@@ -51,10 +51,10 @@ export const HudPanel = memo(function HudPanel({
             )}
           >
             {/* Container — Technical Glassmorphism */}
-            <div className="relative flex h-full w-full flex-col overflow-hidden bg-[#030a0d]/96 rounded-[24px] border border-white/[0.03] shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+            <div className="relative flex h-full w-full flex-col overflow-hidden bg-[#030a0d]/96 rounded-[12px] border border-white/[0.03] shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
               {/* Subtle technical grid background */}
               {showGrid && (
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(0,214,163,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(0,214,163,0.015)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none rounded-[24px]" />
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(0,214,163,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(0,214,163,0.015)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none rounded-[12px]" />
               )}
 
               {/* Header */}

@@ -1432,42 +1432,62 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
 
 
 
-        {/* Floating Zoom & Locate controls (Left Side) */}
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-25 flex flex-col gap-2.5">
-          <div className="flex flex-col rounded-xl border border-white/5 bg-[#0a0d10]/70 p-1 shadow-2xl backdrop-blur-md">
+        {/* Floating Zoom & Locate controls (Top Right Side) */}
+        <div className="absolute right-6 top-6 z-25 flex flex-col items-center gap-3">
+          {/* Zoom Slider Pill */}
+          <div className="flex flex-col items-center rounded-full border border-white/5 bg-[#0a0d10]/80 p-1.5 shadow-2xl backdrop-blur-md">
             <button
               onClick={zoomIn}
-              className="grid h-9 w-9 place-items-center rounded-lg hover:bg-white/5 text-slate-300 hover:text-white transition-all active:scale-95 cursor-pointer"
+              className="grid h-8 w-8 place-items-center rounded-full hover:bg-white/5 text-slate-300 hover:text-cyan-400 transition-all active:scale-95 cursor-pointer"
               title="Aproximar"
               type="button"
             >
               <Plus size={16} strokeWidth={2.5} />
             </button>
-            <div className="h-px bg-white/5 mx-1" />
+            
+            <div className="relative h-28 w-8 py-2 flex justify-center cursor-pointer touch-none"
+                onPointerDown={handleZoomPointerDown}
+                onPointerMove={handleZoomPointerMove}
+                onPointerUp={handleZoomPointerUp}
+                onPointerCancel={handleZoomPointerCancel}
+            >
+              {/* Background Track */}
+              <div className="absolute inset-y-2 w-[3px] bg-[#11161d] rounded-full overflow-hidden shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] pointer-events-none">
+                {/* Filled Track */}
+                <div 
+                  className="absolute bottom-0 w-full bg-slate-500/40 transition-all duration-75 pointer-events-none" 
+                  style={{ height: `${zoomThumbBottom * 100}%` }} 
+                />
+              </div>
+              
+              {/* Thumb */}
+              <div 
+                className="absolute left-1/2 w-4 h-4 -ml-[8px] bg-slate-200 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.8)] border-[4px] border-[#0f172a] flex items-center justify-center pointer-events-none transition-transform active:scale-90 z-20"
+                style={{ bottom: `calc(8px + (100% - 16px) * ${zoomThumbBottom})` }}
+              >
+                 <div className="w-1.5 h-1.5 rounded-full bg-[#0f172a]" />
+              </div>
+            </div>
+
             <button
               onClick={zoomOut}
               disabled={displayedZoomScale <= minMapZoom}
-              className="grid h-9 w-9 place-items-center rounded-lg hover:bg-white/5 text-slate-300 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-all active:scale-95 cursor-pointer"
+              className="grid h-8 w-8 place-items-center rounded-full hover:bg-white/5 text-slate-300 hover:text-cyan-400 disabled:opacity-40 disabled:pointer-events-none transition-all active:scale-95 cursor-pointer"
               title="Afastar"
               type="button"
             >
               <Minus size={16} strokeWidth={2.5} />
             </button>
           </div>
+
+          {/* Locate Button */}
           <button
             onClick={interactiveMap.resetCamera}
-            className="grid h-9 w-9 place-items-center rounded-xl border border-white/5 bg-[#0a0d10]/70 text-cyan-400 hover:text-cyan-300 hover:bg-white/5 shadow-2xl backdrop-blur-md transition-all active:scale-95 cursor-pointer"
+            className="grid h-[42px] w-[42px] place-items-center rounded-2xl border border-white/5 bg-[#0a0d10]/80 text-cyan-400 hover:text-cyan-300 hover:bg-white/5 shadow-2xl backdrop-blur-md transition-all active:scale-95 cursor-pointer"
             title="Centralizar Mapa"
             type="button"
           >
-            <svg className="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <circle cx="12" cy="12" r="3" />
-              <line x1="12" y1="1" x2="12" y2="3" />
-              <line x1="12" y1="21" x2="12" y2="23" />
-              <line x1="1" y1="12" x2="3" y2="12" />
-              <line x1="21" y1="12" x2="23" y2="12" />
-            </svg>
+            <Crosshair size={20} strokeWidth={2.5} />
           </button>
         </div>
 
@@ -1551,8 +1571,6 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
           <span>Centralizar</span>
         </button>
       </div>
-
-      {/* Floating zoom controls — left side of map */}
 
       {isAuthModalOpen && (
         <AuthModal onClose={() => setIsAuthModalOpen(false)} />
