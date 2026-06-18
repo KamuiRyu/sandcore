@@ -28,11 +28,11 @@ Este documento detalha o plano de ação passo a passo para a construção do ap
 ## Fase 3: Migração das Regras de Negócio (Clean Architecture)
 *Objetivo: Reaproveitar o código web existente (regras de negócio e conexão com PocketBase) mantendo os princípios de Clean Architecture. Todos os arquivos legados estão atualmente na pasta `old/`.*
 
-- [ ] **Cópia do Core:** Copiar as pastas `core`, `infrastructure`, e `dependencies` do módulo de map (`slp-map/old/src/modules/map/`) para a nova estrutura raiz.
-- [ ] **Dependências do Projeto:** Instalar os pacotes necessários que já eram usados no web (ex: `pocketbase`, `lucide-react`, `tailwindcss`, libs de mapa, etc).
-- [ ] **Serviços Compartilhados:** Copiar utilitários essenciais (ex: `lib/pocketbase.ts` e arquivos de ambiente).
-- [ ] **Validação:** Testar os hooks migrados isoladamente para garantir que o PocketBase e a lógica de negócios estão funcionando corretamente no ambiente Electron.
-- [ ] **Limpeza Pós-Migração:** Após a validação de que todas as regras de negócio e dependências foram migradas e estão operando corretamente, deletar completamente a pasta `old/` para limpar o repositório.
+- [x] **Cópia do Core:** Copiar as pastas `core`, `infrastructure`, e `dependencies` do módulo de map (`slp-map/old/src/modules/map/`) para a nova estrutura raiz.
+- [x] **Dependências do Projeto:** Instalar os pacotes necessários que já eram usados no web (ex: `pocketbase`, `lucide-react`, `tailwindcss`, libs de mapa, etc).
+- [x] **Serviços Compartilhados:** Copiar utilitários essenciais (ex: `lib/pocketbase.ts` e arquivos de ambiente).
+- [x] **Validação:** Testar os hooks migrados isoladamente para garantir que o PocketBase e a lógica de negócios estão funcionando corretamente no ambiente Electron.
+- [x] **Limpeza Pós-Migração:** Após a validação de que todas as regras de negócio e dependências foram migradas e estão operando corretamente, deletar completamente a pasta `old/` para limpar o repositório.
 
 ## Fase 4: Nova Interface Visual (HUD)
 *Objetivo: Construir a nova UI em React, otimizada especificamente para atuar como um overlay desktop.*

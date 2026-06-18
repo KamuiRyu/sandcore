@@ -71,7 +71,7 @@ export const LoginScreen = () => {
           {/* Logo and Subtitle Section matching Mockup */}
           <div className="flex flex-col items-center">
             <img 
-              src="/images/logo.webp" 
+              src="./images/logo.webp" 
               alt="Shinobi Map Logo" 
               className="h-20 w-auto object-contain drop-shadow-[0_4px_16px_rgba(0,168,150,0.15)]"
               draggable={false}
@@ -81,15 +81,12 @@ export const LoginScreen = () => {
             {/* Custom Horizontal Line with Mini Shuriken SVG */}
             <div className="flex items-center justify-center gap-3 w-full mt-3">
               <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-teal-500/30"></div>
-              <svg 
-                className="w-4 h-4 text-teal-500/80 animate-[spin_20s_linear_infinite] flex-none" 
-                viewBox="0 0 24 24" 
-                fill="currentColor" 
-                fillRule="evenodd" 
-                clipRule="evenodd"
-              >
-                <path d="M12 2Q12 12 2 12Q12 12 12 22Q12 12 22 12Q12 12 12 2ZM12 9.5A2.5 2.5 0 1 1 12 14.5A2.5 2.5 0 0 1 12 9.5Z" />
-              </svg>
+              <img 
+                src="./images/logo_mini.webp" 
+                alt="Logo" 
+                className="w-4 h-4 animate-[spin_20s_linear_infinite] flex-none object-contain" 
+                draggable={false}
+              />
               <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-teal-500/30"></div>
             </div>
           </div>
@@ -202,7 +199,7 @@ export const LoginScreen = () => {
       </div>
 
       {/* Right Image/Banner Column */}
-      <div className="flex-1 bg-cover bg-[85%_center] select-none relative max-[500px]:hidden h-full" style={{ backgroundImage: "url('/images/background.webp')" }}>
+      <div className="flex-1 bg-cover bg-[85%_center] select-none relative max-[500px]:hidden h-full" style={{ backgroundImage: "url('./images/background.webp')" }}>
         <div className="absolute inset-0 bg-gradient-to-r from-[#080A0C] via-transparent to-transparent w-24"></div>
       </div>
 

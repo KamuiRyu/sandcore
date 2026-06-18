@@ -12,6 +12,13 @@ function App() {
   const [activeTab, setActiveTab] = useState<string | null>(null)
   const [layoutSide, setLayoutSide] = useState<'left' | 'right'>('right')
   const [sidebarOpacity, setSidebarOpacity] = useState(95)
+  const [lastActiveTab, setLastActiveTab] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (activeTab) {
+      setLastActiveTab(activeTab)
+    }
+  }, [activeTab])
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
@@ -89,17 +96,29 @@ function App() {
 
   // Unified side-by-side layout using flex-row-reverse mirror to prevent unmounting and flashing
   return (
-    <div className={`h-screen w-screen bg-transparent flex items-start select-none font-sans overflow-hidden p-0 ${layoutSide === 'left' ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div 
+      className={`h-screen w-screen bg-transparent flex items-start select-none font-sans overflow-hidden p-0 ${layoutSide === 'left' ? 'flex-row-reverse' : 'flex-row'}`}
+      style={{ opacity: sidebarOpacity / 100 }}
+    >
       <div className="w-[60px] flex-none h-[360px]">
-        <SidebarScreen activeTab={activeTab} sidebarOpacity={sidebarOpacity} onLogout={() => viewModel.logout()} />
+        <SidebarScreen activeTab={activeTab} onLogout={() => viewModel.logout()} />
       </div>
-      {activeTab && (
-        <>
-          <div className="w-3 flex-none h-full bg-transparent" />
-          <div className="flex-1 h-full overflow-hidden">
-            <ContentPanelScreen activeTab={activeTab} />
+      {lastActiveTab && (
+        <div 
+          className="h-full overflow-hidden flex-1"
+          style={{ 
+            visibility: activeTab ? 'visible' : 'hidden', 
+            pointerEvents: activeTab ? 'auto' : 'none',
+            transition: 'visibility 300ms'
+          }}
+        >
+          <div className="flex h-full">
+            <div className="w-3 flex-none bg-transparent" />
+            <div className="flex-1 h-full overflow-hidden">
+              <ContentPanelScreen activeTab={activeTab} lastActiveTab={lastActiveTab} />
+            </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   )

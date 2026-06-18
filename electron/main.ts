@@ -1,9 +1,13 @@
-import { app, BrowserWindow, ipcMain, screen } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, globalShortcut } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fs from 'node:fs'
+import { autoUpdater } from 'electron-updater'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion')
+app.commandLine.appendSwitch('disable-background-timer-throttling')
 
 process.env.DIST = path.join(__dirname, '../dist')
 process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(process.env.DIST, '../public')
@@ -15,8 +19,83 @@ let currentLayoutSide: 'left' | 'right' = 'right'
 // Config management
 const configPath = path.join(app.getPath('userData'), 'config.json')
 
+let registeredShortcutMap: string | null = null
+let registeredShortcutSettings: string | null = null
+
+function updateShortcutMap(newShortcut: string): boolean {
+  if (registeredShortcutMap === newShortcut) return true
+
+  if (registeredShortcutMap) {
+    globalShortcut.unregister(registeredShortcutMap)
+    registeredShortcutMap = null
+  }
+
+  if (!newShortcut) return true
+
+  try {
+    const success = globalShortcut.register(newShortcut, () => {
+      if (sidebarWin && !sidebarWin.isDestroyed()) {
+        if (sidebarWin.isMinimized()) {
+          sidebarWin.restore()
+          sidebarWin.focus()
+          resizeSingleWindow('map')
+        } else if (sidebarWin.isFocused() && currentTabId === 'map') {
+          resizeSingleWindow(null)
+        } else {
+          sidebarWin.focus()
+          resizeSingleWindow('map')
+        }
+      }
+    })
+
+    if (success) {
+      registeredShortcutMap = newShortcut
+    }
+    return success
+  } catch (err) {
+    console.error('Failed to register map shortcut:', err)
+    return false
+  }
+}
+
+function updateShortcutSettings(newShortcut: string): boolean {
+  if (registeredShortcutSettings === newShortcut) return true
+
+  if (registeredShortcutSettings) {
+    globalShortcut.unregister(registeredShortcutSettings)
+    registeredShortcutSettings = null
+  }
+
+  if (!newShortcut) return true
+
+  try {
+    const success = globalShortcut.register(newShortcut, () => {
+      if (sidebarWin && !sidebarWin.isDestroyed()) {
+        if (sidebarWin.isMinimized()) {
+          sidebarWin.restore()
+          sidebarWin.focus()
+          resizeSingleWindow('settings')
+        } else if (sidebarWin.isFocused() && currentTabId === 'settings') {
+          resizeSingleWindow(null)
+        } else {
+          sidebarWin.focus()
+          resizeSingleWindow('settings')
+        }
+      }
+    })
+
+    if (success) {
+      registeredShortcutSettings = newShortcut
+    }
+    return success
+  } catch (err) {
+    console.error('Failed to register settings shortcut:', err)
+    return false
+  }
+}
+
 function loadConfig() {
-  const defaults = { alwaysOnTop: true, inGameNotifs: true, volume: 80, completedMarkers: [], favoritesList: [], layoutSide: 'right', sidebarOpacity: 95, uiScale: 100 }
+  const defaults = { alwaysOnTop: true, inGameNotifs: true, volume: 80, completedMarkers: [], favoritesList: [], layoutSide: 'right', sidebarOpacity: 95, uiScale: 100, shortcutMap: 'CommandOrControl+Alt+M', shortcutSettings: 'CommandOrControl+Alt+S' }
   try {
     if (fs.existsSync(configPath)) {
       return { ...defaults, ...JSON.parse(fs.readFileSync(configPath, 'utf-8')) }
@@ -130,11 +209,36 @@ function createSidebarWindow() {
     hasShadow: false,
     backgroundColor: '#00000000',
     alwaysOnTop: appConfig.alwaysOnTop,
+    skipTaskbar: false, // User might want it in taskbar, but we'll see
+    focusable: true,
     webPreferences: {
       preload: preloadPath,
       nodeIntegration: false,
       contextIsolation: true,
+      backgroundThrottling: false, // Ensure performance remains high
     },
+  })
+
+  sidebarWin.setFullScreenable(false)
+  sidebarWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+  sidebarWin.setMenu(null)
+
+  if (appConfig.alwaysOnTop) {
+    sidebarWin.setAlwaysOnTop(true, 'screen-saver', 1)
+  }
+
+  // Prevent the window from being minimized by the system when losing focus to a fullscreen app
+  sidebarWin.on('blur', () => {
+    if (appConfig.alwaysOnTop && sidebarWin) {
+      sidebarWin.setAlwaysOnTop(true, 'screen-saver', 1)
+    }
+  })
+
+  sidebarWin.on('minimize' as any, (e: { preventDefault: () => void }) => {
+    if (appConfig.alwaysOnTop) {
+      e.preventDefault()
+      sidebarWin?.restore()
+    }
   })
 
   sidebarWin.webContents.on('dom-ready', () => {
@@ -154,9 +258,29 @@ function createSidebarWindow() {
 }
 
 let pendingBounds: { x: number; y: number; width: number; height: number } | null = null
+let resizeTimeout: NodeJS.Timeout | null = null
 
-function resizeSingleWindow(tabId: string | null) {
+function resizeSingleWindow(tabId: string | null, immediate = false) {
   if (!sidebarWin || sidebarWin.isDestroyed()) return
+
+  if (resizeTimeout) {
+    clearTimeout(resizeTimeout)
+    resizeTimeout = null
+  }
+
+  // If not immediate, and we are switching/closing from an open tab, do a transition
+  if (!immediate && currentTabId !== null && currentTabId !== tabId) {
+    // Start transition: fade out the active panel
+    sidebarWin.webContents.send('layout-updated', { tabId: null, layoutSide: appConfig.layoutSide || 'right' })
+
+    // Wait for fade out to complete, then perform resize
+    resizeTimeout = setTimeout(() => {
+      resizeTimeout = null
+      resizeSingleWindow(tabId, true)
+    }, 300)
+    return
+  }
+
   currentTabId = tabId
 
   const zoom = (appConfig.uiScale || 100) / 100
@@ -179,8 +303,8 @@ function resizeSingleWindow(tabId: string | null) {
     panelW = 1200
     panelH = 800
   } else if (tabId) {
-    panelW = 400
-    panelH = 360
+    panelW = 450
+    panelH = 550
   }
 
   // Calculate total window dimensions (Sidebar 60 + Gap 12 + Panel width)
@@ -267,6 +391,99 @@ function handleWindowMoved(win: BrowserWindow) {
 
 // IPC Handlers
 ipcMain.handle('get-config', () => appConfig)
+ipcMain.handle('get-app-version', () => app.getVersion())
+
+// Auto Updater IPC / Logic
+ipcMain.on('check-for-updates', (event) => {
+  // If in dev mode, we can simulate an update flow to test the React UI
+  if (!app.isPackaged) {
+    event.sender.send('update-status', { status: 'checking' })
+    setTimeout(() => {
+      event.sender.send('update-status', {
+        status: 'available',
+        version: '1.3.0',
+        releaseNotes: 'Esta é uma simulação de nova versão em desenvolvimento.'
+      })
+
+      // Simulate download progress
+      let percent = 0
+      const interval = setInterval(() => {
+        percent += 20
+        event.sender.send('update-progress', { percent })
+        if (percent >= 100) {
+          clearInterval(interval)
+          event.sender.send('update-status', { status: 'downloaded', version: '1.3.0' })
+        }
+      }, 1000)
+    }, 1500)
+    return
+  }
+
+  // Real auto updater check
+  autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+    event.sender.send('update-status', { status: 'error', message: err?.message || 'Erro desconhecido' })
+  })
+})
+
+ipcMain.on('quit-and-install-update', () => {
+  if (app.isPackaged) {
+    autoUpdater.quitAndInstall()
+  } else {
+    console.log('Simulando reinicialização para instalar atualização (modo desenvolvimento).')
+    app.relaunch()
+    app.exit(0)
+  }
+})
+
+// Real Auto Updater Events
+autoUpdater.on('checking-for-update', () => {
+  if (sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.webContents.send('update-status', { status: 'checking' })
+  }
+})
+
+autoUpdater.on('update-available', (info) => {
+  if (sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.webContents.send('update-status', {
+      status: 'available',
+      version: info.version,
+      releaseNotes: info.releaseNotes
+    })
+  }
+})
+
+autoUpdater.on('update-not-available', () => {
+  if (sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.webContents.send('update-status', { status: 'not-available' })
+  }
+})
+
+autoUpdater.on('error', (err) => {
+  if (sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.webContents.send('update-status', { status: 'error', message: err?.message || 'Erro de conexão' })
+  }
+})
+
+autoUpdater.on('download-progress', (progressObj) => {
+  if (sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.webContents.send('update-progress', { percent: Math.round(progressObj.percent) })
+  }
+})
+
+autoUpdater.on('update-downloaded', (info) => {
+  if (sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.webContents.send('update-status', { status: 'downloaded', version: info.version })
+  }
+})
+
+ipcMain.handle('register-shortcut', (_event, { type, shortcut }) => {
+  if (type === 'map') {
+    return { success: updateShortcutMap(shortcut) }
+  } else if (type === 'settings') {
+    return { success: updateShortcutSettings(shortcut) }
+  }
+  return { success: false }
+})
 
 ipcMain.on('set-config', (_event, newConfig) => {
   appConfig = { ...appConfig, ...newConfig }
@@ -276,9 +493,20 @@ ipcMain.on('set-config', (_event, newConfig) => {
     sidebarWin.webContents.send('config-updated', appConfig)
   }
 
+  if ('shortcutMap' in newConfig) {
+    updateShortcutMap(newConfig.shortcutMap)
+  }
+  if ('shortcutSettings' in newConfig) {
+    updateShortcutSettings(newConfig.shortcutSettings)
+  }
+
   if ('alwaysOnTop' in newConfig) {
     if (sidebarWin && !sidebarWin.isDestroyed()) {
-      sidebarWin.setAlwaysOnTop(newConfig.alwaysOnTop)
+      if (newConfig.alwaysOnTop) {
+        sidebarWin.setAlwaysOnTop(true, 'screen-saver', 1)
+      } else {
+        sidebarWin.setAlwaysOnTop(false)
+      }
     }
   }
 
@@ -314,7 +542,7 @@ ipcMain.on('toggle-panel-window', (_event, tabId) => {
 
 // Close panel and resize window back to sidebar only
 ipcMain.on('close-panel-window', () => {
-  resizeSingleWindow(null)
+  resizeSingleWindow(null, true)
 })
 
 // Minimize window
@@ -358,4 +586,16 @@ app.on('activate', () => {
   }
 })
 
-app.whenReady().then(createLoginWindow)
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll()
+})
+
+app.whenReady().then(() => {
+  createLoginWindow()
+  if (appConfig.shortcutMap) {
+    updateShortcutMap(appConfig.shortcutMap)
+  }
+  if (appConfig.shortcutSettings) {
+    updateShortcutSettings(appConfig.shortcutSettings)
+  }
+})

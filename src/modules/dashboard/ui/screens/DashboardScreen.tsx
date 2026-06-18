@@ -71,10 +71,13 @@ export const DashboardScreen = () => {
       {/* Titlebar Overlay */}
       <div className="absolute top-0 left-0 right-0 h-8 flex items-center justify-between pl-4 pr-0 select-none z-50" style={{ WebkitAppRegion: 'drag' } as any}>
         <div className="flex items-center gap-2">
-          <svg className="w-3.5 h-3.5 text-teal-500 animate-[pulse_2s_infinite]" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2L14.8 9.2L22 12L14.8 14.8L12 22L9.2 14.8L2 12L9.2 9.2L12 2Z" />
-          </svg>
-          <span className="text-[10px] font-mono tracking-widest text-slate-500 uppercase">Shinobi Map • Overlay</span>
+          <img 
+            src="./images/logo_mini.webp" 
+            alt="Logo" 
+            className="w-3.5 h-3.5 object-contain" 
+            draggable={false}
+          />
+          <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase">Shinobi Map • Overlay</span>
         </div>
         <div className="flex items-center h-full">
           <button 
@@ -123,13 +126,12 @@ export const DashboardScreen = () => {
               {activeTab === 'shuriken' && (
                 <div className="absolute left-[-11px] top-1/2 -translate-y-1/2 w-1 h-5 bg-teal-400 rounded-r-md" />
               )}
-              <svg 
-                className={`w-6 h-6 group-hover:rotate-90 transition-transform duration-500 ease-out`} 
-                viewBox="0 0 24 24" 
-                fill="currentColor"
-              >
-                <path d="M12 2Q12 12 2 12Q12 12 12 22Q12 12 22 12Q12 12 12 2ZM12 9.5A2.5 2.5 0 1 1 12 14.5A2.5 2.5 0 0 1 12 9.5Z" />
-              </svg>
+              <img 
+                src="./images/logo_mini.webp" 
+                alt="Logo" 
+                className="w-6 h-6 group-hover:rotate-90 transition-transform duration-500 ease-out object-contain" 
+                draggable={false}
+              />
             </button>
 
             {/* Divider */}
