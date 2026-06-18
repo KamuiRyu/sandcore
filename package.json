@@ -1,7 +1,8 @@
 {
   "name": "slp-map",
   "version": "1.0.1-beta",
-  "description": "",
+  "description": "Mapa interativo para Shinobi Legends",
+  "author": "Hyoou",
   "main": "dist-electron/main.js",
   "type": "module",
   "scripts": {
@@ -10,7 +11,6 @@
     "preview": "vite preview"
   },
   "keywords": [],
-  "author": "",
   "license": "ISC",
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

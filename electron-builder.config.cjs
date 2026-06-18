@@ -1,43 +1,46 @@
-const pkg = require('./package.json');
-const versionStr = pkg.version.replace(/\./g, '_');
+const pkg = require("./package.json");
+const versionStr = pkg.version.replace(/\./g, "_");
 
-/** @type {import('electron-builder').Configuration} */
 module.exports = {
-  appId: "com.kamuiryu.shinobimap",
+  appId: "com.hyoou.shinobimap",
   productName: "Shinobi Map",
-  executableName: "shinobi_map",
+  executableName: "ShinobiMap",
+  compression: "maximum",
   directories: {
-    output: "release"
+    output: "release",
   },
   files: ["dist/**/*", "dist-electron/**/*", "package.json"],
+
   win: {
+    icon: "public/icon.ico",
     target: [
       {
         target: "nsis",
-        arch: ["x64"]
+        arch: ["x64"],
       },
       {
         target: "portable",
-        arch: ["x64"]
-      }
+        arch: ["x64"],
+      },
     ],
-    icon: "public/icon.ico"
   },
+
   nsis: {
     oneClick: false,
     allowToChangeInstallationDirectory: true,
     createDesktopShortcut: true,
-    createStartMenuShortcut: true,
-    shortcutName: "Shinobi Map",
-    artifactName: "shinobi_map_${versionStr}_setup.${ext}"
+    include: "build/nsis/installer.nsh",
+    artifactName: "ShinobiMap_" + versionStr + "_setup.${ext}",
   },
+
   portable: {
-    artifactName: "shinobi_map_${versionStr}_portable.${ext}"
+    artifactName: "ShinobiMap_" + versionStr + "_portable.${ext}",
   },
- publish: {
+
+  publish: {
     provider: "github",
-    releaseType: "release" ,
     owner: "KamuiRyu",
-    repo: "slp-map"
+    repo: "slp-map",
+    releaseType: "release",
   },
 };
