@@ -47,7 +47,7 @@ function updateShortcutMap(newShortcut: string): boolean {
         }
       }
     })
-    
+
     if (success) {
       registeredShortcutMap = newShortcut
     }
@@ -83,7 +83,7 @@ function updateShortcutSettings(newShortcut: string): boolean {
         }
       }
     })
-    
+
     if (success) {
       registeredShortcutSettings = newShortcut
     }
@@ -246,7 +246,7 @@ function createSidebarWindow() {
   })
 
   // Open DevTools automatically to see errors - can be commented out later
-  sidebarWin.webContents.openDevTools()
+  //sidebarWin.webContents.openDevTools()
 
   if (process.env.VITE_DEV_SERVER_URL) {
     sidebarWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}?windowType=sidebar`)
@@ -272,7 +272,7 @@ function resizeSingleWindow(tabId: string | null, immediate = false) {
   if (!immediate && currentTabId !== null && currentTabId !== tabId) {
     // Start transition: fade out the active panel
     sidebarWin.webContents.send('layout-updated', { tabId: null, layoutSide: appConfig.layoutSide || 'right' })
-    
+
     // Wait for fade out to complete, then perform resize
     resizeTimeout = setTimeout(() => {
       resizeTimeout = null
@@ -399,12 +399,12 @@ ipcMain.on('check-for-updates', (event) => {
   if (!app.isPackaged) {
     event.sender.send('update-status', { status: 'checking' })
     setTimeout(() => {
-      event.sender.send('update-status', { 
-        status: 'available', 
+      event.sender.send('update-status', {
+        status: 'available',
         version: '1.3.0',
         releaseNotes: 'Esta é uma simulação de nova versão em desenvolvimento.'
       })
-      
+
       // Simulate download progress
       let percent = 0
       const interval = setInterval(() => {
@@ -444,10 +444,10 @@ autoUpdater.on('checking-for-update', () => {
 
 autoUpdater.on('update-available', (info) => {
   if (sidebarWin && !sidebarWin.isDestroyed()) {
-    sidebarWin.webContents.send('update-status', { 
-      status: 'available', 
+    sidebarWin.webContents.send('update-status', {
+      status: 'available',
       version: info.version,
-      releaseNotes: info.releaseNotes 
+      releaseNotes: info.releaseNotes
     })
   }
 })
