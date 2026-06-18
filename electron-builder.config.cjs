@@ -42,5 +42,6 @@ module.exports = {
     owner: "KamuiRyu",
     repo: "slp-map",
     releaseType: "release",
+    allowPrerelease: true,
   },
 };
