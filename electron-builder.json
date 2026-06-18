@@ -1,14 +1,10 @@
 {
-  "appId": "com.kamuiryu.slpmap",
-  "productName": "SLP Map Overlay",
+  "appId": "com.kamuiryu.shinobimap",
+  "productName": "Shinobi Map",
   "directories": {
     "output": "release"
   },
-  "files": [
-    "dist/**/*",
-    "dist-electron/**/*",
-    "package.json"
-  ],
+  "files": ["dist/**/*", "dist-electron/**/*", "package.json"],
   "win": {
     "target": [
       {
@@ -27,6 +23,11 @@
     "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "SLP Map Overlay"
+    "shortcutName": "Shinobi Map"
+  },
+  "publish": {
+    "provider": "github",
+    "owner": "KamuiRyu",
+    "repo": "slp-map"
   }
 }

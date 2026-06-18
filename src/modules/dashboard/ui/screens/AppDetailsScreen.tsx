@@ -9,6 +9,13 @@ export const AppDetailsScreen = () => {
   const [uiScale, setUiScale] = useState(100)
   const [alwaysOnTop, setAlwaysOnTop] = useState(true)
 
+  // Version & Update States
+  const [appVersion, setAppVersion] = useState('1.0.0')
+  const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'>('idle')
+  const [updateVersion, setUpdateVersion] = useState('')
+  const [downloadPercent, setDownloadPercent] = useState(0)
+  const [updaterError, setUpdaterError] = useState('')
+
   // Custom Confirm Modal State
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean
@@ -28,7 +35,7 @@ export const AppDetailsScreen = () => {
       .then(() => setPocketbaseConnected(true))
       .catch(() => setPocketbaseConnected(false))
 
-    // Fetch scaling config
+    // Fetch scaling config and app version
     if (window.ipcRenderer) {
       window.ipcRenderer.getConfig().then((config) => {
         if (config) {
@@ -36,6 +43,38 @@ export const AppDetailsScreen = () => {
           if ('alwaysOnTop' in config) setAlwaysOnTop(config.alwaysOnTop)
         }
       })
+
+      window.ipcRenderer.invoke('get-app-version')
+        .then((version) => {
+          if (version) setAppVersion(version)
+        })
+        .catch((err) => console.error('Error fetching version:', err))
+
+      // Listen for updates from main process
+      const handleUpdateStatus = (_event: any, data: { status: any; version?: string; message?: string }) => {
+        setUpdateStatus(data.status)
+        if (data.version) setUpdateVersion(data.version)
+        if (data.message) setUpdaterError(data.message)
+
+        if (data.status === 'not-available') {
+          setTimeout(() => {
+            setUpdateStatus('idle')
+          }, 3000)
+        }
+      }
+
+      const handleUpdateProgress = (_event: any, data: { percent: number }) => {
+        setUpdateStatus('downloading')
+        setDownloadPercent(data.percent)
+      }
+
+      window.ipcRenderer.on('update-status', handleUpdateStatus)
+      window.ipcRenderer.on('update-progress', handleUpdateProgress)
+
+      return () => {
+        window.ipcRenderer?.off('update-status', handleUpdateStatus)
+        window.ipcRenderer?.off('update-progress', handleUpdateProgress)
+      }
     }
   }, [])
 
@@ -91,6 +130,19 @@ export const AppDetailsScreen = () => {
     )
   }
 
+  const handleCheckForUpdates = () => {
+    if (window.ipcRenderer) {
+      setUpdaterError('')
+      window.ipcRenderer.send('check-for-updates')
+    }
+  }
+
+  const handleInstallUpdate = () => {
+    if (window.ipcRenderer) {
+      window.ipcRenderer.send('quit-and-install-update')
+    }
+  }
+
   return (
     <div className="flex flex-col h-full overflow-hidden text-slate-200 relative">
       {/* Title */}
@@ -114,7 +166,7 @@ export const AppDetailsScreen = () => {
           </div>
           <div className="min-w-0">
             <h3 className="font-black text-slate-100 text-sm tracking-wide">SHINOBI MAP HUD</h3>
-            <p className="text-[10px] text-slate-400 font-mono mt-0.5">Versão 1.2.0 • Build Electron</p>
+            <p className="text-[10px] text-slate-400 font-mono mt-0.5">Versão {appVersion} • Build Electron</p>
           </div>
         </div>
 
@@ -146,6 +198,107 @@ export const AppDetailsScreen = () => {
                 CONECTADO
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* Update Section */}
+        <div className="space-y-2">
+          <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-slate-500 ml-1">
+            Atualização do Software
+          </span>
+          <div className="bg-[#11161D]/55 border border-slate-800/60 p-4 rounded-xl space-y-3">
+            {updateStatus === 'idle' && (
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-slate-200">Verificar atualizações</span>
+                  <span className="text-[10px] text-slate-400">Verifique se há novas versões do mapa</span>
+                </div>
+                <button
+                  onClick={handleCheckForUpdates}
+                  className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-slate-100 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-teal-900/20"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Verificar
+                </button>
+              </div>
+            )}
+
+            {updateStatus === 'checking' && (
+              <div className="flex items-center gap-3">
+                <RefreshCw className="w-4 h-4 text-teal-400 animate-spin" />
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-slate-200">Buscando atualizações...</span>
+                  <span className="text-[10px] text-slate-400">Conectando ao servidor de distribuição</span>
+                </div>
+              </div>
+            )}
+
+            {updateStatus === 'available' && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-teal-400">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span className="text-xs font-bold">Nova versão {updateVersion} disponível!</span>
+                </div>
+                <div className="text-[10px] text-slate-400">
+                  Iniciando o download automático da atualização...
+                </div>
+              </div>
+            )}
+
+            {updateStatus === 'downloading' && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                  <span>Baixando atualização ({updateVersion})...</span>
+                  <span className="font-bold text-teal-400">{downloadPercent}%</span>
+                </div>
+                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-teal-400 h-full rounded-full transition-all duration-300"
+                    style={{ width: `${downloadPercent}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {updateStatus === 'downloaded' && (
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-emerald-400">Atualização {updateVersion} baixada!</span>
+                  <span className="text-[10px] text-slate-400">Reinicie para aplicar as alterações</span>
+                </div>
+                <button
+                  onClick={handleInstallUpdate}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-slate-100 text-xs font-bold transition-all cursor-pointer shadow-md shadow-emerald-900/20"
+                >
+                  Reiniciar e Instalar
+                </button>
+              </div>
+            )}
+
+            {updateStatus === 'not-available' && (
+              <div className="flex items-center gap-2 text-emerald-400">
+                <ShieldCheck className="w-4.5 h-4.5" />
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold">Você está atualizado</span>
+                  <span className="text-[10px] text-slate-400 font-mono">Aplicativo rodando na última versão ({appVersion})</span>
+                </div>
+              </div>
+            )}
+
+            {updateStatus === 'error' && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-rose-400">Falha ao atualizar</span>
+                  <button
+                    onClick={handleCheckForUpdates}
+                    className="px-2.5 py-1.2 rounded-lg bg-rose-950 border border-rose-800 text-rose-300 text-[10px] font-semibold hover:bg-rose-900 transition-all cursor-pointer"
+                  >
+                    Tentar Novamente
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-500 font-mono leading-tight">{updaterError || 'Erro ao conectar ao servidor de atualizações.'}</p>
+              </div>
+            )}
           </div>
         </div>
 

@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, screen, globalShortcut } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fs from 'node:fs'
+import { autoUpdater } from 'electron-updater'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -390,6 +391,90 @@ function handleWindowMoved(win: BrowserWindow) {
 
 // IPC Handlers
 ipcMain.handle('get-config', () => appConfig)
+ipcMain.handle('get-app-version', () => app.getVersion())
+
+// Auto Updater IPC / Logic
+ipcMain.on('check-for-updates', (event) => {
+  // If in dev mode, we can simulate an update flow to test the React UI
+  if (!app.isPackaged) {
+    event.sender.send('update-status', { status: 'checking' })
+    setTimeout(() => {
+      event.sender.send('update-status', { 
+        status: 'available', 
+        version: '1.3.0',
+        releaseNotes: 'Esta é uma simulação de nova versão em desenvolvimento.'
+      })
+      
+      // Simulate download progress
+      let percent = 0
+      const interval = setInterval(() => {
+        percent += 20
+        event.sender.send('update-progress', { percent })
+        if (percent >= 100) {
+          clearInterval(interval)
+          event.sender.send('update-status', { status: 'downloaded', version: '1.3.0' })
+        }
+      }, 1000)
+    }, 1500)
+    return
+  }
+
+  // Real auto updater check
+  autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+    event.sender.send('update-status', { status: 'error', message: err?.message || 'Erro desconhecido' })
+  })
+})
+
+ipcMain.on('quit-and-install-update', () => {
+  if (app.isPackaged) {
+    autoUpdater.quitAndInstall()
+  } else {
+    console.log('Simulando reinicialização para instalar atualização (modo desenvolvimento).')
+    app.relaunch()
+    app.exit(0)
+  }
+})
+
+// Real Auto Updater Events
+autoUpdater.on('checking-for-update', () => {
+  if (sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.webContents.send('update-status', { status: 'checking' })
+  }
+})
+
+autoUpdater.on('update-available', (info) => {
+  if (sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.webContents.send('update-status', { 
+      status: 'available', 
+      version: info.version,
+      releaseNotes: info.releaseNotes 
+    })
+  }
+})
+
+autoUpdater.on('update-not-available', () => {
+  if (sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.webContents.send('update-status', { status: 'not-available' })
+  }
+})
+
+autoUpdater.on('error', (err) => {
+  if (sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.webContents.send('update-status', { status: 'error', message: err?.message || 'Erro de conexão' })
+  }
+})
+
+autoUpdater.on('download-progress', (progressObj) => {
+  if (sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.webContents.send('update-progress', { percent: Math.round(progressObj.percent) })
+  }
+})
+
+autoUpdater.on('update-downloaded', (info) => {
+  if (sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.webContents.send('update-status', { status: 'downloaded', version: info.version })
+  }
+})
 
 ipcMain.handle('register-shortcut', (_event, { type, shortcut }) => {
   if (type === 'map') {
