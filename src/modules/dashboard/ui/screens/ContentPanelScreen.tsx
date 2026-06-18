@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Search, HelpCircle, Filter } from 'lucide-react'
+import { Search, HelpCircle } from 'lucide-react'
 import { GroupsScreen } from '../../../groups/ui/screens/GroupsScreen'
 import { MapScreen } from '../../../map/ui/screens/MapScreen'
 import { SettingsScreen } from '../../../settings/ui/screens/SettingsScreen'
+import { StatsScreen } from './StatsScreen'
+import { AppDetailsScreen } from './AppDetailsScreen'
 
 interface ContentPanelScreenProps {
   activeTab: string | null
@@ -51,7 +53,11 @@ export const ContentPanelScreen = ({ activeTab, lastActiveTab }: ContentPanelScr
               draggable={false}
             />
             <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase">
-              Shinobi Map • {activeTab === 'groups' ? 'Grupos' : 'Configurações'}
+              Shinobi Map • {
+                activeTab === 'groups' ? 'Grupos' : 
+                activeTab === 'stats' ? 'Estatísticas' :
+                activeTab === 'details' ? 'Logo' : 'Configurações'
+              }
             </span>
           </div>
           <div className="flex items-center h-full">
@@ -80,19 +86,18 @@ export const ContentPanelScreen = ({ activeTab, lastActiveTab }: ContentPanelScr
       ) : (
         <div className="h-14 bg-[#080c10] border-b border-[#131b24] px-4 flex items-center justify-between gap-4 select-none z-50 flex-none" style={{ WebkitAppRegion: 'drag' } as any}>
           {/* Logo */}
-          <div className="flex items-center gap-2.5 flex-none">
-            <svg 
-              className="w-5 h-5 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.7)]" 
-              viewBox="0 0 24 24" 
-              fill="currentColor"
-            >
-              <path d="M12 2c0 5.523 4.477 10 10 10-5.523 0-10 4.477-10 10 0-5.523-4.477-10-10-10 5.523 0 10-4.477 10-10z" />
-            </svg>
+          <div className="flex items-center gap-2 flex-none">
+            <img 
+              src="/images/logo_mini.webp" 
+              alt="Logo" 
+              className="w-5 h-5 object-contain" 
+              draggable={false}
+            />
             <span className="font-bold text-sm tracking-widest text-slate-200">SHINOBI MAP</span>
           </div>
 
-          {/* Search, Help, Filters */}
-          <div className="flex-1 max-w-md flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
+          {/* Search, Help */}
+          <div className="flex-1 max-w-sm flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
             <div className="flex-1 relative flex items-center">
               <span className="absolute left-3 flex items-center pointer-events-none text-slate-500">
                 <Search size={14} />
@@ -111,12 +116,6 @@ export const ContentPanelScreen = ({ activeTab, lastActiveTab }: ContentPanelScr
                 <HelpCircle size={14} />
               </button>
             </div>
-
-            {/* Filters toggle */}
-            <button className="bg-[#11161D]/65 hover:bg-[#1C232E]/80 border border-[#222B37] rounded-lg py-1.5 px-3 flex items-center gap-1.5 text-xs text-slate-300 hover:text-white transition-all cursor-pointer backdrop-blur-sm">
-              <Filter size={13} />
-              <span>Filtros</span>
-            </button>
           </div>
 
           {/* Window controls */}
@@ -160,6 +159,8 @@ export const ContentPanelScreen = ({ activeTab, lastActiveTab }: ContentPanelScr
           <div className="flex-1 bg-[#0A0D10] p-5 flex flex-col justify-between overflow-hidden animate-in fade-in duration-300">
             {lastActiveTab === 'groups' && <GroupsScreen />}
             {lastActiveTab === 'settings' && <SettingsScreen />}
+            {lastActiveTab === 'stats' && <StatsScreen />}
+            {lastActiveTab === 'details' && <AppDetailsScreen />}
           </div>
         )}
       </div>

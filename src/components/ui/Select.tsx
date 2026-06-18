@@ -12,13 +12,16 @@ const SelectTrigger = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
 >(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Trigger
-    className={cn('ui-select', className)}
+    className={cn(
+      'flex items-center justify-between w-full border border-white/10 bg-black/40 text-slate-200 h-10 px-4 rounded-xl text-xs focus:outline-none focus:border-teal-500/50 transition-colors',
+      className
+    )}
     ref={ref}
     {...props}
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown aria-hidden="true" />
+      <ChevronDown className="h-4 w-4 opacity-50 flex-none" aria-hidden="true" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ))
@@ -59,13 +62,17 @@ const SelectContent = React.forwardRef<
 >(({ className, children, position = 'popper', ...props }, ref) => (
   <SelectPrimitive.Portal>
     <SelectPrimitive.Content
-      className={cn('ui-select-content', className)}
+      className={cn(
+        'relative z-[9999] min-w-[8rem] overflow-hidden rounded-xl border border-white/10 bg-slate-900 text-slate-200 shadow-md animate-in fade-in-50 duration-100',
+        position === 'popper' && 'data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1',
+        className
+      )}
       position={position}
       ref={ref}
       {...props}
     >
       <SelectScrollUpButton />
-      <SelectPrimitive.Viewport className="ui-select-viewport">
+      <SelectPrimitive.Viewport className={cn('p-1', position === 'popper' && 'w-full min-w-[var(--radix-select-trigger-width)]')}>
         {children}
       </SelectPrimitive.Viewport>
       <SelectScrollDownButton />
@@ -79,13 +86,16 @@ const SelectItem = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
 >(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Item
-    className={cn('ui-select-item', className)}
+    className={cn(
+      'relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-8 pr-2 text-xs outline-none hover:bg-white/5 focus:bg-white/10 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-slate-300',
+      className
+    )}
     ref={ref}
     {...props}
   >
-    <span className="ui-select-item-indicator">
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
-        <Check aria-hidden="true" />
+        <Check className="h-3.5 w-3.5 text-teal-400" aria-hidden="true" />
       </SelectPrimitive.ItemIndicator>
     </span>
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>

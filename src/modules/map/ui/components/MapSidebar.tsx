@@ -45,11 +45,7 @@ import type {
 import type { MapCollectionStats } from "../../core/entities/MapStats.entity";
 import type { StatsPeriod } from "../viewModels/useMap.viewModel";
 
-type SidebarSection =
-  | "officialPins"
-  | "customPins"
-  | "routes"
-  | "search";
+type SidebarSection = "officialPins" | "customPins" | "routes" | "search";
 type RoutesView = "mine" | "public";
 
 interface MapSidebarProps {
@@ -435,13 +431,6 @@ export const MapSidebar = memo(function MapSidebar({
             </div>
           </div>
 
-          <div className="flex items-center gap-1 p-2 bg-black/20 border-b border-white/5">
-            <div className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-white/10 text-white shadow-lg">
-              <Layers size={13} strokeWidth={2.5} />
-              Categorias
-            </div>
-          </div>
-
           <div className="flex flex-1 flex-col overflow-hidden">
             <div className="px-5 py-4 border-b border-white/5 bg-black/10">
               <div className="grid grid-cols-4 gap-1.5">
@@ -587,122 +576,204 @@ export const MapSidebar = memo(function MapSidebar({
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 custom-scrollbar relative z-10">
               <div className="grid gap-5">
                 {sidebarSection === "officialPins" ? (
-                    <section className="rounded-[26px] border border-white/5 bg-black/25 p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_12px_36px_rgba(0,0,0,0.2)]">
-                      <div className="mb-4 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <span className="grid h-9 w-9 place-items-center rounded-xl border border-white/8 bg-white/5 text-cyan-200">
-                            <Layers size={16} />
-                          </span>
-                          <div>
-                            <p className="text-[0.62rem] font-black uppercase tracking-[0.2em] text-slate-400">
-                              Categorias
-                            </p>
-                            <h3 className="text-base font-bold tracking-tight text-white">
-                              Pins no mapa
-                            </h3>
-                          </div>
-                        </div>
-                        <span className="rounded-full border border-white/8 bg-white/5 px-2.5 py-0.5 font-mono text-[0.58rem] font-bold text-slate-400 uppercase tracking-wider">
-                          {
-                            officialPinCategories.base.filter(
-                              (category) => category.total > 0,
-                            ).length
-                          }{" "}
-                          grupos
+                  <section className="rounded-[26px] border border-white/5 bg-black/25 p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_12px_36px_rgba(0,0,0,0.2)]">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className="grid h-9 w-9 place-items-center rounded-xl border border-white/8 bg-white/5 text-cyan-200">
+                          <Layers size={16} />
                         </span>
+                        <div>
+                          <p className="text-[0.62rem] font-black uppercase tracking-[0.2em] text-slate-400">
+                            Categorias
+                          </p>
+                          <h3 className="text-base font-bold tracking-tight text-white">
+                            Pins no mapa
+                          </h3>
+                        </div>
                       </div>
+                      <span className="rounded-full border border-white/8 bg-white/5 px-2.5 py-0.5 font-mono text-[0.58rem] font-bold text-slate-400 uppercase tracking-wider">
+                        {
+                          officialPinCategories.base.filter(
+                            (category) => category.total > 0,
+                          ).length
+                        }{" "}
+                        grupos
+                      </span>
+                    </div>
 
-                      <div className="relative group mb-5">
-                        <Search
-                          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[var(--cyan)] transition-colors"
-                          size={14}
-                        />
-                        <input
-                          className="w-full rounded-xl border border-white/8 bg-black/40 py-2.5 pl-10 pr-4 text-xs text-white placeholder-slate-600 outline-none transition-all duration-300 focus:border-[var(--cyan)]/40 focus:bg-black/60"
-                          onChange={(e) =>
-                            setSidebarSearchQuery(e.target.value)
-                          }
-                          placeholder="Filtrar categorias..."
-                          type="text"
-                          value={sidebarSearchQuery}
-                        />
-                      </div>
+                    <div className="relative group mb-5">
+                      <Search
+                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[var(--cyan)] transition-colors"
+                        size={14}
+                      />
+                      <input
+                        className="w-full rounded-xl border border-white/8 bg-black/40 py-2.5 pl-10 pr-4 text-xs text-white placeholder-slate-600 outline-none transition-all duration-300 focus:border-[var(--cyan)]/40 focus:bg-black/60"
+                        onChange={(e) => setSidebarSearchQuery(e.target.value)}
+                        placeholder="Filtrar categorias..."
+                        type="text"
+                        value={sidebarSearchQuery}
+                      />
+                    </div>
 
-                      <div className="grid grid-cols-3 gap-2.5">
-                        {officialPinCategories.base
-                          .filter((category) => category.total > 0)
-                          .map((category) => (
+                    <div className="grid grid-cols-3 gap-2.5">
+                      {officialPinCategories.base
+                        .filter((category) => category.total > 0)
+                        .map((category) => (
+                          <button
+                            key={category.type}
+                            className={cn(
+                              "group relative min-h-[9.5rem] overflow-hidden p-3 text-left transition-all duration-300 hover:-translate-y-1.5 cursor-pointer rounded-2xl border",
+                              selectedTypes.includes(category.type)
+                                ? "border-cyan-500/40 bg-[linear-gradient(180deg,rgba(0,214,163,0.14),rgba(113,92,255,0.03))] shadow-[0_12px_28px_rgba(0,0,0,0.4),0_0_20px_rgba(0,214,163,0.1)]"
+                                : "border-white/5 bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.05]",
+                            )}
+                            onClick={() =>
+                              toggleSelectedType(category.type as MapMarkerType)
+                            }
+                            type="button"
+                          >
+                            <div className="absolute inset-0 tech-corner-accent opacity-40 group-hover:opacity-100" />
+                            <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent)]" />
+                            {selectedTypes.includes(
+                              category.type as MapMarkerType,
+                            ) ? (
+                              <span className="absolute left-2 top-2 text-[var(--cyan)] drop-shadow-[0_0_4px_rgba(0,214,163,0.4)] scale-110 transition-transform">
+                                <CircleCheck size={13} />
+                              </span>
+                            ) : null}
+                            <span
+                              className={cn(
+                                "absolute right-2.5 top-2 rounded-full px-1.5 py-0.5 text-[0.6rem] font-bold font-mono transition-all duration-300 border",
+                                selectedTypes.includes(
+                                  category.type as MapMarkerType,
+                                )
+                                  ? "bg-[var(--cyan)] text-black border-cyan-400 shadow-[0_0_10px_rgba(0,214,163,0.45)]"
+                                  : "bg-white/10 text-slate-350 border-white/5",
+                              )}
+                            >
+                              {category.count}
+                            </span>
+                            <div className="grid gap-2.5 mt-2">
+                              <div className="grid h-[4.75rem] place-items-center rounded-xl border border-white/6 bg-[radial-gradient(circle_at_top,rgba(0,214,163,0.12),transparent_50%),rgba(255,255,255,0.01)] shadow-inner transition-all duration-300 group-hover:border-cyan-500/20 group-hover:bg-cyan-500/5">
+                                <IconImage
+                                  className="h-14 w-14 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.65)] transition-all duration-300 group-hover:scale-115 group-hover:-translate-y-1"
+                                  iconId={category.iconId}
+                                  label={
+                                    category.label ||
+                                    getMarkerTypeLabel(
+                                      category.type as MapMarkerType,
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div>
+                                <p className="line-clamp-2 text-[0.78rem] font-bold leading-[1.25] text-slate-200 group-hover:text-white transition-colors">
+                                  {category.label ||
+                                    getMarkerTypeLabel(
+                                      category.type as MapMarkerType,
+                                    )}
+                                </p>
+                                <div className="flex items-center gap-1.5 mt-1">
+                                  <span
+                                    className={cn(
+                                      "h-1.5 w-1.5 rounded-full",
+                                      selectedTypes.includes(
+                                        category.type as MapMarkerType,
+                                      )
+                                        ? "bg-cyan-455 animate-tech-pulse"
+                                        : "bg-slate-500",
+                                    )}
+                                  />
+                                  <p className="text-[0.58rem] font-mono uppercase tracking-[0.1em] text-slate-400 group-hover:text-slate-300">
+                                    {selectedTypes.includes(
+                                      category.type as MapMarkerType,
+                                    )
+                                      ? "ATIVADO"
+                                      : "OCULTO"}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+
+                    {officialPinCategories.identified.length > 0 && (
+                      <div className="mt-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        <div className="mb-5 flex items-center justify-between px-1">
+                          <div className="flex items-center gap-3">
+                            <span className="grid h-8 w-8 place-items-center rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-400">
+                              <Search size={14} />
+                            </span>
+                            <div>
+                              <p className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-slate-400">
+                                Identificados
+                              </p>
+                              <h3 className="text-sm font-bold tracking-tight text-white">
+                                Recursos Específicos
+                              </h3>
+                            </div>
+                          </div>
+                          <span className="rounded-full border border-white/8 bg-white/5 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-400">
+                            {officialPinCategories.identified.length} tipos
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2.5">
+                          {officialPinCategories.identified.map((category) => (
                             <button
                               key={category.type}
                               className={cn(
-                                "group relative min-h-[9.5rem] overflow-hidden p-3 text-left transition-all duration-300 hover:-translate-y-1.5 cursor-pointer rounded-2xl border",
+                                "group relative min-h-[9rem] overflow-hidden p-3 text-left transition-all duration-300 hover:-translate-y-1 cursor-pointer rounded-2xl border",
                                 selectedTypes.includes(category.type)
-                                  ? "border-cyan-500/40 bg-[linear-gradient(180deg,rgba(0,214,163,0.14),rgba(113,92,255,0.03))] shadow-[0_12px_28px_rgba(0,0,0,0.4),0_0_20px_rgba(0,214,163,0.1)]"
-                                  : "border-white/5 bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.05]",
+                                  ? "border-emerald-500/40 bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(113,92,255,0.02))] shadow-[0_8px_20px_rgba(0,0,0,0.3)]"
+                                  : "border-white/5 bg-white/[0.02] hover:border-white/12",
                               )}
-                              onClick={() =>
-                                toggleSelectedType(
-                                  category.type as MapMarkerType,
-                                )
-                              }
+                              onClick={() => toggleSelectedType(category.type)}
                               type="button"
                             >
-                              <div className="absolute inset-0 tech-corner-accent opacity-40 group-hover:opacity-100" />
-                              <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent)]" />
-                              {selectedTypes.includes(
-                                category.type as MapMarkerType,
-                              ) ? (
-                                <span className="absolute left-2 top-2 text-[var(--cyan)] drop-shadow-[0_0_4px_rgba(0,214,163,0.4)] scale-110 transition-transform">
-                                  <CircleCheck size={13} />
+                              <div className="absolute inset-0 tech-corner-accent opacity-30 group-hover:opacity-60" />
+
+                              {selectedTypes.includes(category.type) && (
+                                <span className="absolute left-2 top-2 text-emerald-400 scale-100 transition-transform">
+                                  <CircleCheck size={12} />
                                 </span>
-                              ) : null}
+                              )}
+
                               <span
                                 className={cn(
-                                  "absolute right-2.5 top-2 rounded-full px-1.5 py-0.5 text-[0.6rem] font-bold font-mono transition-all duration-300 border",
-                                  selectedTypes.includes(
-                                    category.type as MapMarkerType,
-                                  )
-                                    ? "bg-[var(--cyan)] text-black border-cyan-400 shadow-[0_0_10px_rgba(0,214,163,0.45)]"
-                                    : "bg-white/10 text-slate-350 border-white/5",
+                                  "absolute right-2 top-2 rounded-full px-1.2 py-0.5 text-[0.55rem] font-bold font-mono transition-all duration-300 border",
+                                  selectedTypes.includes(category.type)
+                                    ? "bg-emerald-500 text-black border-emerald-400"
+                                    : "bg-white/10 text-slate-400 border-white/5",
                                 )}
                               >
                                 {category.count}
                               </span>
-                              <div className="grid gap-2.5 mt-2">
-                                <div className="grid h-[4.75rem] place-items-center rounded-xl border border-white/6 bg-[radial-gradient(circle_at_top,rgba(0,214,163,0.12),transparent_50%),rgba(255,255,255,0.01)] shadow-inner transition-all duration-300 group-hover:border-cyan-500/20 group-hover:bg-cyan-500/5">
+
+                              <div className="grid gap-2 mt-2">
+                                <div className="grid h-16 place-items-center rounded-xl border border-white/6 bg-white/[0.01] transition-all duration-300 group-hover:bg-emerald-500/5">
                                   <IconImage
-                                    className="h-14 w-14 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.65)] transition-all duration-300 group-hover:scale-115 group-hover:-translate-y-1"
+                                    className="h-11 w-11 object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)] transition-all duration-300 group-hover:scale-110"
                                     iconId={category.iconId}
-                                    label={
-                                      category.label ||
-                                      getMarkerTypeLabel(
-                                        category.type as MapMarkerType,
-                                      )
-                                    }
+                                    label={category.label || ""}
                                   />
                                 </div>
                                 <div>
-                                  <p className="line-clamp-2 text-[0.78rem] font-bold leading-[1.25] text-slate-200 group-hover:text-white transition-colors">
-                                    {category.label ||
-                                      getMarkerTypeLabel(
-                                        category.type as MapMarkerType,
-                                      )}
+                                  <p className="line-clamp-2 text-[0.72rem] font-bold leading-tight text-slate-200 group-hover:text-white transition-colors">
+                                    {category.label}
                                   </p>
                                   <div className="flex items-center gap-1.5 mt-1">
                                     <span
                                       className={cn(
-                                        "h-1.5 w-1.5 rounded-full",
-                                        selectedTypes.includes(
-                                          category.type as MapMarkerType,
-                                        )
-                                          ? "bg-cyan-455 animate-tech-pulse"
-                                          : "bg-slate-500",
+                                        "h-1 w-1 rounded-full",
+                                        selectedTypes.includes(category.type)
+                                          ? "bg-emerald-400"
+                                          : "bg-slate-600",
                                       )}
                                     />
-                                    <p className="text-[0.58rem] font-mono uppercase tracking-[0.1em] text-slate-400 group-hover:text-slate-300">
-                                      {selectedTypes.includes(
-                                        category.type as MapMarkerType,
-                                      )
+                                    <p className="text-[0.55rem] font-mono text-slate-500 group-hover:text-slate-400">
+                                      {selectedTypes.includes(category.type)
                                         ? "ATIVADO"
                                         : "OCULTO"}
                                     </p>
@@ -711,1055 +782,966 @@ export const MapSidebar = memo(function MapSidebar({
                               </div>
                             </button>
                           ))}
+                        </div>
                       </div>
+                    )}
+                  </section>
+                ) : null}
 
-                      {officialPinCategories.identified.length > 0 && (
-                        <div className="mt-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                          <div className="mb-5 flex items-center justify-between px-1">
-                            <div className="flex items-center gap-3">
-                              <span className="grid h-8 w-8 place-items-center rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-400">
-                                <Search size={14} />
-                              </span>
-                              <div>
-                                <p className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-slate-400">
-                                  Identificados
-                                </p>
-                                <h3 className="text-sm font-bold tracking-tight text-white">
-                                  Recursos Específicos
-                                </h3>
-                              </div>
-                            </div>
-                            <span className="rounded-full border border-white/8 bg-white/5 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-400">
-                              {officialPinCategories.identified.length} tipos
+                {sidebarSection === "customPins" ? (
+                  <section className="rounded-[26px] border border-white/5 bg-black/25 p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_12px_36px_rgba(0,0,0,0.2)]">
+                    {!isAuthenticated ? (
+                      <LockedFeature
+                        title="Pinos Personalizados"
+                        description="Crie marcadores próprios com fotos e notas. Seus pinos são salvos na nuvem para acesso em qualquer dispositivo."
+                        onLogin={openLoginModal}
+                      />
+                    ) : mode === "pin" && selectedCustomPin ? (
+                      <div className="grid gap-4 animate-[fade-in_150ms_ease-out]">
+                        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/8 bg-white/5 text-[var(--cyan)]">
+                              <MapPin size={15} />
                             </span>
+                            <div>
+                              <h3 className="text-sm font-bold text-white">
+                                {editingCustomPinId
+                                  ? "Editar Pino"
+                                  : "Novo Pino"}
+                              </h3>
+                              {selectedCustomPin.isPlaced === false ? (
+                                <p className="text-[10px] font-mono text-amber-400 animate-pulse font-bold">
+                                  Clique no mapa para posicionar
+                                </p>
+                              ) : (
+                                <p className="text-[10px] font-mono text-slate-400">
+                                  LOC: {selectedCustomPin.x.toFixed(2)},{" "}
+                                  {selectedCustomPin.y.toFixed(2)}
+                                </p>
+                              )}
+                            </div>
                           </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={cancelCustomPin}
+                              className="rounded-full border border-red-500/25 bg-red-950/10 px-3 py-1 text-xs font-semibold text-red-400 hover:bg-red-500/20 hover:text-white transition cursor-pointer"
+                            >
+                              Cancelar
+                            </button>
 
-                          <div className="grid grid-cols-3 gap-2.5">
-                            {officialPinCategories.identified.map(
-                              (category) => (
-                                <button
-                                  key={category.type}
-                                  className={cn(
-                                    "group relative min-h-[9rem] overflow-hidden p-3 text-left transition-all duration-300 hover:-translate-y-1 cursor-pointer rounded-2xl border",
-                                    selectedTypes.includes(category.type)
-                                      ? "border-emerald-500/40 bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(113,92,255,0.02))] shadow-[0_8px_20px_rgba(0,0,0,0.3)]"
-                                      : "border-white/5 bg-white/[0.02] hover:border-white/12",
-                                  )}
-                                  onClick={() =>
-                                    toggleSelectedType(category.type)
-                                  }
-                                  type="button"
-                                >
-                                  <div className="absolute inset-0 tech-corner-accent opacity-30 group-hover:opacity-60" />
-
-                                  {selectedTypes.includes(category.type) && (
-                                    <span className="absolute left-2 top-2 text-emerald-400 scale-100 transition-transform">
-                                      <CircleCheck size={12} />
-                                    </span>
-                                  )}
-
-                                  <span
-                                    className={cn(
-                                      "absolute right-2 top-2 rounded-full px-1.2 py-0.5 text-[0.55rem] font-bold font-mono transition-all duration-300 border",
-                                      selectedTypes.includes(category.type)
-                                        ? "bg-emerald-500 text-black border-emerald-400"
-                                        : "bg-white/10 text-slate-400 border-white/5",
-                                    )}
-                                  >
-                                    {category.count}
-                                  </span>
-
-                                  <div className="grid gap-2 mt-2">
-                                    <div className="grid h-16 place-items-center rounded-xl border border-white/6 bg-white/[0.01] transition-all duration-300 group-hover:bg-emerald-500/5">
-                                      <IconImage
-                                        className="h-11 w-11 object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)] transition-all duration-300 group-hover:scale-110"
-                                        iconId={category.iconId}
-                                        label={category.label || ""}
-                                      />
-                                    </div>
-                                    <div>
-                                      <p className="line-clamp-2 text-[0.72rem] font-bold leading-tight text-slate-200 group-hover:text-white transition-colors">
-                                        {category.label}
-                                      </p>
-                                      <div className="flex items-center gap-1.5 mt-1">
-                                        <span
-                                          className={cn(
-                                            "h-1 w-1 rounded-full",
-                                            selectedTypes.includes(
-                                              category.type,
-                                            )
-                                              ? "bg-emerald-400"
-                                              : "bg-slate-600",
-                                          )}
-                                        />
-                                        <p className="text-[0.55rem] font-mono text-slate-500 group-hover:text-slate-400">
-                                          {selectedTypes.includes(category.type)
-                                            ? "ATIVADO"
-                                            : "OCULTO"}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </button>
-                              ),
+                            {selectedCustomPin.isPlaced && (
+                              <button
+                                type="button"
+                                onClick={confirmCustomPin}
+                                className="rounded-full border border-cyan-500 bg-cyan-950/40 px-3.5 py-1 text-xs font-semibold text-cyan-200 hover:bg-cyan-500 hover:text-white transition cursor-pointer"
+                                title="Concluir edição"
+                              >
+                                Concluir
+                              </button>
                             )}
                           </div>
                         </div>
-                      )}
-                    </section>
-                  ) : null}
 
-                  {sidebarSection === "customPins" ? (
-                    <section className="rounded-[26px] border border-white/5 bg-black/25 p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_12px_36px_rgba(0,0,0,0.2)]">
-                      {!isAuthenticated ? (
-                        <LockedFeature
-                          title="Pinos Personalizados"
-                          description="Crie marcadores próprios com fotos e notas. Seus pinos são salvos na nuvem para acesso em qualquer dispositivo."
-                          onLogin={openLoginModal}
-                        />
-                      ) : mode === "pin" && selectedCustomPin ? (
-                        <div className="grid gap-4 animate-[fade-in_150ms_ease-out]">
-                          <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                            <div className="flex items-center gap-2">
-                              <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/8 bg-white/5 text-[var(--cyan)]">
-                                <MapPin size={15} />
-                              </span>
-                              <div>
-                                <h3 className="text-sm font-bold text-white">
-                                  {editingCustomPinId
-                                    ? "Editar Pino"
-                                    : "Novo Pino"}
-                                </h3>
-                                {selectedCustomPin.isPlaced === false ? (
-                                  <p className="text-[10px] font-mono text-amber-400 animate-pulse font-bold">
-                                    Clique no mapa para posicionar
-                                  </p>
-                                ) : (
-                                  <p className="text-[10px] font-mono text-slate-400">
-                                    LOC: {selectedCustomPin.x.toFixed(2)},{" "}
-                                    {selectedCustomPin.y.toFixed(2)}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={cancelCustomPin}
-                                className="rounded-full border border-red-500/25 bg-red-950/10 px-3 py-1 text-xs font-semibold text-red-400 hover:bg-red-500/20 hover:text-white transition cursor-pointer"
-                              >
-                                Cancelar
-                              </button>
+                        <div>
+                          <label className="block text-[10.5px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Nome do Pino
+                          </label>
+                          <input
+                            type="text"
+                            value={selectedCustomPin.name}
+                            onChange={(e) =>
+                              updateSelectedPinField("name", e.target.value)
+                            }
+                            placeholder="ex: Entrada Secreta"
+                            className="w-full rounded-xl border border-white/8 bg-black/40 px-4 py-2 text-sm text-white outline-none focus:border-cyan-500/50 transition"
+                          />
+                        </div>
 
-                              {selectedCustomPin.isPlaced && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[10.5px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                              Cor
+                            </label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {[
+                                "#00d6a3",
+                                "#00bcd4",
+                                "#ffeb3b",
+                                "#ff9800",
+                                "#f44336",
+                                "#9c27b0",
+                              ].map((color) => (
                                 <button
+                                  key={color}
                                   type="button"
-                                  onClick={confirmCustomPin}
-                                  className="rounded-full border border-cyan-500 bg-cyan-950/40 px-3.5 py-1 text-xs font-semibold text-cyan-200 hover:bg-cyan-500 hover:text-white transition cursor-pointer"
-                                  title="Concluir edição"
-                                >
-                                  Concluir
-                                </button>
-                              )}
+                                  onClick={() =>
+                                    updateSelectedPinField("color", color)
+                                  }
+                                  className={cn(
+                                    "h-5 w-5 rounded-full border border-black/40 cursor-pointer transition-all duration-300",
+                                    selectedCustomPin.color === color
+                                      ? "scale-125 ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-900"
+                                      : "hover:scale-110",
+                                  )}
+                                  style={{ backgroundColor: color }}
+                                />
+                              ))}
                             </div>
                           </div>
 
                           <div>
                             <label className="block text-[10.5px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                              Nome do Pino
+                              Ícone
+                            </label>
+                            <div className="flex gap-2 overflow-x-auto pb-1 max-w-[150px] custom-scrollbar">
+                              {customPinIcons.map((icon) => (
+                                <button
+                                  key={icon.id}
+                                  type="button"
+                                  title={icon.label}
+                                  onClick={() =>
+                                    updateSelectedPinField("iconId", icon.id)
+                                  }
+                                  className={cn(
+                                    "grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg border border-white/8 bg-white/5 cursor-pointer transition hover:bg-white/10",
+                                    selectedCustomPin.iconId === icon.id &&
+                                      "border-cyan-500/50 bg-cyan-950/20 shadow-[0_0_8px_rgba(0,214,163,0.2)]",
+                                  )}
+                                >
+                                  <img
+                                    src={icon.src}
+                                    alt={icon.label}
+                                    className="h-5 w-5 object-contain"
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10.5px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Imagem do Marcador
+                          </label>
+                          <div
+                            className={cn(
+                              "relative group cursor-pointer border-2 border-dashed border-white/10 rounded-2xl p-4 transition hover:bg-white/5",
+                              selectedCustomPin.imageUrl
+                                ? "border-cyan-500/30 bg-cyan-500/5"
+                                : "",
+                            )}
+                            onClick={() =>
+                              document
+                                .getElementById("pin-image-upload")
+                                ?.click()
+                            }
+                          >
+                            <input
+                              type="file"
+                              id="pin-image-upload"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    updateSelectedPinField(
+                                      "imageUrl",
+                                      reader.result as string,
+                                    );
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+
+                            {selectedCustomPin.imageUrl ? (
+                              <div className="relative aspect-video rounded-lg overflow-hidden border border-white/10">
+                                <img
+                                  src={selectedCustomPin.imageUrl}
+                                  alt="Preview"
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+                                  <ImageIcon className="text-white" size={32} />
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center justify-center py-4 text-slate-400 gap-2">
+                                <ImageIcon size={32} className="opacity-20" />
+                                <span className="text-xs font-medium">
+                                  Clique para selecionar imagem
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10.5px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Categorias
+                          </label>
+                          <input
+                            type="text"
+                            value={selectedCustomPin.tags.join(", ")}
+                            onChange={(e) =>
+                              updateSelectedPinField("tags", e.target.value)
+                            }
+                            placeholder="Vila, Recurso, etc..."
+                            className="w-full rounded-xl border border-white/8 bg-black/40 px-3.5 py-2 text-xs text-white outline-none focus:border-cyan-500/50 transition"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10.5px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                            Observação
+                          </label>
+                          <textarea
+                            value={selectedCustomPin.description || ""}
+                            onChange={(e) =>
+                              updateSelectedPinField(
+                                "description",
+                                e.target.value,
+                              )
+                            }
+                            placeholder="Observações..."
+                            rows={2}
+                            className="w-full rounded-xl border border-white/8 bg-black/40 px-3.5 py-2 text-sm text-white outline-none focus:border-cyan-500/50 transition resize-none custom-scrollbar"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid gap-4 animate-[fade-in_150ms_ease-out]">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="grid h-9 w-9 place-items-center rounded-xl border border-white/8 bg-white/5 text-[var(--cyan)]">
+                              <MapPin size={16} />
+                            </span>
+                            <div>
+                              <p className="text-[0.62rem] font-black uppercase tracking-[0.2em] text-slate-400">
+                                Personalizados
+                              </p>
+                              <h3 className="text-base font-bold tracking-tight text-white">
+                                Meus Pinos
+                              </h3>
+                            </div>
+                          </div>
+                          <button
+                            onClick={openCustomPinsSection}
+                            className="flex items-center gap-1.5 rounded-full bg-[var(--cyan)] px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-black transition hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(0,214,163,0.3)] cursor-pointer"
+                          >
+                            <Plus size={12} strokeWidth={3} />
+                            Criar
+                          </button>
+                        </div>
+
+                        {customPins.length === 0 ? (
+                          <div className="rounded-[20px] border border-dashed border-white/10 bg-white/[0.01] px-4 py-6 text-center text-sm text-slate-400 leading-relaxed">
+                            Você ainda não criou pins customizados.
+                            <br />
+                            <span className="text-xs text-slate-500 mt-1 block">
+                              Clique no botão Criar no topo da lista.
+                            </span>
+                          </div>
+                        ) : (
+                          <>
+                            {paginatedCustomPins.map((pin) => (
+                              <div
+                                key={pin.id}
+                                className={cn(
+                                  "flex items-center justify-between rounded-xl border p-3 transition-all duration-300 hover:-translate-y-0.5 group relative",
+                                  editingCustomPinId === pin.id
+                                    ? "border-cyan-500/40 bg-[linear-gradient(180deg,rgba(0,214,163,0.08),rgba(9,15,28,0.75))] shadow-[0_8px_24px_rgba(0,0,0,0.3)]"
+                                    : "border-white/5 bg-white/[0.01] hover:border-white/12 hover:bg-white/[0.03]",
+                                )}
+                              >
+                                <div
+                                  className="flex flex-1 items-center gap-3.5 min-w-0 cursor-pointer relative z-10"
+                                  onClick={() => selectCustomPin(pin.id)}
+                                >
+                                  <div
+                                    className="grid h-9 w-9 place-items-center rounded-xl border border-white/8 shadow-md shrink-0"
+                                    style={{ backgroundColor: pin.color }}
+                                  >
+                                    <IconImage
+                                      className="h-6 w-6 object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.45)]"
+                                      iconId={pin.iconId}
+                                      label={pin.name}
+                                    />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-bold text-slate-200 group-hover:text-white">
+                                      {pin.name}
+                                    </p>
+                                    <p className="mt-0.5 truncate text-[10.5px] font-mono text-slate-400">
+                                      LOC: {pin.x.toFixed(2)},{" "}
+                                      {pin.y.toFixed(2)}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 relative z-20 shrink-0 ml-2">
+                                  <button
+                                    onClick={() =>
+                                      toggleCustomPinVisibility(pin.id)
+                                    }
+                                    className="p-1.5 text-slate-500 hover:text-white transition cursor-pointer"
+                                    title={
+                                      pin.isHidden
+                                        ? "Mostrar no mapa"
+                                        : "Ocultar do mapa"
+                                    }
+                                  >
+                                    {pin.isHidden ? (
+                                      <EyeOff size={14} />
+                                    ) : (
+                                      <Eye size={14} />
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      selectCustomPin(pin.id);
+                                      startEditingCustomPin(pin.id);
+                                    }}
+                                    className="p-1.5 text-slate-500 hover:text-[var(--cyan)] transition cursor-pointer"
+                                    title="Editar"
+                                  >
+                                    <Edit2 size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => removeCustomPin(pin.id)}
+                                    className="p-1.5 text-slate-500 hover:text-red-400 transition cursor-pointer"
+                                    title="Excluir"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                            <PaginationControls
+                              currentPage={customPinsPage}
+                              totalPages={totalCustomPinsPages}
+                              onPageChange={setCustomPinsPage}
+                            />
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </section>
+                ) : null}
+
+                {sidebarSection === "routes" ? (
+                  <div className="grid gap-4 animate-[fade-in_150ms_ease-out]">
+                    {mode === "route" ? (
+                      <section className="rounded-[26px] border border-white/5 bg-black/25 p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_12px_36px_rgba(0,0,0,0.2)]">
+                        <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
+                          <div className="flex items-center gap-2">
+                            <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/8 bg-white/5 text-orange-400">
+                              <Route size={15} />
+                            </span>
+                            <div>
+                              <h3 className="text-sm font-bold text-white">
+                                {selectedSavedRouteId
+                                  ? "Editar Rota"
+                                  : "Nova Rota"}
+                              </h3>
+                              <p className="text-[10px] font-mono text-slate-400 animate-pulse font-bold">
+                                Clique no mapa para ligar pontos
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setMode("explore")}
+                              className="rounded-full border border-red-500/25 bg-red-950/10 px-3 py-1 text-xs font-semibold text-red-400 hover:bg-red-500/20 hover:text-white transition cursor-pointer"
+                            >
+                              Sair
+                            </button>
+                            <button
+                              type="button"
+                              onClick={saveCurrentRoute}
+                              disabled={
+                                !isAuthenticated ||
+                                currentRoute.checkpoints.length === 0
+                              }
+                              className="rounded-full border border-cyan-500 bg-cyan-950/40 px-3.5 py-1 text-xs font-semibold text-cyan-200 hover:bg-cyan-500 hover:text-white transition cursor-pointer disabled:opacity-30"
+                            >
+                              {selectedSavedRouteId ? "Salvar" : "Criar"}
+                              {!isAuthenticated && (
+                                <Shield
+                                  className="inline-block ml-1"
+                                  size={10}
+                                />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="grid gap-4">
+                          <div>
+                            <label className="block text-[10.5px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                              Nome da Rota
                             </label>
                             <input
                               type="text"
-                              value={selectedCustomPin.name}
+                              value={currentRoute.name}
                               onChange={(e) =>
-                                updateSelectedPinField("name", e.target.value)
+                                updateRouteField("name", e.target.value)
                               }
-                              placeholder="ex: Entrada Secreta"
-                              className="w-full rounded-xl border border-white/8 bg-black/40 px-4 py-2 text-sm text-white outline-none focus:border-cyan-500/50 transition"
+                              placeholder="Ex: Rota de Farm Stick"
+                              className="w-full rounded-xl border border-white/8 bg-black/40 px-3.5 py-2 text-sm text-white outline-none focus:border-cyan-500/50 transition"
                             />
                           </div>
 
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <label className="block text-[10.5px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                                Cor
+                                Cor da Linha
                               </label>
-                              <div className="flex flex-wrap gap-1.5">
-                                {[
-                                  "#00d6a3",
-                                  "#00bcd4",
-                                  "#ffeb3b",
-                                  "#ff9800",
-                                  "#f44336",
-                                  "#9c27b0",
-                                ].map((color) => (
-                                  <button
-                                    key={color}
-                                    type="button"
-                                    onClick={() =>
-                                      updateSelectedPinField("color", color)
-                                    }
-                                    className={cn(
-                                      "h-5 w-5 rounded-full border border-black/40 cursor-pointer transition-all duration-300",
-                                      selectedCustomPin.color === color
-                                        ? "scale-125 ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-900"
-                                        : "hover:scale-110",
-                                    )}
-                                    style={{ backgroundColor: color }}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-
-                            <div>
-                              <label className="block text-[10.5px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                                Ícone
-                              </label>
-                              <div className="flex gap-2 overflow-x-auto pb-1 max-w-[150px] custom-scrollbar">
-                                {customPinIcons.map((icon) => (
-                                  <button
-                                    key={icon.id}
-                                    type="button"
-                                    title={icon.label}
-                                    onClick={() =>
-                                      updateSelectedPinField("iconId", icon.id)
-                                    }
-                                    className={cn(
-                                      "grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg border border-white/8 bg-white/5 cursor-pointer transition hover:bg-white/10",
-                                      selectedCustomPin.iconId === icon.id &&
-                                        "border-cyan-500/50 bg-cyan-950/20 shadow-[0_0_8px_rgba(0,214,163,0.2)]",
-                                    )}
-                                  >
-                                    <img
-                                      src={icon.src}
-                                      alt={icon.label}
-                                      className="h-5 w-5 object-contain"
-                                    />
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-[10.5px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                              Imagem do Marcador
-                            </label>
-                            <div
-                              className={cn(
-                                "relative group cursor-pointer border-2 border-dashed border-white/10 rounded-2xl p-4 transition hover:bg-white/5",
-                                selectedCustomPin.imageUrl
-                                  ? "border-cyan-500/30 bg-cyan-500/5"
-                                  : "",
-                              )}
-                              onClick={() =>
-                                document
-                                  .getElementById("pin-image-upload")
-                                  ?.click()
-                              }
-                            >
-                              <input
-                                type="file"
-                                id="pin-image-upload"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => {
-                                      updateSelectedPinField(
-                                        "imageUrl",
-                                        reader.result as string,
-                                      );
-                                    };
-                                    reader.readAsDataURL(file);
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={currentRoute.color}
+                                  onChange={(e) =>
+                                    updateRouteField("color", e.target.value)
                                   }
-                                }}
-                              />
-
-                              {selectedCustomPin.imageUrl ? (
-                                <div className="relative aspect-video rounded-lg overflow-hidden border border-white/10">
-                                  <img
-                                    src={selectedCustomPin.imageUrl}
-                                    alt="Preview"
-                                    className="w-full h-full object-cover"
-                                  />
-                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
-                                    <ImageIcon
-                                      className="text-white"
-                                      size={32}
+                                  className="h-8 w-8 rounded border-0 bg-transparent p-0 cursor-pointer"
+                                />
+                                <div className="flex flex-wrap gap-1">
+                                  {[
+                                    "#00d6a3",
+                                    "#ff9800",
+                                    "#f44336",
+                                    "#9c27b0",
+                                    "#2196f3",
+                                  ].map((c) => (
+                                    <button
+                                      key={c}
+                                      onClick={() =>
+                                        updateRouteField("color", c)
+                                      }
+                                      className={cn(
+                                        "h-4 w-4 rounded-full border border-black/20",
+                                        currentRoute.color === c &&
+                                          "ring-1 ring-white",
+                                      )}
+                                      style={{ backgroundColor: c }}
                                     />
-                                  </div>
+                                  ))}
                                 </div>
-                              ) : (
-                                <div className="flex flex-col items-center justify-center py-4 text-slate-400 gap-2">
-                                  <ImageIcon size={32} className="opacity-20" />
-                                  <span className="text-xs font-medium">
-                                    Clique para selecionar imagem
-                                  </span>
-                                </div>
-                              )}
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col justify-end">
+                              <div className="flex items-center gap-1.5 justify-end">
+                                <button
+                                  onClick={shareCurrentRoute}
+                                  className="p-2 rounded-lg bg-white/5 text-slate-400 hover:text-white transition cursor-pointer"
+                                  title="Compartilhar"
+                                >
+                                  <Share2 size={14} />
+                                </button>
+                                <button
+                                  onClick={copyRouteJson}
+                                  className="p-2 rounded-lg bg-white/5 text-slate-400 hover:text-white transition cursor-pointer"
+                                  title="Copiar JSON"
+                                >
+                                  <Code2 size={14} />
+                                </button>
+                                <button
+                                  onClick={clearRoute}
+                                  className="p-2 rounded-lg bg-white/5 text-slate-400 hover:text-red-400 transition cursor-pointer"
+                                  title="Limpar Tudo"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
                             </div>
                           </div>
 
                           <div>
                             <label className="block text-[10.5px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                              Categorias
-                            </label>
-                            <input
-                              type="text"
-                              value={selectedCustomPin.tags.join(", ")}
-                              onChange={(e) =>
-                                updateSelectedPinField("tags", e.target.value)
-                              }
-                              placeholder="Vila, Recurso, etc..."
-                              className="w-full rounded-xl border border-white/8 bg-black/40 px-3.5 py-2 text-xs text-white outline-none focus:border-cyan-500/50 transition"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[10.5px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                              Observação
+                              Descrição
                             </label>
                             <textarea
-                              value={selectedCustomPin.description || ""}
+                              value={currentRoute.description || ""}
                               onChange={(e) =>
-                                updateSelectedPinField(
-                                  "description",
-                                  e.target.value,
-                                )
+                                updateRouteField("description", e.target.value)
                               }
-                              placeholder="Observações..."
+                              placeholder="Descrição opcional..."
                               rows={2}
                               className="w-full rounded-xl border border-white/8 bg-black/40 px-3.5 py-2 text-sm text-white outline-none focus:border-cyan-500/50 transition resize-none custom-scrollbar"
                             />
                           </div>
-                        </div>
-                      ) : (
-                        <div className="grid gap-4 animate-[fade-in_150ms_ease-out]">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <span className="grid h-9 w-9 place-items-center rounded-xl border border-white/8 bg-white/5 text-[var(--cyan)]">
-                                <MapPin size={16} />
-                              </span>
-                              <div>
-                                <p className="text-[0.62rem] font-black uppercase tracking-[0.2em] text-slate-400">
-                                  Personalizados
-                                </p>
-                                <h3 className="text-base font-bold tracking-tight text-white">
-                                  Meus Pinos
-                                </h3>
-                              </div>
-                            </div>
-                            <button
-                              onClick={openCustomPinsSection}
-                              className="flex items-center gap-1.5 rounded-full bg-[var(--cyan)] px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-black transition hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(0,214,163,0.3)] cursor-pointer"
-                            >
-                              <Plus size={12} strokeWidth={3} />
-                              Criar
-                            </button>
-                          </div>
 
-                          {customPins.length === 0 ? (
-                            <div className="rounded-[20px] border border-dashed border-white/10 bg-white/[0.01] px-4 py-6 text-center text-sm text-slate-400 leading-relaxed">
-                              Você ainda não criou pins customizados.
-                              <br />
-                              <span className="text-xs text-slate-500 mt-1 block">
-                                Clique no botão Criar no topo da lista.
-                              </span>
-                            </div>
-                          ) : (
-                            <>
-                              {paginatedCustomPins.map((pin) => (
-                                <div
-                                  key={pin.id}
-                                  className={cn(
-                                    "flex items-center justify-between rounded-xl border p-3 transition-all duration-300 hover:-translate-y-0.5 group relative",
-                                    editingCustomPinId === pin.id
-                                      ? "border-cyan-500/40 bg-[linear-gradient(180deg,rgba(0,214,163,0.08),rgba(9,15,28,0.75))] shadow-[0_8px_24px_rgba(0,0,0,0.3)]"
-                                      : "border-white/5 bg-white/[0.01] hover:border-white/12 hover:bg-white/[0.03]",
-                                  )}
-                                >
-                                  <div
-                                    className="flex flex-1 items-center gap-3.5 min-w-0 cursor-pointer relative z-10"
-                                    onClick={() => selectCustomPin(pin.id)}
-                                  >
-                                    <div
-                                      className="grid h-9 w-9 place-items-center rounded-xl border border-white/8 shadow-md shrink-0"
-                                      style={{ backgroundColor: pin.color }}
-                                    >
-                                      <IconImage
-                                        className="h-6 w-6 object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.45)]"
-                                        iconId={pin.iconId}
-                                        label={pin.name}
-                                      />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                      <p className="truncate text-sm font-bold text-slate-200 group-hover:text-white">
-                                        {pin.name}
-                                      </p>
-                                      <p className="mt-0.5 truncate text-[10.5px] font-mono text-slate-400">
-                                        LOC: {pin.x.toFixed(2)},{" "}
-                                        {pin.y.toFixed(2)}
-                                      </p>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center gap-1.5 relative z-20 shrink-0 ml-2">
-                                    <button
-                                      onClick={() =>
-                                        toggleCustomPinVisibility(pin.id)
-                                      }
-                                      className="p-1.5 text-slate-500 hover:text-white transition cursor-pointer"
-                                      title={
-                                        pin.isHidden
-                                          ? "Mostrar no mapa"
-                                          : "Ocultar do mapa"
-                                      }
-                                    >
-                                      {pin.isHidden ? (
-                                        <EyeOff size={14} />
-                                      ) : (
-                                        <Eye size={14} />
-                                      )}
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        selectCustomPin(pin.id);
-                                        startEditingCustomPin(pin.id);
-                                      }}
-                                      className="p-1.5 text-slate-500 hover:text-[var(--cyan)] transition cursor-pointer"
-                                      title="Editar"
-                                    >
-                                      <Edit2 size={14} />
-                                    </button>
-                                    <button
-                                      onClick={() => removeCustomPin(pin.id)}
-                                      className="p-1.5 text-slate-500 hover:text-red-400 transition cursor-pointer"
-                                      title="Excluir"
-                                    >
-                                      <Trash2 size={14} />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                              <PaginationControls
-                                currentPage={customPinsPage}
-                                totalPages={totalCustomPinsPages}
-                                onPageChange={setCustomPinsPage}
-                              />
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </section>
-                  ) : null}
-
-                  {sidebarSection === "routes" ? (
-                    <div className="grid gap-4 animate-[fade-in_150ms_ease-out]">
-                      {mode === "route" ? (
-                        <section className="rounded-[26px] border border-white/5 bg-black/25 p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_12px_36px_rgba(0,0,0,0.2)]">
-                          <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
-                            <div className="flex items-center gap-2">
-                              <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/8 bg-white/5 text-orange-400">
-                                <Route size={15} />
-                              </span>
-                              <div>
-                                <h3 className="text-sm font-bold text-white">
-                                  {selectedSavedRouteId
-                                    ? "Editar Rota"
-                                    : "Nova Rota"}
-                                </h3>
-                                <p className="text-[10px] font-mono text-slate-400 animate-pulse font-bold">
-                                  Clique no mapa para ligar pontos
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setMode("explore")}
-                                className="rounded-full border border-red-500/25 bg-red-950/10 px-3 py-1 text-xs font-semibold text-red-400 hover:bg-red-500/20 hover:text-white transition cursor-pointer"
-                              >
-                                Sair
-                              </button>
-                              <button
-                                type="button"
-                                onClick={saveCurrentRoute}
-                                disabled={
-                                  !isAuthenticated ||
-                                  currentRoute.checkpoints.length === 0
-                                }
-                                className="rounded-full border border-cyan-500 bg-cyan-950/40 px-3.5 py-1 text-xs font-semibold text-cyan-200 hover:bg-cyan-500 hover:text-white transition cursor-pointer disabled:opacity-30"
-                              >
-                                {selectedSavedRouteId ? "Salvar" : "Criar"}
-                                {!isAuthenticated && (
-                                  <Shield
-                                    className="inline-block ml-1"
-                                    size={10}
-                                  />
-                                )}
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="grid gap-4">
-                            <div>
-                              <label className="block text-[10.5px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                                Nome da Rota
-                              </label>
-                              <input
-                                type="text"
-                                value={currentRoute.name}
-                                onChange={(e) =>
-                                  updateRouteField("name", e.target.value)
-                                }
-                                placeholder="Ex: Rota de Farm Stick"
-                                className="w-full rounded-xl border border-white/8 bg-black/40 px-3.5 py-2 text-sm text-white outline-none focus:border-cyan-500/50 transition"
-                              />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-[10.5px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                                  Cor da Linha
+                          {currentRoute.checkpoints.length > 0 && (
+                            <div className="mt-2 border-t border-white/10 pt-4">
+                              <div className="flex items-center justify-between mb-3">
+                                <label className="text-[10.5px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                                  Pontos ({currentRoute.checkpoints.length})
                                 </label>
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="color"
-                                    value={currentRoute.color}
-                                    onChange={(e) =>
-                                      updateRouteField("color", e.target.value)
-                                    }
-                                    className="h-8 w-8 rounded border-0 bg-transparent p-0 cursor-pointer"
-                                  />
-                                  <div className="flex flex-wrap gap-1">
-                                    {[
-                                      "#00d6a3",
-                                      "#ff9800",
-                                      "#f44336",
-                                      "#9c27b0",
-                                      "#2196f3",
-                                    ].map((c) => (
-                                      <button
-                                        key={c}
-                                        onClick={() =>
-                                          updateRouteField("color", c)
-                                        }
-                                        className={cn(
-                                          "h-4 w-4 rounded-full border border-black/20",
-                                          currentRoute.color === c &&
-                                            "ring-1 ring-white",
-                                        )}
-                                        style={{ backgroundColor: c }}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
+                                <span className="text-[10px] text-slate-500 italic">
+                                  Arraste para ordenar (em breve)
+                                </span>
                               </div>
-
-                              <div className="flex flex-col justify-end">
-                                <div className="flex items-center gap-1.5 justify-end">
-                                  <button
-                                    onClick={shareCurrentRoute}
-                                    className="p-2 rounded-lg bg-white/5 text-slate-400 hover:text-white transition cursor-pointer"
-                                    title="Compartilhar"
-                                  >
-                                    <Share2 size={14} />
-                                  </button>
-                                  <button
-                                    onClick={copyRouteJson}
-                                    className="p-2 rounded-lg bg-white/5 text-slate-400 hover:text-white transition cursor-pointer"
-                                    title="Copiar JSON"
-                                  >
-                                    <Code2 size={14} />
-                                  </button>
-                                  <button
-                                    onClick={clearRoute}
-                                    className="p-2 rounded-lg bg-white/5 text-slate-400 hover:text-red-400 transition cursor-pointer"
-                                    title="Limpar Tudo"
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div>
-                              <label className="block text-[10.5px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                                Descrição
-                              </label>
-                              <textarea
-                                value={currentRoute.description || ""}
-                                onChange={(e) =>
-                                  updateRouteField(
-                                    "description",
-                                    e.target.value,
-                                  )
-                                }
-                                placeholder="Descrição opcional..."
-                                rows={2}
-                                className="w-full rounded-xl border border-white/8 bg-black/40 px-3.5 py-2 text-sm text-white outline-none focus:border-cyan-500/50 transition resize-none custom-scrollbar"
-                              />
-                            </div>
-
-                            {currentRoute.checkpoints.length > 0 && (
-                              <div className="mt-2 border-t border-white/10 pt-4">
-                                <div className="flex items-center justify-between mb-3">
-                                  <label className="text-[10.5px] font-mono font-bold text-slate-400 uppercase tracking-wider">
-                                    Pontos ({currentRoute.checkpoints.length})
-                                  </label>
-                                  <span className="text-[10px] text-slate-500 italic">
-                                    Arraste para ordenar (em breve)
-                                  </span>
-                                </div>
-                                <div className="grid gap-2 max-h-[14rem] overflow-y-auto custom-scrollbar pr-1">
-                                  {currentRoute.checkpoints.map(
-                                    (cp: RouteCheckpoint, idx: number) => (
-                                      <div
-                                        key={cp.id}
-                                        className="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/5 p-2.5 group hover:border-white/10 transition-colors"
-                                      >
-                                        <div className="flex items-center gap-3 min-w-0">
-                                          <span className="shrink-0 grid h-5 w-5 place-items-center rounded-lg bg-orange-500 text-[10px] font-black text-white shadow-lg">
-                                            {idx + 1}
-                                          </span>
-                                          <div className="min-w-0">
-                                            <input
-                                              type="text"
-                                              value={cp.label || ""}
-                                              onChange={(e) =>
-                                                updateCheckpointLabel(
-                                                  cp.id,
-                                                  e.target.value,
-                                                )
-                                              }
-                                              placeholder={`Ponto ${idx + 1}`}
-                                              className="bg-transparent border-0 p-0 text-xs font-bold text-slate-200 outline-none w-full truncate placeholder:text-slate-600"
-                                            />
-                                            <p className="text-[9px] font-mono text-slate-500">
-                                              POS: {cp.x.toFixed(1)},{" "}
-                                              {cp.y.toFixed(1)}
-                                            </p>
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                          <button
-                                            onClick={() =>
-                                              moveCheckpoint(cp.id, -1)
+                              <div className="grid gap-2 max-h-[14rem] overflow-y-auto custom-scrollbar pr-1">
+                                {currentRoute.checkpoints.map(
+                                  (cp: RouteCheckpoint, idx: number) => (
+                                    <div
+                                      key={cp.id}
+                                      className="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/5 p-2.5 group hover:border-white/10 transition-colors"
+                                    >
+                                      <div className="flex items-center gap-3 min-w-0">
+                                        <span className="shrink-0 grid h-5 w-5 place-items-center rounded-lg bg-orange-500 text-[10px] font-black text-white shadow-lg">
+                                          {idx + 1}
+                                        </span>
+                                        <div className="min-w-0">
+                                          <input
+                                            type="text"
+                                            value={cp.label || ""}
+                                            onChange={(e) =>
+                                              updateCheckpointLabel(
+                                                cp.id,
+                                                e.target.value,
+                                              )
                                             }
-                                            disabled={idx === 0}
-                                            className="p-1.5 text-slate-500 hover:text-white disabled:opacity-20 cursor-pointer"
-                                          >
-                                            <ChevronUp size={14} />
-                                          </button>
-                                          <button
-                                            onClick={() =>
-                                              moveCheckpoint(cp.id, 1)
-                                            }
-                                            disabled={
-                                              idx ===
-                                              currentRoute.checkpoints.length -
-                                                1
-                                            }
-                                            className="p-1.5 text-slate-500 hover:text-white disabled:opacity-20 cursor-pointer"
-                                          >
-                                            <ChevronDown size={14} />
-                                          </button>
-                                          <button
-                                            onClick={() =>
-                                              removeCheckpoint(cp.id)
-                                            }
-                                            className="p-1.5 text-slate-500 hover:text-red-400 cursor-pointer"
-                                          >
-                                            <X size={14} />
-                                          </button>
+                                            placeholder={`Ponto ${idx + 1}`}
+                                            className="bg-transparent border-0 p-0 text-xs font-bold text-slate-200 outline-none w-full truncate placeholder:text-slate-600"
+                                          />
+                                          <p className="text-[9px] font-mono text-slate-500">
+                                            POS: {cp.x.toFixed(1)},{" "}
+                                            {cp.y.toFixed(1)}
+                                          </p>
                                         </div>
                                       </div>
-                                    ),
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </section>
-                      ) : (
-                        <>
-                          <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/[0.03] border border-white/5 shadow-inner">
-                            <button
-                              onClick={() => setRoutesView("mine")}
-                              className={cn(
-                                "flex-1 rounded-xl py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer",
-                                routesView === "mine"
-                                  ? "bg-white/10 text-white shadow-lg"
-                                  : "text-slate-500 hover:text-slate-300",
-                              )}
-                            >
-                              Minhas Rotas
-                            </button>
-                            <button
-                              onClick={() => setRoutesView("public")}
-                              className={cn(
-                                "flex-1 rounded-xl py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer",
-                                routesView === "public"
-                                  ? "bg-white/10 text-white shadow-lg"
-                                  : "text-slate-500 hover:text-slate-300",
-                              )}
-                            >
-                              Públicas
-                            </button>
-                          </div>
-
-                          {routesView === "mine" ? (
-                            <section className="rounded-[26px] border border-white/5 bg-black/25 p-4">
-                              {!isAuthenticated ? (
-                                <LockedFeature
-                                  title="Minhas Rotas"
-                                  description="Faça login para criar, salvar e gerenciar suas rotas de farm personalizadas."
-                                  onLogin={openLoginModal}
-                                />
-                              ) : (
-                                <>
-                                  <button
-                                    onClick={() => {
-                                      clearRoute();
-                                      setMode("route");
-                                    }}
-                                    className="w-full mb-4 flex items-center justify-center gap-2 rounded-xl bg-[var(--cyan)] py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(0,214,163,0.3)] cursor-pointer"
-                                  >
-                                    <Plus size={16} strokeWidth={3} />
-                                    Criar Nova Rota
-                                  </button>
-
-                                  <div className="flex items-center justify-between mb-3 px-1">
-                                    <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                                      Suas Coleções
-                                    </h4>
-                                  </div>
-
-                                  {paginatedSavedRoutes.length === 0 ? (
-                                    <div className="py-8 text-center text-xs text-slate-500">
-                                      Nenhuma rota salva.
-                                    </div>
-                                  ) : (
-                                    <div className="grid gap-2.5">
-                                      {paginatedSavedRoutes.map((route) => (
-                                        <div
-                                          key={route.id}
-                                          className={cn(
-                                            "flex items-center justify-between rounded-xl border p-3 transition-all group",
-                                            selectedSavedRouteId === route.id
-                                              ? "border-cyan-500/40 bg-cyan-500/5 shadow-[0_0_15px_rgba(0,214,163,0.1)]"
-                                              : "border-white/5 bg-white/[0.01] hover:border-white/15",
-                                          )}
+                                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                          onClick={() =>
+                                            moveCheckpoint(cp.id, -1)
+                                          }
+                                          disabled={idx === 0}
+                                          className="p-1.5 text-slate-500 hover:text-white disabled:opacity-20 cursor-pointer"
                                         >
-                                          <div
-                                            className="flex-1 min-w-0 cursor-pointer"
-                                            onClick={() =>
-                                              loadSavedRoute(route.id)
-                                            }
-                                          >
-                                            <p className="truncate text-sm font-bold text-slate-200 group-hover:text-white transition-colors">
-                                              {route.name}
-                                            </p>
-                                            <p className="text-[10px] text-slate-500">
-                                              {route.route.checkpoints.length}{" "}
-                                              pontos • {route.color}
-                                            </p>
-                                          </div>
-                                          <div className="flex items-center gap-1">
-                                            <button
-                                              onClick={() =>
-                                                toggleRouteVisibility(route.id)
-                                              }
-                                              className="p-1.5 text-slate-500 hover:text-white transition cursor-pointer"
-                                              title={
-                                                visibleRoutes.includes(route.id)
-                                                  ? "Ocultar no Mapa"
-                                                  : "Mostrar no Mapa"
-                                              }
-                                            >
-                                              {visibleRoutes.includes(
-                                                route.id,
-                                              ) ? (
-                                                <Eye size={14} />
-                                              ) : (
-                                                <EyeOff size={14} />
-                                              )}
-                                            </button>
-                                            {route.isPublic ? (
-                                              <button
-                                                onClick={() =>
-                                                  unpublishSelectedRoute(
-                                                    route.id,
-                                                  )
-                                                }
-                                                className="p-1.5 text-[var(--cyan)] hover:text-red-400 transition cursor-pointer"
-                                                title="Tornar Privada"
-                                              >
-                                                <Globe size={14} />
-                                              </button>
-                                            ) : (
-                                              <button
-                                                onClick={() =>
-                                                  publishSelectedRoute(route.id)
-                                                }
-                                                className="p-1.5 text-slate-500 hover:text-[var(--cyan)] transition cursor-pointer"
-                                                title="Tornar Pública"
-                                              >
-                                                <Globe size={14} />
-                                              </button>
-                                            )}
-                                            <button
-                                              onClick={() =>
-                                                deleteSavedRoute(route.id)
-                                              }
-                                              className="p-1.5 text-slate-500 hover:text-red-400 transition cursor-pointer"
-                                              title="Excluir"
-                                            >
-                                              <Trash2 size={14} />
-                                            </button>
-                                          </div>
-                                        </div>
-                                      ))}
-                                      <PaginationControls
-                                        currentPage={mineRoutesPage}
-                                        totalPages={totalSavedRoutesPages}
-                                        onPageChange={setMineRoutesPage}
-                                      />
+                                          <ChevronUp size={14} />
+                                        </button>
+                                        <button
+                                          onClick={() =>
+                                            moveCheckpoint(cp.id, 1)
+                                          }
+                                          disabled={
+                                            idx ===
+                                            currentRoute.checkpoints.length - 1
+                                          }
+                                          className="p-1.5 text-slate-500 hover:text-white disabled:opacity-20 cursor-pointer"
+                                        >
+                                          <ChevronDown size={14} />
+                                        </button>
+                                        <button
+                                          onClick={() =>
+                                            removeCheckpoint(cp.id)
+                                          }
+                                          className="p-1.5 text-slate-500 hover:text-red-400 cursor-pointer"
+                                        >
+                                          <X size={14} />
+                                        </button>
+                                      </div>
                                     </div>
-                                  )}
-                                </>
-                              )}
-                            </section>
-                          ) : (
-                            <section className="rounded-[26px] border border-white/5 bg-black/25 p-4">
-                              <div className="relative block group mb-4">
-                                <Search
-                                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[var(--cyan)] transition-colors"
-                                  size={14}
-                                />
-                                <input
-                                  type="text"
-                                  placeholder="Buscar rotas públicas..."
-                                  value={publicRoutesQuery}
-                                  onChange={(e) =>
-                                    setPublicRoutesQuery(e.target.value)
-                                  }
-                                  className="w-full rounded-xl border border-white/8 bg-black/40 py-2.5 pl-9 pr-4 text-xs text-white outline-none focus:border-cyan-500/30 transition-all"
-                                />
+                                  ),
+                                )}
                               </div>
-                              {publicRoutesLoading ? (
-                                <div className="py-8 text-center">
-                                  <Compass
-                                    size={24}
-                                    className="mx-auto text-[var(--cyan)] animate-tech-spin mb-2 opacity-50"
-                                  />
-                                  <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
-                                    Sincronizando...
-                                  </p>
+                            </div>
+                          )}
+                        </div>
+                      </section>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/[0.03] border border-white/5 shadow-inner">
+                          <button
+                            onClick={() => setRoutesView("mine")}
+                            className={cn(
+                              "flex-1 rounded-xl py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer",
+                              routesView === "mine"
+                                ? "bg-white/10 text-white shadow-lg"
+                                : "text-slate-500 hover:text-slate-300",
+                            )}
+                          >
+                            Minhas Rotas
+                          </button>
+                          <button
+                            onClick={() => setRoutesView("public")}
+                            className={cn(
+                              "flex-1 rounded-xl py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer",
+                              routesView === "public"
+                                ? "bg-white/10 text-white shadow-lg"
+                                : "text-slate-500 hover:text-slate-300",
+                            )}
+                          >
+                            Públicas
+                          </button>
+                        </div>
+
+                        {routesView === "mine" ? (
+                          <section className="rounded-[26px] border border-white/5 bg-black/25 p-4">
+                            {!isAuthenticated ? (
+                              <LockedFeature
+                                title="Minhas Rotas"
+                                description="Faça login para criar, salvar e gerenciar suas rotas de farm personalizadas."
+                                onLogin={openLoginModal}
+                              />
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    clearRoute();
+                                    setMode("route");
+                                  }}
+                                  className="w-full mb-4 flex items-center justify-center gap-2 rounded-xl bg-[var(--cyan)] py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(0,214,163,0.3)] cursor-pointer"
+                                >
+                                  <Plus size={16} strokeWidth={3} />
+                                  Criar Nova Rota
+                                </button>
+
+                                <div className="flex items-center justify-between mb-3 px-1">
+                                  <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                    Suas Coleções
+                                  </h4>
                                 </div>
-                              ) : paginatedPublicRoutes.length === 0 ? (
-                                <div className="py-8 text-center text-xs text-slate-500 italic">
-                                  Nenhuma rota pública encontrada.
-                                </div>
-                              ) : (
-                                <div className="grid gap-2.5">
-                                  {paginatedPublicRoutes.map((route) => (
-                                    <div
-                                      key={route.id}
-                                      className={cn(
-                                        "flex items-center justify-between rounded-2xl border border-white/5 bg-white/[0.01] p-3.5 hover:border-white/15 hover:bg-white/[0.03] transition-all group",
-                                        selectedSavedRouteId === route.id
-                                          ? "border-cyan-500/40 bg-cyan-500/5 shadow-[0_0_15px_rgba(0,214,163,0.1)]"
-                                          : "border-white/5 bg-white/[0.01] hover:border-white/15",
-                                      )}
-                                    >
+
+                                {paginatedSavedRoutes.length === 0 ? (
+                                  <div className="py-8 text-center text-xs text-slate-500">
+                                    Nenhuma rota salva.
+                                  </div>
+                                ) : (
+                                  <div className="grid gap-2.5">
+                                    {paginatedSavedRoutes.map((route) => (
                                       <div
-                                        className="flex-1 min-w-0 cursor-pointer"
-                                        onClick={() => loadSavedRoute(route.id)}
+                                        key={route.id}
+                                        className={cn(
+                                          "flex items-center justify-between rounded-xl border p-3 transition-all group",
+                                          selectedSavedRouteId === route.id
+                                            ? "border-cyan-500/40 bg-cyan-500/5 shadow-[0_0_15px_rgba(0,214,163,0.1)]"
+                                            : "border-white/5 bg-white/[0.01] hover:border-white/15",
+                                        )}
                                       >
-                                        <div className="flex items-center gap-2.5 mb-1.5">
-                                          <div className="h-6 w-6 rounded-full border border-white/10 bg-black/40 overflow-hidden shrink-0">
-                                            {route.creator?.avatarUrl ? (
-                                              <img
-                                                src={route.creator.avatarUrl}
-                                                alt={route.creator.name}
-                                                className="h-full w-full object-cover"
-                                              />
-                                            ) : (
-                                              <div className="h-full w-full flex items-center justify-center text-[10px] font-black text-[var(--cyan)] bg-cyan-950/30">
-                                                {route.creator?.name?.slice(
-                                                  0,
-                                                  1,
-                                                ) || "S"}
-                                              </div>
-                                            )}
-                                          </div>
+                                        <div
+                                          className="flex-1 min-w-0 cursor-pointer"
+                                          onClick={() =>
+                                            loadSavedRoute(route.id)
+                                          }
+                                        >
                                           <p className="truncate text-sm font-bold text-slate-200 group-hover:text-white transition-colors">
                                             {route.name}
                                           </p>
-                                        </div>
-
-                                        <div className="flex items-center gap-2 pl-8">
-                                          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-tight">
-                                            por{" "}
-                                            <span className="text-slate-400">
-                                              {route.creator?.name || "Anônimo"}
-                                            </span>
-                                          </p>
-                                          <span className="text-slate-700 text-[10px]">
-                                            •
-                                          </span>
-                                          <p className="text-[10px] font-mono text-slate-500">
-                                            {route.route.checkpoints.length} pts
+                                          <p className="text-[10px] text-slate-500">
+                                            {route.route.checkpoints.length}{" "}
+                                            pontos • {route.color}
                                           </p>
                                         </div>
-                                        {route.description && (
-                                          <p className="mt-2 pl-8 line-clamp-2 text-[11px] text-slate-400 leading-relaxed italic border-l border-white/5 ml-1">
-                                            "{route.description}"
-                                          </p>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center gap-1 ml-2">
-                                        <button
-                                          onClick={() =>
-                                            toggleRouteVisibility(route.id)
-                                          }
-                                          className="p-2 text-slate-500 hover:text-white hover:bg-white/5 rounded-lg transition cursor-pointer"
-                                          title={
-                                            visibleRoutes.includes(route.id)
-                                              ? "Ocultar no Mapa"
-                                              : "Mostrar no Mapa"
-                                          }
-                                        >
-                                          {visibleRoutes.includes(route.id) ? (
-                                            <Eye size={16} />
+                                        <div className="flex items-center gap-1">
+                                          <button
+                                            onClick={() =>
+                                              toggleRouteVisibility(route.id)
+                                            }
+                                            className="p-1.5 text-slate-500 hover:text-white transition cursor-pointer"
+                                            title={
+                                              visibleRoutes.includes(route.id)
+                                                ? "Ocultar no Mapa"
+                                                : "Mostrar no Mapa"
+                                            }
+                                          >
+                                            {visibleRoutes.includes(
+                                              route.id,
+                                            ) ? (
+                                              <Eye size={14} />
+                                            ) : (
+                                              <EyeOff size={14} />
+                                            )}
+                                          </button>
+                                          {route.isPublic ? (
+                                            <button
+                                              onClick={() =>
+                                                unpublishSelectedRoute(route.id)
+                                              }
+                                              className="p-1.5 text-[var(--cyan)] hover:text-red-400 transition cursor-pointer"
+                                              title="Tornar Privada"
+                                            >
+                                              <Globe size={14} />
+                                            </button>
                                           ) : (
-                                            <EyeOff size={16} />
+                                            <button
+                                              onClick={() =>
+                                                publishSelectedRoute(route.id)
+                                              }
+                                              className="p-1.5 text-slate-500 hover:text-[var(--cyan)] transition cursor-pointer"
+                                              title="Tornar Pública"
+                                            >
+                                              <Globe size={14} />
+                                            </button>
                                           )}
-                                        </button>
-                                        <button
-                                          onClick={() =>
-                                            duplicateSavedRoute(route.id)
-                                          }
-                                          className="p-2 text-slate-500 hover:text-[var(--cyan)] hover:bg-white/5 rounded-lg transition cursor-pointer"
-                                          title="Importar para minhas rotas"
-                                        >
-                                          <Plus size={16} />
-                                        </button>
+                                          <button
+                                            onClick={() =>
+                                              deleteSavedRoute(route.id)
+                                            }
+                                            className="p-1.5 text-slate-500 hover:text-red-400 transition cursor-pointer"
+                                            title="Excluir"
+                                          >
+                                            <Trash2 size={14} />
+                                          </button>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ))}
-                                  <PaginationControls
-                                    currentPage={publicRoutesPage}
-                                    totalPages={totalPublicRoutesPages}
-                                    onPageChange={setPublicRoutesPage}
-                                  />
-                                </div>
-                              )}
-                            </section>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  ) : null}
-
-                  {sidebarSection === "search" ? (
-                    <div className="grid gap-4 animate-[fade-in_150ms_ease-out]">
-                      <section className="rounded-[26px] border border-white/5 bg-black/25 p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_12px_36px_rgba(0,0,0,0.2)]">
-                        <div className="mb-4 flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <span className="grid h-9 w-9 place-items-center rounded-xl border border-white/8 bg-white/5 text-cyan-200">
-                              <Search size={16} />
-                            </span>
-                            <div>
-                              <p className="text-[0.62rem] font-black uppercase tracking-[0.2em] text-slate-400">
-                                Global
-                              </p>
-                              <h3 className="text-base font-bold tracking-tight text-white">
-                                Resultados da Busca
-                              </h3>
-                            </div>
-                          </div>
-                          <span className="rounded-full border border-white/8 bg-white/5 px-2.5 py-0.5 font-mono text-[0.58rem] font-bold text-slate-400 uppercase tracking-wider">
-                            {searchResults.length} itens
-                          </span>
-                        </div>
-
-                        {searchResults.length === 0 ? (
-                          <div className="py-12 text-center">
-                            <Compass size={32} className="mx-auto text-slate-700 mb-3 opacity-20" />
-                            <p className="text-sm text-slate-500 italic">
-                              Nenhum recurso encontrado.
-                            </p>
-                          </div>
+                                    ))}
+                                    <PaginationControls
+                                      currentPage={mineRoutesPage}
+                                      totalPages={totalSavedRoutesPages}
+                                      onPageChange={setMineRoutesPage}
+                                    />
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </section>
                         ) : (
-                          <div className="grid gap-2">
-                            {paginatedSearchResults.map((item: any) => (
-                              <div
-                                key={item.id}
-                                onClick={() => {
-                                  if (item.isRoute) {
-                                    loadSavedRoute(item.id);
-                                  } else {
-                                    focusCoords({ x: item.x, y: item.y });
-                                    if (item.isCustom) {
-                                      selectCustomPin(item.id);
-                                    } else {
-                                      selectOfficialPoint(item.id);
-                                    }
-                                  }
-                                }}
-                                className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.01] p-3 hover:border-white/15 hover:bg-white/[0.03] transition-all cursor-pointer group"
-                              >
-                                <div className="flex items-center gap-3 min-w-0">
+                          <section className="rounded-[26px] border border-white/5 bg-black/25 p-4">
+                            <div className="relative block group mb-4">
+                              <Search
+                                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[var(--cyan)] transition-colors"
+                                size={14}
+                              />
+                              <input
+                                type="text"
+                                placeholder="Buscar rotas públicas..."
+                                value={publicRoutesQuery}
+                                onChange={(e) =>
+                                  setPublicRoutesQuery(e.target.value)
+                                }
+                                className="w-full rounded-xl border border-white/8 bg-black/40 py-2.5 pl-9 pr-4 text-xs text-white outline-none focus:border-cyan-500/30 transition-all"
+                              />
+                            </div>
+                            {publicRoutesLoading ? (
+                              <div className="py-8 text-center">
+                                <Compass
+                                  size={24}
+                                  className="mx-auto text-[var(--cyan)] animate-tech-spin mb-2 opacity-50"
+                                />
+                                <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
+                                  Sincronizando...
+                                </p>
+                              </div>
+                            ) : paginatedPublicRoutes.length === 0 ? (
+                              <div className="py-8 text-center text-xs text-slate-500 italic">
+                                Nenhuma rota pública encontrada.
+                              </div>
+                            ) : (
+                              <div className="grid gap-2.5">
+                                {paginatedPublicRoutes.map((route) => (
                                   <div
-                                    className="h-9 w-9 rounded-lg border border-white/10 flex items-center justify-center shrink-0"
-                                    style={{
-                                      backgroundColor: item.color || "transparent",
-                                    }}
-                                  >
-                                    {item.isRoute ? (
-                                      <Route size={16} className="text-orange-400" />
-                                    ) : (
-                                      <IconImage
-                                        iconId={item.iconId}
-                                        label={item.name}
-                                        className="h-6 w-6 object-contain"
-                                      />
+                                    key={route.id}
+                                    className={cn(
+                                      "flex items-center justify-between rounded-2xl border border-white/5 bg-white/[0.01] p-3.5 hover:border-white/15 hover:bg-white/[0.03] transition-all group",
+                                      selectedSavedRouteId === route.id
+                                        ? "border-cyan-500/40 bg-cyan-500/5 shadow-[0_0_15px_rgba(0,214,163,0.1)]"
+                                        : "border-white/5 bg-white/[0.01] hover:border-white/15",
                                     )}
+                                  >
+                                    <div
+                                      className="flex-1 min-w-0 cursor-pointer"
+                                      onClick={() => loadSavedRoute(route.id)}
+                                    >
+                                      <div className="flex items-center gap-2.5 mb-1.5">
+                                        <div className="h-6 w-6 rounded-full border border-white/10 bg-black/40 overflow-hidden shrink-0">
+                                          {route.creator?.avatarUrl ? (
+                                            <img
+                                              src={route.creator.avatarUrl}
+                                              alt={route.creator.name}
+                                              className="h-full w-full object-cover"
+                                            />
+                                          ) : (
+                                            <div className="h-full w-full flex items-center justify-center text-[10px] font-black text-[var(--cyan)] bg-cyan-950/30">
+                                              {route.creator?.name?.slice(
+                                                0,
+                                                1,
+                                              ) || "S"}
+                                            </div>
+                                          )}
+                                        </div>
+                                        <p className="truncate text-sm font-bold text-slate-200 group-hover:text-white transition-colors">
+                                          {route.name}
+                                        </p>
+                                      </div>
+
+                                      <div className="flex items-center gap-2 pl-8">
+                                        <p className="text-[10px] font-medium text-slate-500 uppercase tracking-tight">
+                                          por{" "}
+                                          <span className="text-slate-400">
+                                            {route.creator?.name || "Anônimo"}
+                                          </span>
+                                        </p>
+                                        <span className="text-slate-700 text-[10px]">
+                                          •
+                                        </span>
+                                        <p className="text-[10px] font-mono text-slate-500">
+                                          {route.route.checkpoints.length} pts
+                                        </p>
+                                      </div>
+                                      {route.description && (
+                                        <p className="mt-2 pl-8 line-clamp-2 text-[11px] text-slate-400 leading-relaxed italic border-l border-white/5 ml-1">
+                                          "{route.description}"
+                                        </p>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-1 ml-2">
+                                      <button
+                                        onClick={() =>
+                                          toggleRouteVisibility(route.id)
+                                        }
+                                        className="p-2 text-slate-500 hover:text-white hover:bg-white/5 rounded-lg transition cursor-pointer"
+                                        title={
+                                          visibleRoutes.includes(route.id)
+                                            ? "Ocultar no Mapa"
+                                            : "Mostrar no Mapa"
+                                        }
+                                      >
+                                        {visibleRoutes.includes(route.id) ? (
+                                          <Eye size={16} />
+                                        ) : (
+                                          <EyeOff size={16} />
+                                        )}
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          duplicateSavedRoute(route.id)
+                                        }
+                                        className="p-2 text-slate-500 hover:text-[var(--cyan)] hover:bg-white/5 rounded-lg transition cursor-pointer"
+                                        title="Importar para minhas rotas"
+                                      >
+                                        <Plus size={16} />
+                                      </button>
+                                    </div>
                                   </div>
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-bold text-slate-200 group-hover:text-white truncate">
-                                      {item.name}
-                                    </p>
-                                    <p className="text-[10px] font-mono text-slate-500">
-                                      {item.isRoute ? "Rota" : (item.type || "Custom")} 
-                                      {!item.isRoute && ` • ${item.x.toFixed(1)}, ${item.y.toFixed(1)}`}
-                                      {item.isRoute && item.route?.checkpoints && ` • ${item.route.checkpoints.length} pts`}
-                                    </p>
-                                  </div>
+                                ))}
+                                <PaginationControls
+                                  currentPage={publicRoutesPage}
+                                  totalPages={totalPublicRoutesPages}
+                                  onPageChange={setPublicRoutesPage}
+                                />
+                              </div>
+                            )}
+                          </section>
+                        )}
+                      </>
+                    )}
+                  </div>
+                ) : null}
+
+                {sidebarSection === "search" ? (
+                  <div className="grid gap-4 animate-[fade-in_150ms_ease-out]">
+                    <section className="rounded-[26px] border border-white/5 bg-black/25 p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_12px_36px_rgba(0,0,0,0.2)]">
+                      <div className="mb-4 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <span className="grid h-9 w-9 place-items-center rounded-xl border border-white/8 bg-white/5 text-cyan-200">
+                            <Search size={16} />
+                          </span>
+                          <div>
+                            <p className="text-[0.62rem] font-black uppercase tracking-[0.2em] text-slate-400">
+                              Global
+                            </p>
+                            <h3 className="text-base font-bold tracking-tight text-white">
+                              Resultados da Busca
+                            </h3>
+                          </div>
+                        </div>
+                        <span className="rounded-full border border-white/8 bg-white/5 px-2.5 py-0.5 font-mono text-[0.58rem] font-bold text-slate-400 uppercase tracking-wider">
+                          {searchResults.length} itens
+                        </span>
+                      </div>
+
+                      {searchResults.length === 0 ? (
+                        <div className="py-12 text-center">
+                          <Compass
+                            size={32}
+                            className="mx-auto text-slate-700 mb-3 opacity-20"
+                          />
+                          <p className="text-sm text-slate-500 italic">
+                            Nenhum recurso encontrado.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid gap-2">
+                          {paginatedSearchResults.map((item: any) => (
+                            <div
+                              key={item.id}
+                              onClick={() => {
+                                if (item.isRoute) {
+                                  loadSavedRoute(item.id);
+                                } else {
+                                  focusCoords({ x: item.x, y: item.y });
+                                  if (item.isCustom) {
+                                    selectCustomPin(item.id);
+                                  } else {
+                                    selectOfficialPoint(item.id);
+                                  }
+                                }
+                              }}
+                              className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.01] p-3 hover:border-white/15 hover:bg-white/[0.03] transition-all cursor-pointer group"
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div
+                                  className="h-9 w-9 rounded-lg border border-white/10 flex items-center justify-center shrink-0"
+                                  style={{
+                                    backgroundColor:
+                                      item.color || "transparent",
+                                  }}
+                                >
+                                  {item.isRoute ? (
+                                    <Route
+                                      size={16}
+                                      className="text-orange-400"
+                                    />
+                                  ) : (
+                                    <IconImage
+                                      iconId={item.iconId}
+                                      label={item.name}
+                                      className="h-6 w-6 object-contain"
+                                    />
+                                  )}
                                 </div>
-                                <div className="p-1.5 text-slate-600 group-hover:text-[var(--cyan)] transition-colors">
-                                  <ChevronRight size={14} />
+                                <div className="min-w-0">
+                                  <p className="text-sm font-bold text-slate-200 group-hover:text-white truncate">
+                                    {item.name}
+                                  </p>
+                                  <p className="text-[10px] font-mono text-slate-500">
+                                    {item.isRoute
+                                      ? "Rota"
+                                      : item.type || "Custom"}
+                                    {!item.isRoute &&
+                                      ` • ${item.x.toFixed(1)}, ${item.y.toFixed(1)}`}
+                                    {item.isRoute &&
+                                      item.route?.checkpoints &&
+                                      ` • ${item.route.checkpoints.length} pts`}
+                                  </p>
                                 </div>
                               </div>
-                            ))}
-                            <PaginationControls
-                              currentPage={searchPage}
-                              totalPages={totalSearchPages}
-                              onPageChange={setSearchPage}
-                            />
-                          </div>
-                        )}
-                      </section>
-                    </div>
-                  ) : null}
-                </div>
+                              <div className="p-1.5 text-slate-600 group-hover:text-[var(--cyan)] transition-colors">
+                                <ChevronRight size={14} />
+                              </div>
+                            </div>
+                          ))}
+                          <PaginationControls
+                            currentPage={searchPage}
+                            totalPages={totalSearchPages}
+                            onPageChange={setSearchPage}
+                          />
+                        </div>
+                      )}
+                    </section>
+                  </div>
+                ) : null}
               </div>
             </div>
+          </div>
         </div>
       </aside>
     </div>

@@ -1,14 +1,13 @@
-import { Map, LogOut, Users, Settings } from 'lucide-react'
+import { Map, LogOut, Users, Settings, BarChart2, Info } from 'lucide-react'
 
-type TabType = 'groups' | 'map' | 'settings'
+type TabType = 'groups' | 'map' | 'stats' | 'details' | 'settings'
 
 interface SidebarScreenProps {
   activeTab: string | null
-  sidebarOpacity?: number
   onLogout: () => void
 }
 
-export const SidebarScreen = ({ activeTab, sidebarOpacity = 95, onLogout }: SidebarScreenProps) => {
+export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
   const handleTabClick = (tabId: TabType) => {
     const nextTab = activeTab === tabId ? null : tabId
     window.ipcRenderer?.send('toggle-panel-window', nextTab)
@@ -21,9 +20,10 @@ export const SidebarScreen = ({ activeTab, sidebarOpacity = 95, onLogout }: Side
   }
 
   const menuItems = [
+    { id: 'details', icon: null, label: 'Detalhes' },
     { id: 'groups', icon: Users, label: 'Grupos' },
     { id: 'map', icon: Map, label: 'Mapa' },
-    { id: 'settings', icon: Settings, label: 'Configurações' },
+    { id: 'stats', icon: BarChart2, label: 'Estatísticas' },
   ] as const
 
   return (
@@ -33,8 +33,7 @@ export const SidebarScreen = ({ activeTab, sidebarOpacity = 95, onLogout }: Side
       <div 
         className="w-full h-full flex flex-col justify-between items-center py-2 bg-[#0B0E12]/95 border border-[#1E2732]/60 rounded-2xl relative z-10"
         style={{ 
-          WebkitAppRegion: 'drag',
-          opacity: sidebarOpacity / 100
+          WebkitAppRegion: 'drag'
         } as any}
       >
         {/* Top Controls: Logo & Navigation */}
@@ -62,18 +61,44 @@ export const SidebarScreen = ({ activeTab, sidebarOpacity = 95, onLogout }: Side
                     <div className="absolute left-[-4px] top-1/2 -translate-y-1/2 w-1 h-3.5 rounded-r-md bg-teal-400" />
                   )}
                   
-                  <Icon 
-                    size={20} 
-                    className="transition-all duration-300 group-hover:scale-110" 
-                  />
+                  {item.id === 'details' ? (
+                    <img 
+                      src="/images/logo_mini.webp" 
+                      alt="Logo" 
+                      className="w-7 h-7 group-hover:rotate-90 transition-transform duration-500 ease-out object-contain" 
+                      draggable={false}
+                    />
+                  ) : (
+                    Icon && <Icon 
+                      size={20} 
+                      className="transition-all duration-300 group-hover:scale-110" 
+                    />
+                  )}
                 </button>
               </div>
             )
           })}
         </div>
 
-        {/* Bottom Controls: Logout */}
+        {/* Bottom Controls: Settings & Logout */}
         <div className="flex flex-col items-center w-full">
+          <button
+            onClick={() => handleTabClick('settings')}
+            style={{ WebkitAppRegion: 'no-drag' } as any}
+            className={`relative w-9.5 h-9.5 rounded-lg flex items-center justify-center transition-all duration-300 group cursor-pointer
+              ${activeTab === 'settings' 
+                ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 shadow-[0_0_10px_rgba(3,166,150,0.25)]' 
+                : 'text-slate-400 hover:text-teal-400 hover:bg-white/5 border border-transparent'
+              }
+            `}
+            title="Configurações"
+          >
+            {activeTab === 'settings' && (
+              <div className="absolute left-[-4px] top-1/2 -translate-y-1/2 w-1 h-3.5 rounded-r-md bg-teal-400" />
+            )}
+            <Settings size={20} className="transition-all duration-300 group-hover:scale-110" />
+          </button>
+
           <div className="h-[1px] w-6 bg-slate-800/50 my-0.5"></div>
 
           <button

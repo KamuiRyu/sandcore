@@ -257,9 +257,29 @@ function createSidebarWindow() {
 }
 
 let pendingBounds: { x: number; y: number; width: number; height: number } | null = null
+let resizeTimeout: NodeJS.Timeout | null = null
 
-function resizeSingleWindow(tabId: string | null) {
+function resizeSingleWindow(tabId: string | null, immediate = false) {
   if (!sidebarWin || sidebarWin.isDestroyed()) return
+
+  if (resizeTimeout) {
+    clearTimeout(resizeTimeout)
+    resizeTimeout = null
+  }
+
+  // If not immediate, and we are switching/closing from an open tab, do a transition
+  if (!immediate && currentTabId !== null && currentTabId !== tabId) {
+    // Start transition: fade out the active panel
+    sidebarWin.webContents.send('layout-updated', { tabId: null, layoutSide: appConfig.layoutSide || 'right' })
+    
+    // Wait for fade out to complete, then perform resize
+    resizeTimeout = setTimeout(() => {
+      resizeTimeout = null
+      resizeSingleWindow(tabId, true)
+    }, 300)
+    return
+  }
+
   currentTabId = tabId
 
   const zoom = (appConfig.uiScale || 100) / 100
@@ -437,7 +457,7 @@ ipcMain.on('toggle-panel-window', (_event, tabId) => {
 
 // Close panel and resize window back to sidebar only
 ipcMain.on('close-panel-window', () => {
-  resizeSingleWindow(null)
+  resizeSingleWindow(null, true)
 })
 
 // Minimize window
