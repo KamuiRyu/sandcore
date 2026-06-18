@@ -29,13 +29,15 @@ module.exports = {
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
     shortcutName: "Shinobi Map",
-    artifactName: `shinobi_map_${versionStr}_setup.\${ext}`
+    artifactName: `shinobi_map_${versionStr}_setup.${ext}`
   },
   portable: {
-    artifactName: `shinobi_map.\${ext}`
+    artifactName: `shinobi_map_${versionStr}_portable.${ext}`
   },
  publish: {
     provider: "github",
-    releaseType: "release" 
+    releaseType: "release" ,
+    owner: "KamuiRyu",
+    repo: "slp-map"
   },
 };
