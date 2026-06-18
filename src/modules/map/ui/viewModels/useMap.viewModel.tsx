@@ -19,6 +19,7 @@ import { getResourceData } from '../../core/entities/ResourceDefinitions.entity'
 import { type MapCollectionStats, sumStats, createEmptyStats } from '../../core/entities/MapStats.entity'
 
 import { pb } from '../../../../lib/pocketbase'
+const requestNotificationToken = async () => null;
 
 function createId(prefix: string) { return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}` }
 
@@ -61,8 +62,9 @@ export type StatsPeriod = 'today' | 'weekly' | 'monthly' | 'total'
 export function useMapViewModel() {
   const { showToast, toast } = useTimedToast()
   const officialPoints = useMemo(() => toOfficialPointReference(), [])
-  const { isLoggedIn: isAuthenticated, getCurrentUser } = useAuthViewModel()
-  const user = getCurrentUser()
+  const auth = useAuthViewModel()
+  const isAuthenticated = auth.isLoggedIn
+  const user = auth.getCurrentUser()
   
   const [mode, _setMode] = useState<'explore' | 'pin' | 'route' | 'feedback'>('explore')
   const [sidebarSection, setSidebarSection] = useState<'officialPins' | 'customPins' | 'routes' | 'stats' | 'group'>('officialPins')
@@ -72,7 +74,7 @@ export function useMapViewModel() {
   const [searchQuery, setSearchQuery] = useState('')
   const debouncedSearchQuery = useDebounce(searchQuery, 350)
   
-  const [selectedTypes, setSelectedTypes] = useState<string[]>(['vila'])
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([])
   const [selectedRegion, setSelectedRegion] = useState<string | 'all'>('all')
   const [routesView, setRoutesView] = useState<'mine' | 'public'>('mine')
   
@@ -252,30 +254,15 @@ export function useMapViewModel() {
   }, [officialPoints, debouncedSearchQuery, selectedLayers, selectedRegion, selectedTypes, visibleRoutes.length, mode, referencedOfficialPointIds, completedPins, notificationSettings.hideUnmarkedResources])
 
   const visibleCustomPins = useMemo(() => {
-    let pins = customPins;
-    
-    // First, filter the existing pins
-    let filteredPins = pins.filter(p => {
+    return customPins.filter(p => {
         if (visibleRoutes.length > 0 && mode === 'explore') {
             const idsInRoutes = new Set<string>()
             savedRoutes.filter(r => visibleRoutes.includes(r.id)).forEach(r => r.route.checkpoints.forEach(cp => { if (cp.customPinId) idsInRoutes.add(cp.customPinId) }))
             return idsInRoutes.has(p.id)
         }
         return selectedLayers.includes('customPins') && matchesSearch([p.name, ...p.tags], debouncedSearchQuery)
-    });
-
-    // Then, force-append the draftCustomPin if it's placed, regardless of filters
-    if (draftCustomPin && draftCustomPin.isPlaced) {
-      const exists = filteredPins.some(p => p.id === draftCustomPin.id);
-      if (!exists) {
-        filteredPins = [...filteredPins, draftCustomPin];
-      } else {
-        filteredPins = filteredPins.map(p => p.id === draftCustomPin.id ? draftCustomPin : p);
-      }
-    }
-
-    return filteredPins;
-  }, [customPins, draftCustomPin, debouncedSearchQuery, selectedLayers, visibleRoutes, mode, savedRoutes])
+    })
+  }, [customPins, debouncedSearchQuery, selectedLayers, visibleRoutes, mode, savedRoutes])
 
   const searchResults = useMemo(() => {
     const query = debouncedSearchQuery.trim().toLowerCase(); 
@@ -737,9 +724,28 @@ export function useMapViewModel() {
   }, [mode, officialPoints, _setEditingCustomPinIdRef])
 
   const requestPushPermission = useCallback(async () => {
-    showToast('Notificação', 'Notificações push via navegador não são suportadas no cliente desktop.', 'info')
+    if (!isAuthenticated) {
+      showToast('Aviso', 'Você precisa estar logado para ativar notificações push.', 'info')
+      return false
+    }
+
+    try {
+      const token = await requestNotificationToken()
+      if (token) {
+        await pb.send('/api/save-token', {
+          method: 'POST',
+          body: { token }
+        })
+        updateNotificationSettings({ pushEnabled: true })
+        showToast('Sucesso', 'Notificações ativadas!', 'success')
+        return true
+      }
+    } catch (error) {
+      logger.error('Erro ao solicitar permissão de push:', error)
+      showToast('Erro', 'Falha ao ativar notificações.', 'error')
+    }
     return false
-  }, [showToast])
+  }, [isAuthenticated, showToast, updateNotificationSettings])
 
   const confirmCustomPin = useCallback(() => {
     if (!draftCustomPin) return

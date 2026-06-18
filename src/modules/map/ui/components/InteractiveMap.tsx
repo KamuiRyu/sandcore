@@ -18,18 +18,16 @@ import { getResourceData } from "../../core/entities/ResourceDefinitions.entity"
 import { cn } from "../../../../lib/utils";
 import { ViewportPortal } from "../../../app/ui/components/ViewportPortal";
 import { NotificationSettingsModal } from "./NotificationSettingsModal";
+import { MapSidebar } from "./MapSidebar";
 import { MapCanvasLayer } from "./MapCanvasLayer";
-import { MapCategoriesMenu } from "./MapCategoriesMenu";
-import { MapPinsMenu } from "./MapPinsMenu";
-import { MapRoutesMenu } from "./MapRoutesMenu";
 import { SUB_REGION_BOUNDARIES } from "../../core/entities/SubRegionBoundaries.entity";
-import { motion } from "framer-motion";
 import {
   AlertCircle,
   CheckCircle2,
   CircleCheck,
   Clock,
   Edit2,
+  Hourglass,
   Info,
   Layers,
   Lock,
@@ -42,8 +40,6 @@ import {
   Shield,
   Trash2,
   X,
-  Star,
-  Crosshair,
 } from "lucide-react";
 
 import { MapFeedbackModal } from "./MapFeedbackModal";
@@ -275,9 +271,9 @@ const PinBadge = memo(function PinBadge({
       />
       <IconImage
         className={cn(
-          "object-contain transition-opacity duration-300",
-          isCluster ? "h-10 w-10 opacity-80" : "h-8 w-8",
+          "h-10 w-10 object-contain transition-opacity duration-300",
           isCompleted ? "opacity-35 grayscale" : "",
+          isCluster ? "opacity-80" : "",
         )}
         iconId={iconId}
         label={label}
@@ -420,11 +416,7 @@ type ClusteredCustomPin = SavedCustomPin & {
   clusterCount?: number;
 };
 
-export interface InteractiveMapProps {
-  externalSearchQuery?: string;
-}
-
-export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps) {
+export function InteractiveMap() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const {
@@ -450,8 +442,6 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
     selectedOfficialPointId,
     selectedSavedRouteId,
     selectedTypes,
-    selectedLayers,
-    toggleLayer,
     setPublicRoutesQuery,
     setSearchQuery,
     setRoutesView,
@@ -540,8 +530,10 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
   } = useMapViewModel();
 
   useEffect(() => {
-    setSearchQuery(externalSearchQuery);
-  }, [externalSearchQuery, setSearchQuery]);
+    const handleOpenSettings = () => setIsSettingsModalOpen(true);
+    window.addEventListener('open-map-settings', handleOpenSettings);
+    return () => window.removeEventListener('open-map-settings', handleOpenSettings);
+  }, [setIsSettingsModalOpen]);
 
   const {
     displayedCamera,
@@ -1082,24 +1074,24 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
   }, [isDragging, mode, isOverCanvasPin]);
 
   return (
-    <div className="flex flex-col h-full w-full relative overflow-hidden">
+    <>
       {/* Mode Banner */}
       {(mode === "pin" ||
         mode === "route" ||
         mode === "feedback" ||
         editingCustomPinId !== null) && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[100] animate-[fade-in_200ms_ease-out]">
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-[100] animate-[fade-in_200ms_ease-out]">
           <div
             className={cn(
-              "flex items-center gap-3.5 px-4 py-2.5 rounded-full border shadow-[0_12px_40px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-2xl",
+              "flex items-center gap-4 px-6 py-3 rounded-2xl border shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl",
               mode === "pin" || editingCustomPinId !== null
-                ? "border-cyan-500/30 bg-cyan-950/80 shadow-cyan-500/10"
+                ? "border-cyan-500/50 bg-cyan-950/90 shadow-cyan-500/10"
                 : mode === "feedback"
-                  ? "border-purple-500/30 bg-purple-950/80 shadow-purple-500/10"
-                  : "border-orange-500/30 bg-orange-950/80 shadow-orange-500/10",
+                  ? "border-purple-500/50 bg-purple-950/90 shadow-purple-500/10"
+                  : "border-orange-500/50 bg-orange-950/90 shadow-orange-500/10",
             )}
           >
-            <div className="relative flex h-2.5 w-2.5 shrink-0 ml-1">
+            <div className="relative flex h-3.5 w-3.5">
               <span
                 className={cn(
                   "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
@@ -1112,25 +1104,24 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
               />
               <span
                 className={cn(
-                  "relative inline-flex rounded-full h-2.5 w-2.5",
+                  "relative inline-flex rounded-full h-3.5 w-3.5",
                   mode === "pin" || editingCustomPinId !== null
-                    ? "bg-cyan-500 shadow-[0_0_8px_var(--cyan)]"
+                    ? "bg-cyan-500"
                     : mode === "feedback"
-                      ? "bg-purple-500 shadow-[0_0_8px_var(--purple)]"
-                      : "bg-orange-500 shadow-[0_0_8px_var(--orange)]",
+                      ? "bg-purple-500"
+                      : "bg-orange-500",
                 )}
               />
             </div>
-            
-            <div className="flex flex-col justify-center">
-              <p className="text-[9px] font-black text-white/60 uppercase tracking-widest leading-none mb-0.5">
+            <div className="flex flex-col">
+              <p className="text-[0.65rem] font-black text-white/50 uppercase tracking-[0.2em] leading-none mb-1">
                 {mode === "feedback"
                   ? "Feedback"
                   : mode === "pin" || editingCustomPinId !== null
                     ? "Marcador"
                     : "Construtor de Rota"}
               </p>
-              <p className="text-sm font-bold text-white leading-none whitespace-nowrap">
+              <p className="text-sm font-bold text-white leading-none">
                 {mode === "feedback"
                   ? "Modo de Feedback"
                   : mode === "pin"
@@ -1142,19 +1133,16 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
                         : "Criando Novo Trajeto"}
               </p>
             </div>
-            
-            <span className="h-6 w-px bg-white/15 mx-1" />
-            
-            <p className="text-[11px] font-medium text-slate-300 max-w-[240px] leading-tight">
+            <span className="h-8 w-px bg-white/10 mx-2" />
+            <p className="text-xs font-medium text-slate-300 max-w-[200px] leading-tight">
               {mode === "feedback"
                 ? "Clique em qualquer lugar do mapa para sugerir um novo ponto ou reportar algo."
                 : mode === "pin"
                   ? "Clique no mapa para definir o local do seu novo pino."
                   : editingCustomPinId !== null
                     ? "Você pode clicar no mapa para mudar a posição deste pino."
-                    : "Clique nos ícones ou no mapa para conectar os pontos."}
+                    : "Clique nos ícones ou no mapa para conectar os pontos da sua rota."}
             </p>
-            
             <button
               onClick={() => {
                 setMode("explore");
@@ -1170,17 +1158,17 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
                   }
                 }
               }}
-              className="ml-1 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/5 text-white/70 hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-white/10"
+              className="ml-2 grid h-8 w-8 place-items-center rounded-xl bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-white/5"
               title="Cancelar"
             >
-              <X size={14} />
+              <X size={16} />
             </button>
           </div>
         </div>
       )}
 
       <section
-        className="relative flex-1 min-h-0 overflow-hidden bg-[#1f636f] selection:bg-cyan-500/30"
+        className="relative h-full min-h-0 overflow-hidden bg-[#1f636f] selection:bg-cyan-500/30"
         style={{ contain: "layout size" }}
       >
         <div className="absolute inset-0 overflow-hidden">
@@ -1247,18 +1235,6 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
                   onLoad={() => setHighResLoaded(true)}
                 />
               )}
-
-              {/* Sci-Fi Grid Overlay */}
-              <div 
-                className="absolute inset-0 pointer-events-none opacity-[0.15]" 
-                style={{
-                  backgroundImage: `
-                    linear-gradient(to right, rgba(0, 214, 163, 0.35) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(0, 214, 163, 0.35) 1px, transparent 1px)
-                  `,
-                  backgroundSize: '40px 40px',
-                }} 
-              />
 
               {/* Renderizar todas as rotas visíveis (salvas/públicas) */}
               {visibleRoutes.map((routeId: string) => {
@@ -1430,147 +1406,278 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
           </div>
         </div>
 
-
-
-        {/* Floating Zoom & Locate controls (Top Right Side) */}
-        <div className="absolute right-6 top-6 z-25 flex flex-col items-center gap-3">
-          {/* Zoom Slider Pill */}
-          <div className="flex flex-col items-center rounded-full border border-white/5 bg-[#0a0d10]/80 p-1.5 shadow-2xl backdrop-blur-md">
-            <button
-              onClick={zoomIn}
-              className="grid h-8 w-8 place-items-center rounded-full hover:bg-white/5 text-slate-300 hover:text-cyan-400 transition-all active:scale-95 cursor-pointer"
-              title="Aproximar"
-              type="button"
-            >
-              <Plus size={16} strokeWidth={2.5} />
-            </button>
-            
-            <div className="relative h-28 w-8 py-2 flex justify-center cursor-pointer touch-none"
-                onPointerDown={handleZoomPointerDown}
-                onPointerMove={handleZoomPointerMove}
-                onPointerUp={handleZoomPointerUp}
-                onPointerCancel={handleZoomPointerCancel}
-            >
-              {/* Background Track */}
-              <div className="absolute inset-y-2 w-[3px] bg-[#11161d] rounded-full overflow-hidden shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] pointer-events-none">
-                {/* Filled Track */}
-                <div 
-                  className="absolute bottom-0 w-full bg-slate-500/40 transition-all duration-75 pointer-events-none" 
-                  style={{ height: `${zoomThumbBottom * 100}%` }} 
-                />
-              </div>
-              
-              {/* Thumb */}
-              <div 
-                className="absolute left-1/2 w-4 h-4 -ml-[8px] bg-slate-200 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.8)] border-[4px] border-[#0f172a] flex items-center justify-center pointer-events-none transition-transform active:scale-90 z-20"
-                style={{ bottom: `calc(8px + (100% - 16px) * ${zoomThumbBottom})` }}
-              >
-                 <div className="w-1.5 h-1.5 rounded-full bg-[#0f172a]" />
-              </div>
-            </div>
-
-            <button
-              onClick={zoomOut}
-              disabled={displayedZoomScale <= minMapZoom}
-              className="grid h-8 w-8 place-items-center rounded-full hover:bg-white/5 text-slate-300 hover:text-cyan-400 disabled:opacity-40 disabled:pointer-events-none transition-all active:scale-95 cursor-pointer"
-              title="Afastar"
-              type="button"
-            >
-              <Minus size={16} strokeWidth={2.5} />
-            </button>
-          </div>
-
-          {/* Locate Button */}
+        {/* Painel Flutuante de Atalhos Rápidos (Canto Superior Direito) */}
+        <div className="absolute top-3 right-3 sm:top-5 sm:right-5 z-25 flex flex-col gap-2 rounded-full border border-[#00d6a3]/15 bg-[#041418]/28 p-2 shadow-none backdrop-blur-[20px]">
+          {/* Adicionar Pin */}
           <button
-            onClick={interactiveMap.resetCamera}
-            className="grid h-[42px] w-[42px] place-items-center rounded-2xl border border-white/5 bg-[#0a0d10]/80 text-cyan-400 hover:text-cyan-300 hover:bg-white/5 shadow-2xl backdrop-blur-md transition-all active:scale-95 cursor-pointer"
-            title="Centralizar Mapa"
+            onClick={() => {
+              if (mode === "pin") {
+                setMode("explore");
+              } else {
+                openCustomPinsSection();
+                setIsSidebarOpen(true);
+              }
+            }}
+            className={cn(
+              "grid h-10 w-10 place-items-center rounded-full border transition-all duration-200 cursor-pointer group relative",
+              mode === "pin"
+                ? "border-cyan-500 bg-cyan-500/20 text-white shadow-[0_0_15px_rgba(0,214,163,0.4)]"
+                : "border-white/10 bg-black/30 text-slate-300 hover:text-white hover:bg-white/10 active:scale-95",
+            )}
+            title={
+              mode === "pin" ? "Cancelar Adição" : "Adicionar Pin Customizado"
+            }
             type="button"
           >
-            <Crosshair size={20} strokeWidth={2.5} />
+            <MapPin
+              size={18}
+              className="transition-transform group-hover:scale-110"
+            />
+            {mode !== "pin" && (
+              <span className="absolute right-1 top-1 flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                <Plus
+                  size={8}
+                  strokeWidth={4}
+                  className="relative inline-flex text-[var(--cyan)]"
+                />
+              </span>
+            )}
+          </button>
+
+          {/* Enviar Feedback */}
+          <button
+            onClick={() => {
+              if (mode === "feedback") {
+                setMode("explore");
+              } else {
+                setMode("feedback");
+              }
+            }}
+            className={cn(
+              "grid h-10 w-10 place-items-center rounded-full border transition-all duration-200 cursor-pointer group relative",
+              mode === "feedback"
+                ? "border-purple-500 bg-purple-500/20 text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]"
+                : "border-white/10 bg-black/30 text-slate-300 hover:text-white hover:bg-white/10 active:scale-95",
+            )}
+            title={
+              mode === "feedback"
+                ? "Sair do Modo Feedback"
+                : "Enviar Feedback / Sugerir Ponto"
+            }
+            type="button"
+          >
+            <MessageSquare
+              size={18}
+              className="transition-transform group-hover:scale-110"
+            />
+            {mode !== "feedback" && (
+              <span className="absolute right-1 top-1 flex h-2 w-2">
+                <Plus
+                  size={8}
+                  strokeWidth={4}
+                  className="relative inline-flex text-purple-400"
+                />
+              </span>
+            )}
+          </button>
+
+          {/* Criar Rota */}
+          <button
+            onClick={() => {
+              if (mode === "route") {
+                setMode("explore");
+              } else {
+                setSidebarSection("routes");
+                setMode("route");
+                setIsSidebarOpen(true);
+              }
+            }}
+            className={cn(
+              "grid h-10 w-10 place-items-center rounded-full border transition-all duration-200 cursor-pointer group relative",
+              mode === "route"
+                ? "border-orange-500 bg-orange-500/20 text-white shadow-[0_0_15px_rgba(249,115,22,0.4)]"
+                : "border-white/10 bg-black/30 text-slate-300 hover:text-white hover:bg-white/10 active:scale-95",
+            )}
+            title={mode === "route" ? "Sair do Modo Rota" : "Criar Nova Rota"}
+            type="button"
+          >
+            <Route
+              size={18}
+              className="transition-transform group-hover:scale-110"
+            />
+            {mode !== "route" && (
+              <span className="absolute right-1 top-1 flex h-2 w-2">
+                <Plus
+                  size={8}
+                  strokeWidth={4}
+                  className="relative inline-flex text-orange-400"
+                />
+              </span>
+            )}
+          </button>
+
+          {/* Biblioteca de Rotas */}
+          <button
+            onClick={() => {
+              setSidebarSection("routes");
+              setIsSidebarOpen(true);
+            }}
+            className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group"
+            title="Biblioteca de Rotas"
+            type="button"
+          >
+            <Layers
+              size={18}
+              className="transition-transform group-hover:scale-110"
+            />
+          </button>
+
+          {/* Meus Pinos */}
+          <button
+            onClick={() => {
+              setSidebarSection("customPins");
+              selectCustomPin(null);
+              setIsSidebarOpen(true);
+            }}
+            className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group"
+            title="Meus Pinos Customizados"
+            type="button"
+          >
+            <Hourglass
+              size={18}
+              className="transition-transform group-hover:scale-110"
+            />
           </button>
         </div>
 
+        <div className="absolute bottom-3 right-3 sm:bottom-5 sm:right-5 z-10 rounded-full border border-[#00d6a3]/15 bg-[#041418]/28 px-2 py-3 shadow-none backdrop-blur-[20px]">
+          <div className="grid justify-items-center gap-2">
+            <button
+              aria-label="Aproximar mapa"
+              className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/30 text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer"
+              onClick={zoomIn}
+              title="Aproximar"
+              type="button"
+            >
+              <Plus size={16} strokeWidth={2} />
+            </button>
 
-      </section>
-
-      {/* Fixed Bottom Tab Bar — same style as header */}
-      <div
-        className="p-3 flex-none bg-[#080c10] border-t border-[#131b24] flex items-center justify-between px-4 select-none z-40"
-        style={{ WebkitAppRegion: 'no-drag' } as any}
-      >
-        {/* Left: Resource Stats */}
-        <div className="flex items-center gap-2 text-[10px] text-slate-500 py-2.5">
-          <MapPin size={11} className="text-cyan-400/70 shrink-0" />
-          <span>
-            <span className="text-slate-300 font-semibold">{officialPoints.length}</span>
-            {" "}recursos
-          </span>
-          <span className="text-white/15">·</span>
-          <span>
-            <span className="text-slate-300 font-semibold">{Object.keys(completedPins).length}</span>
-            {" "}coletados
-          </span>
-          {savedRoutes.length > 0 && (
-            <>
-              <span className="text-white/15">·</span>
-              <span>
-                <span className="text-slate-300 font-semibold">{savedRoutes.length}</span>
-                {" "}{savedRoutes.length === 1 ? "rota" : "rotas"}
-              </span>
-            </>
-          )}
-        </div>
-
-        {/* Center: Navigation Tabs */}
-        <div className="flex items-center gap-0.5 absolute left-1/2 -translate-x-1/2">
-          {([
-            { id: 'officialPins', label: 'Categorias', icon: Layers },
-            { id: 'customPins', label: 'Pins', icon: MapPin },
-            { id: 'routes', label: 'Rotas', icon: Route },
-          ] as const).map((tab) => {
-            const isActive = isSidebarOpen && sidebarSection === tab.id;
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  if (isSidebarOpen && sidebarSection === tab.id) {
-                    setIsSidebarOpen(false);
-                  } else {
-                    setSidebarSection(tab.id);
-                    setIsSidebarOpen(true);
-                  }
-                }}
-                className={cn(
-                  "relative flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer",
-                  isActive
-                    ? "bg-[#11161D] border border-[#222B37] text-white"
-                    : "border border-transparent text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]",
-                )}
-                type="button"
+            <button
+              aria-label="Ajustar zoom do mapa"
+              className="relative h-28 w-8 cursor-pointer bg-transparent"
+              onPointerCancel={handleZoomPointerCancel}
+              onPointerDown={handleZoomPointerDown}
+              onPointerMove={handleZoomPointerMove}
+              onPointerUp={handleZoomPointerUp}
+              title={`${Math.round(displayedZoomScale * 100)}%`}
+              type="button"
+            >
+              <span className="absolute left-1/2 top-1 h-[calc(100%-8px)] w-1 -translate-x-1/2 rounded-full bg-black/40 border border-white/5" />
+              <span
+                className="absolute left-1/2 grid h-4 w-4 -translate-x-1/2 place-items-center rounded-full border border-white/80 bg-slate-300 shadow-[0_2px_6px_rgba(0,0,0,0.4)]"
+                style={{ bottom: `${zoomThumbBottom}px` }}
               >
-                <Icon size={13} />
-                <span>{tab.label}</span>
-                {isActive && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-cyan-400 rounded-full" />
-                )}
-              </button>
-            );
-          })}
+                <span className="h-1.5 w-1.5 rounded-full bg-slate-800" />
+              </span>
+            </button>
+
+            <button
+              aria-label="Afastar mapa"
+              className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/30 text-slate-300 hover:text-white disabled:cursor-not-allowed disabled:opacity-45 active:scale-95 transition-all duration-200 cursor-pointer"
+              disabled={displayedZoomScale <= minMapZoom}
+              onClick={zoomOut}
+              title="Afastar"
+              type="button"
+            >
+              <Minus size={16} strokeWidth={2} />
+            </button>
+          </div>
         </div>
 
-        {/* Right: Centralizar */}
-        <button
-          onClick={interactiveMap.resetCamera}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#11161D]/65 border border-[#1a222c] text-[10px] text-slate-500 hover:text-white hover:border-[#222B37] transition-all duration-150 active:scale-95 cursor-pointer"
-          type="button"
-          title="Centralizar Mapa"
-        >
-          <Crosshair size={12} className="text-cyan-400/70" />
-          <span>Centralizar</span>
-        </button>
-      </div>
+        <MapSidebar
+          isSidebarOpen={isSidebarOpen}
+          setIsSidebarOpen={setIsSidebarOpen}
+          sidebarSection={sidebarSection}
+          setSidebarSection={setSidebarSection}
+          isSearchActive={isSearchActive}
+          setIsSearchActive={setIsSearchActive}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          searchHistory={searchHistory}
+          removeFromHistory={removeFromHistory}
+          addToHistory={addToHistory}
+          clearHistory={clearHistory}
+          searchResults={searchResults}
+          selectCustomPin={selectCustomPin}
+          startEditingCustomPin={startEditingCustomPin}
+          selectOfficialPoint={selectOfficialPoint}
+          focusCoords={focusCoords}
+          officialPinCategories={officialPinCategories}
+          selectedTypes={selectedTypes}
+          toggleSelectedType={toggleSelectedType}
+          selectedCustomPin={selectedCustomPin}
+          editingCustomPinId={editingCustomPinId}
+          cancelCustomPin={cancelCustomPin}
+          confirmCustomPin={confirmCustomPin}
+          updateSelectedPinField={updateSelectedPinField}
+          customPins={customPins}
+          removeCustomPin={removeCustomPin}
+          toggleCustomPinVisibility={toggleCustomPinVisibility}
+          paginatedCustomPins={paginatedCustomPins}
+          customPinsPage={customPinsPage}
+          totalCustomPinsPages={totalCustomPinsPages}
+          setCustomPinsPage={setCustomPinsPage}
+          routesView={routesView}
+          setRoutesView={setRoutesView}
+          publicRoutesQuery={publicRoutesQuery}
+          setPublicRoutesQuery={setPublicRoutesQuery}
+          publicRoutesLoading={publicRoutesLoading}
+          paginatedSavedRoutes={paginatedSavedRoutes}
+          mineRoutesPage={mineRoutesPage}
+          totalSavedRoutesPages={totalSavedRoutesPages}
+          setMineRoutesPage={setMineRoutesPage}
+          paginatedPublicRoutes={paginatedPublicRoutes}
+          publicRoutesPage={publicRoutesPage}
+          totalPublicRoutesPages={totalPublicRoutesPages}
+          setPublicRoutesPage={setPublicRoutesPage}
+          loadSavedRoute={loadSavedRoute}
+          deleteSavedRoute={deleteSavedRoute}
+          duplicateSavedRoute={duplicateSavedRoute}
+          publishSelectedRoute={publishSelectedRoute}
+          unpublishSelectedRoute={unpublishSelectedRoute}
+          toggleRouteVisibility={toggleRouteVisibility}
+          visibleRoutes={visibleRoutes}
+          selectedSavedRouteId={selectedSavedRouteId}
+          openCustomPinsSection={openCustomPinsSection}
+          currentRoute={currentRoute}
+          updateRouteField={updateRouteField}
+          clearRoute={clearRoute}
+          saveCurrentRoute={saveCurrentRoute}
+          shareCurrentRoute={shareCurrentRoute}
+          copyRouteJson={copyRouteJson}
+          removeCheckpoint={removeCheckpoint}
+          moveCheckpoint={moveCheckpoint}
+          updateCheckpointLabel={updateCheckpointLabel}
+          setIsSettingsModalOpen={setIsSettingsModalOpen}
+          mode={mode}
+          setMode={setMode}
+          mapStats={mapStats}
+          worldStats={worldStats}
+          statsPeriod={statsPeriod}
+          setStatsPeriod={setStatsPeriod}
+          resetAllActiveRespawns={resetAllActiveRespawns}
+          group={group}
+          members={groupMembers}
+          isGroupLoading={isGroupLoading}
+          createGroup={createGroup}
+          joinGroup={joinGroup}
+          leaveGroup={leaveGroup}
+          copyInviteCode={copyInviteCode}
+          isAuthenticated={isAuthenticated}
+          openLoginModal={() => setIsAuthModalOpen(true)}
+        />
+      </section>
 
       {isAuthModalOpen && (
         <AuthModal onClose={() => setIsAuthModalOpen(false)} />
@@ -1582,7 +1689,7 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
         !editingCustomPinId && (
           <ViewportPortal>
             <div
-              className="fixed w-[285px] rounded-[20px] border border-white/8 bg-[linear-gradient(180deg,rgba(3,10,13,0.92),rgba(1,5,7,0.88))] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-2xl text-left select-text animate-[fade-in_150ms_ease-out] before:pointer-events-none before:absolute before:inset-[1px] before:rounded-[19px] before:border before:border-white/[0.03] before:content-['']"
+              className="fixed w-[310px] rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(3,10,13,0.92),rgba(1,5,7,0.88))] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-2xl text-left select-text animate-[fade-in_150ms_ease-out] before:pointer-events-none before:absolute before:inset-[1px] before:rounded-[23px] before:border before:border-white/[0.03] before:content-['']"
               style={{
                 zIndex: 80,
                 position: "fixed",
@@ -1601,7 +1708,7 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
               <div className="absolute inset-0 tech-corner-accent opacity-20 pointer-events-none" />
 
               {/* Header Actions (Report & Close) */}
-              <div className="absolute top-3 right-3 flex items-center gap-1.5 z-50">
+              <div className="absolute top-4 right-4 flex items-center gap-1.5 z-50">
                 <button
                   type="button"
                   onClick={() => {
@@ -1641,11 +1748,11 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
                 </button>
               </div>
               {/* Title & Category Tag */}
-              <div className="pr-8 mb-2.5">
+              <div className="pr-8 mb-3">
                 <h3 className="text-[15px] font-black text-white truncate tracking-tight leading-none">
                   {activePopupPin.name}
                 </h3>
-                <div className="mt-2 flex flex-wrap gap-1.5">
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
                   <span className="rounded-md bg-white/5 px-2 py-0.5 text-[9.5px] font-mono font-bold uppercase tracking-wider text-cyan-400/95 border border-cyan-500/10">
                     {activePopupPin.typeLabel}
                   </span>
@@ -1654,7 +1761,7 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
 
               {/* Image Section (if present) */}
               {activePopupPin.imageUrl ? (
-                <div className="w-full h-36 rounded-[14px] overflow-hidden border border-white/8 mb-2.5 relative bg-slate-950">
+                <div className="w-full h-36 rounded-[14px] overflow-hidden border border-white/8 mb-3 relative bg-slate-950">
                   <img
                     src={activePopupPin.imageUrl}
                     alt={activePopupPin.name}
@@ -1666,15 +1773,15 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
 
               {/* Description Box */}
               {activePopupPin.description ? (
-                <p className="text-xs text-slate-300 bg-black/25 p-2.5 rounded-[12px] border border-white/5 leading-relaxed mb-2.5 whitespace-pre-line">
+                <p className="text-xs text-slate-300 bg-black/25 p-3 rounded-[14px] border border-white/5 leading-relaxed mb-3 whitespace-pre-line">
                   {activePopupPin.description.replace(/\\n/g, "\n")}
                 </p>
               ) : (
-                <div className="h-1.5" />
+                <div className="h-2" />
               )}
 
               {/* Contributor Row (for custom pins or official info) */}
-              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400/90 border-t border-white/5 pt-2 mb-2.5">
+              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400/90 border-t border-white/5 pt-2.5 mb-3.5">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[#8a91a3]">Contribuidor:</span>
                   <span className="text-cyan-400 font-bold">
@@ -1697,11 +1804,11 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
               {(!activePopupPin.type ||
                 !uncompletableTypes.includes(activePopupPin.type as any) ||
                 activePopupPin.type === "merchant") && (
-                <div className="mt-2.5 grid gap-2">
+                <div className="mt-4 grid gap-2">
                   {(activePopupPin.type === "ore" ||
                     activePopupPin.type === "mushroom") &&
                     !activePopupPin.isCompleted && (
-                      <div className="grid gap-2.5 p-3 rounded-[14px] border border-white/[0.06] bg-black/25 shadow-[inset_0_1px_2px_rgba(255,255,255,0.02)] backdrop-blur-md relative overflow-hidden">
+                      <div className="grid gap-3.5 p-3.5 rounded-2xl border border-white/[0.06] bg-black/25 shadow-[inset_0_1px_2px_rgba(255,255,255,0.02)] backdrop-blur-md relative overflow-hidden">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <div className="w-1.5 h-1.5 rounded-full bg-[var(--cyan)] animate-pulse shadow-[0_0_8px_var(--cyan)]" />
@@ -1721,7 +1828,7 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
                         </div>
 
                         {!isAuthenticated ? (
-                          <div className="py-2 px-1 text-center bg-black/20 rounded-xl border border-white/[0.02]">
+                          <div className="py-2.5 px-1 text-center bg-black/20 rounded-xl border border-white/[0.02]">
                             <p className="text-[10px] text-slate-500 italic leading-tight">
                               Faça login para identificar recursos e sincronizar
                               timers com seu grupo.
@@ -1775,8 +1882,8 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
                                       }
                                     }}
                                     className={cn(
-                                      "group relative overflow-hidden flex w-full items-center justify-center gap-2 rounded-xl px-2.5 py-2.5 text-[10px] font-black uppercase tracking-wide transition-all duration-300 mb-2 cursor-pointer shadow-md active:scale-[0.97]",
-                                      "bg-gradient-to-r from-[var(--cyan)] to-[#00b894] text-slate-950 hover:brightness-110 shadow-[0_4px_12px_rgba(0,214,163,0.25)] before:absolute before:inset-0 before:-skew-x-12 before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent before:-translate-x-full hover:before:translate-x-full before:transition-transform before:duration-700",
+                                      "group relative overflow-hidden flex w-full items-center justify-center gap-2 rounded-xl px-3 py-3 text-[10px] font-black uppercase tracking-wide transition-all duration-300 mb-2.5 cursor-pointer shadow-lg active:scale-[0.97]",
+                                      "bg-gradient-to-r from-[var(--cyan)] to-[#00b894] text-slate-950 hover:brightness-110 shadow-[0_4px_16px_rgba(0,214,163,0.25)] before:absolute before:inset-0 before:-skew-x-12 before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent before:-translate-x-full hover:before:translate-x-full before:transition-transform before:duration-700",
                                     )}
                                   >
                                     {isDefault ? (
@@ -1804,7 +1911,7 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
                                 );
                               })()}
 
-                            <div className="grid grid-cols-5 gap-2 justify-items-center">
+                            <div className="grid grid-cols-5 gap-2.5">
                               {markerIconsByType[activePopupPin.type]
                                 .filter(
                                   (iconId) =>
@@ -1838,7 +1945,7 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
                                         }
                                       }}
                                       className={cn(
-                                        "relative group flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-gradient-to-b from-slate-900/60 to-slate-950/80 transition-all duration-300 hover:border-[var(--cyan)]/50 hover:bg-[var(--cyan)]/10 hover:scale-105 cursor-pointer shadow-sm",
+                                        "relative group flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-gradient-to-b from-slate-900/60 to-slate-950/80 transition-all duration-300 hover:border-[var(--cyan)]/50 hover:bg-[var(--cyan)]/10 hover:scale-105 cursor-pointer shadow-sm",
                                         isLastUsed &&
                                           "border-[var(--cyan)] bg-gradient-to-b from-cyan-950/40 to-cyan-900/60 shadow-[0_0_15px_rgba(0,214,163,0.3)] scale-105",
                                       )}
@@ -1847,7 +1954,7 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
                                       <img
                                         src={getMarkerIconSrc(iconId)}
                                         alt=""
-                                        className="h-6 w-6 object-contain transition-transform group-hover:scale-110"
+                                        className="h-7 w-7 object-contain transition-transform group-hover:scale-110"
                                       />
                                       {isLastUsed && (
                                         <div className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-[var(--cyan)] border-2 border-[#0a0f18] flex items-center justify-center shadow-[0_0_8px_var(--cyan)]">
@@ -1868,7 +1975,7 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
                       <button
                         onClick={() => setPinVisibility("private")}
                         className={cn(
-                          "flex flex-1 items-center justify-center gap-2 rounded-lg py-1 text-[10px] font-black uppercase tracking-wider transition-all pointer-events-auto",
+                          "flex flex-1 items-center justify-center gap-2 rounded-lg py-1.5 text-[10px] font-black uppercase tracking-wider transition-all pointer-events-auto",
                           pinVisibility === "private"
                             ? "bg-white/10 text-white shadow-sm"
                             : "text-slate-500 hover:text-slate-300",
@@ -1880,7 +1987,7 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
                       <button
                         onClick={() => setPinVisibility("group")}
                         className={cn(
-                          "flex flex-1 items-center justify-center gap-2 rounded-lg py-1 text-[10px] font-black uppercase tracking-wider transition-all pointer-events-auto",
+                          "flex flex-1 items-center justify-center gap-2 rounded-lg py-1.5 text-[10px] font-black uppercase tracking-wider transition-all pointer-events-auto",
                           pinVisibility === "group"
                             ? "bg-[var(--cyan)]/20 text-[var(--cyan)] shadow-sm"
                             : "text-slate-500 hover:text-slate-300",
@@ -1901,34 +2008,34 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
                           setIsSidebarOpen(true);
                           startEditingCustomPin(activePopupPin.id);
                         }}
-                        className="flex items-center justify-center gap-2 rounded-[10px] border border-white/10 bg-white/5 py-2 text-[11px] font-bold text-white transition hover:bg-white/10 active:scale-95 pointer-events-auto"
+                        className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-2.5 text-xs font-bold text-white transition hover:bg-white/10 active:scale-95 pointer-events-auto"
                       >
-                        <Edit2 size={12} />
+                        <Edit2 size={13} />
                         Editar
                       </button>
                       <button
                         type="button"
                         onClick={() => togglePinCompleted(activePopupPin.id)}
                         className={cn(
-                          "flex items-center justify-center gap-2 rounded-[10px] py-2 text-[11px] font-bold text-white transition active:scale-95 pointer-events-auto",
+                          "flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold text-white transition active:scale-95 pointer-events-auto",
                           activePopupPin.isCompleted
                             ? "bg-slate-700/50 hover:bg-slate-700"
                             : "bg-[var(--cyan)]/20 text-[var(--cyan)] border border-[var(--cyan)]/30 hover:bg-[var(--cyan)]/30",
                         )}
                       >
-                        <CheckCircle2 size={12} />
+                        <CheckCircle2 size={13} />
                         {activePopupPin.isCompleted ? "Desmarcar" : "Concluir"}
                       </button>
                     </div>
                   ) : (
-                    <div className="grid gap-2">
+                    <div className="grid gap-2.5">
                       {activePopupPin.isCompleted ? (
                         <div className="grid gap-2">
                           {/* Timer status badge */}
-                          <div className="flex items-center justify-between px-2.5 py-2 rounded-xl border border-white/5 bg-[#161c26]/60 shadow-inner">
+                          <div className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-white/5 bg-[#161c26]/60 shadow-inner">
                             <span className="flex items-center gap-2 text-slate-400 font-mono text-[9.5px] font-bold uppercase tracking-widest">
                               <Clock
-                                size={12}
+                                size={13}
                                 className="text-[var(--cyan)] animate-pulse"
                               />
                               {activePopupPin.type === "merchant"
@@ -1983,7 +2090,7 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
                                     );
                                   }}
                                   disabled={!isAuthenticated}
-                                  className="flex-1 flex items-center justify-center gap-1.5 rounded-[10px] border border-[#00d6a3]/20 bg-[#00d6a3]/10 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--cyan)] hover:bg-[#00d6a3]/20 active:scale-95 transition-all cursor-pointer pointer-events-auto disabled:opacity-30 disabled:grayscale"
+                                  className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-[#00d6a3]/20 bg-[#00d6a3]/10 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--cyan)] hover:bg-[#00d6a3]/20 active:scale-95 transition-all cursor-pointer pointer-events-auto disabled:opacity-30 disabled:grayscale"
                                   title={
                                     isAuthenticated
                                       ? "Reiniciar tempo agora (mesmo recurso)"
@@ -2006,7 +2113,7 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
                                 togglePinCompleted(activePopupPin.id)
                               }
                               disabled={!isAuthenticated}
-                              className="flex-1 flex items-center justify-center gap-1.5 rounded-[10px] border border-red-500/20 bg-red-500/10 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-red-400 hover:bg-red-500/20 active:scale-95 transition-all cursor-pointer pointer-events-auto disabled:opacity-30"
+                              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-red-500/20 bg-red-500/10 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-red-400 hover:bg-red-500/20 active:scale-95 transition-all cursor-pointer pointer-events-auto disabled:opacity-30"
                               title={
                                 isAuthenticated
                                   ? "Limpar marcação"
@@ -2032,7 +2139,7 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
                           }
                           disabled={!isAuthenticated}
                           className={cn(
-                            "relative overflow-hidden w-full flex items-center justify-center gap-2 rounded-[10px] px-3 py-2.5 text-xs font-black uppercase tracking-widest transition active:scale-[0.98] cursor-pointer pointer-events-auto disabled:opacity-50 disabled:grayscale disabled:pointer-events-none",
+                            "relative overflow-hidden w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-black uppercase tracking-widest transition active:scale-[0.98] cursor-pointer pointer-events-auto disabled:opacity-50 disabled:grayscale disabled:pointer-events-none",
                             "bg-gradient-to-r from-[var(--cyan)] to-[#00b894] text-slate-950 hover:brightness-110 shadow-[0_4px_16px_rgba(0,214,163,0.25)] hover:shadow-[0_6px_20px_rgba(0,214,163,0.45)] before:absolute before:inset-0 before:-skew-x-12 before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent before:-translate-x-full hover:before:translate-x-full before:transition-transform before:duration-700",
                             // Escondemos o botão genérico apenas para Ore e Mushroom, pois estes exigem identificação
                             (activePopupPin.type === "ore" ||
@@ -2155,88 +2262,6 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
         </ViewportPortal>
       )}
 
-      <MapCategoriesMenu
-        isOpen={isSidebarOpen && sidebarSection === "officialPins"}
-        onClose={() => setIsSidebarOpen(false)}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        searchHistory={searchHistory}
-        removeFromHistory={removeFromHistory}
-        addToHistory={addToHistory}
-        clearHistory={clearHistory}
-        searchResults={searchResults}
-        selectCustomPin={selectCustomPin}
-        selectOfficialPoint={selectOfficialPoint}
-        focusCoords={focusCoords}
-        officialPinCategories={officialPinCategories}
-        selectedTypes={selectedTypes}
-        toggleSelectedType={toggleSelectedType}
-      />
-
-      <MapPinsMenu
-        isOpen={isSidebarOpen && sidebarSection === "customPins"}
-        onClose={() => setIsSidebarOpen(false)}
-        selectedCustomPin={selectedCustomPin}
-        editingCustomPinId={editingCustomPinId}
-        cancelCustomPin={cancelCustomPin}
-        confirmCustomPin={confirmCustomPin}
-        updateSelectedPinField={updateSelectedPinField}
-        customPins={customPins}
-        removeCustomPin={removeCustomPin}
-        toggleCustomPinVisibility={toggleCustomPinVisibility}
-        paginatedCustomPins={paginatedCustomPins}
-        customPinsPage={customPinsPage}
-        totalCustomPinsPages={totalCustomPinsPages}
-        setCustomPinsPage={setCustomPinsPage}
-        mode={mode}
-        setMode={setMode}
-        openCustomPinsSection={openCustomPinsSection}
-        isAuthenticated={isAuthenticated}
-        openLoginModal={() => setIsAuthModalOpen(true)}
-        focusCoords={focusCoords}
-        selectCustomPin={selectCustomPin}
-        startEditingCustomPin={startEditingCustomPin}
-      />
-
-      <MapRoutesMenu
-        isOpen={isSidebarOpen && sidebarSection === "routes"}
-        onClose={() => setIsSidebarOpen(false)}
-        routesView={routesView}
-        setRoutesView={setRoutesView}
-        publicRoutesQuery={publicRoutesQuery}
-        setPublicRoutesQuery={setPublicRoutesQuery}
-        publicRoutesLoading={publicRoutesLoading}
-        paginatedSavedRoutes={paginatedSavedRoutes}
-        mineRoutesPage={mineRoutesPage}
-        totalSavedRoutesPages={totalSavedRoutesPages}
-        setMineRoutesPage={setMineRoutesPage}
-        paginatedPublicRoutes={paginatedPublicRoutes}
-        publicRoutesPage={publicRoutesPage}
-        totalPublicRoutesPages={totalPublicRoutesPages}
-        setPublicRoutesPage={setPublicRoutesPage}
-        loadSavedRoute={loadSavedRoute}
-        deleteSavedRoute={deleteSavedRoute}
-        duplicateSavedRoute={duplicateSavedRoute}
-        publishSelectedRoute={publishSelectedRoute}
-        unpublishSelectedRoute={unpublishSelectedRoute}
-        toggleRouteVisibility={toggleRouteVisibility}
-        visibleRoutes={visibleRoutes}
-        selectedSavedRouteId={selectedSavedRouteId}
-        currentRoute={currentRoute}
-        updateRouteField={updateRouteField}
-        clearRoute={clearRoute}
-        saveCurrentRoute={saveCurrentRoute}
-        shareCurrentRoute={shareCurrentRoute}
-        copyRouteJson={copyRouteJson}
-        removeCheckpoint={removeCheckpoint}
-        moveCheckpoint={moveCheckpoint}
-        updateCheckpointLabel={updateCheckpointLabel}
-        mode={mode}
-        setMode={setMode}
-        isAuthenticated={isAuthenticated}
-        openLoginModal={() => setIsAuthModalOpen(true)}
-      />
-
       {isSettingsModalOpen && (
         <NotificationSettingsModal
           onClose={() => setIsSettingsModalOpen(false)}
@@ -2245,6 +2270,6 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
           onRequestPushPermission={requestPushPermission}
         />
       )}
-    </div>
+    </>
   );
 }

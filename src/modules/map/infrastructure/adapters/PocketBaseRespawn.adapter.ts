@@ -142,55 +142,48 @@ export const pocketBaseRespawnRepository: RespawnRepository = {
   subscribe(onUpdate: (record: RespawnRecord | { pinId: string; deleted: true }) => void): () => void {
     let isCancelled = false
     let unsubscribeFn: (() => void) | null = null
-    let subscriptionPromise: Promise<unknown> | null = null
 
-    // Delay subscription slightly to allow authentication and other initial fetches to settle
-    const timeoutId = setTimeout(() => {
-        if (isCancelled) return
+    const subscriptionPromise = pb.collection(collectionName).subscribe('*', (e) => {
+      if (isCancelled) return
 
-        subscriptionPromise = pb.collection(collectionName).subscribe('*', (e) => {
-          if (isCancelled) return
-
-          if (e.action === 'create' || e.action === 'update') {
-            onUpdate({
-              pinId: e.record.pin_id,
-              completedAt: e.record.completed_at,
-              name: e.record.name,
-              ownerId: e.record.owner,
-              timer: e.record.timer,
-              iconUrl: e.record.icon_url,
-              region: e.record.region,
-              subRegion: e.record.sub_region,
-              type: e.record.type,
-              subType: e.record.sub_type,
-              status: e.record.status,
-              groupId: e.record.group_id,
-            })
-          } else if (e.action === 'delete') {
-            onUpdate({
-              pinId: e.record.pin_id,
-              deleted: true,
-            })
-          }
-        }).then((unsub: unknown) => {
-          unsubscribeFn = unsub as () => void
-          if (isCancelled && unsubscribeFn) {
-            unsubscribeFn()
-          }
-          return unsub
-        }).catch((err) => {
-          if (!err.isAbort) {
-            logger.error('PocketBase Realtime Subscription Error:', err)
-          }
+      if (e.action === 'create' || e.action === 'update') {
+        onUpdate({
+          pinId: e.record.pin_id,
+          completedAt: e.record.completed_at,
+          name: e.record.name,
+          ownerId: e.record.owner,
+          timer: e.record.timer,
+          iconUrl: e.record.icon_url,
+          region: e.record.region,
+          subRegion: e.record.sub_region,
+          type: e.record.type,
+          subType: e.record.sub_type,
+          status: e.record.status,
+          groupId: e.record.group_id,
         })
-    }, 500)
+      } else if (e.action === 'delete') {
+        onUpdate({
+          pinId: e.record.pin_id,
+          deleted: true,
+        })
+      }
+    }).then((unsub: unknown) => {
+      unsubscribeFn = unsub as () => void
+      if (isCancelled && unsubscribeFn) {
+        unsubscribeFn()
+      }
+      return unsub
+    }).catch((err) => {
+      if (!err.isAbort) {
+        logger.error('PocketBase Realtime Subscription Error:', err)
+      }
+    })
 
     return () => {
       isCancelled = true
-      clearTimeout(timeoutId)
       if (unsubscribeFn) {
         unsubscribeFn()
-      } else if (subscriptionPromise) {
+      } else {
         subscriptionPromise.then((unsub: unknown) => {
           if (typeof unsub === 'function') unsub()
         }).catch(() => {})

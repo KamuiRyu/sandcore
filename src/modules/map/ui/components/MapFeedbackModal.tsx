@@ -119,7 +119,7 @@ export function MapFeedbackModal({ isOpen, onClose, target, onSubmit }: MapFeedb
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Tipo do Feedback</Label>
-            <Select value={type} onValueChange={(v: string) => setType(v as MapFeedbackType)}>
+            <Select value={type} onValueChange={(v) => setType(v as MapFeedbackType)}>
               <SelectTrigger className="bg-white/5 border-white/10">
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>

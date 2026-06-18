@@ -156,7 +156,7 @@ export function NotificationSettingsModal({
                     <div className="grid gap-2">
                       <label className="text-[10px] font-black uppercase text-slate-500">Efeito Sonoro</label>
                       <div className="flex items-center gap-3">
-                        <Select value={settings.soundType} onValueChange={(v: string) => { onUpdate({ soundType: v as NotificationSoundType }); SoundSynthesizer.play(v as NotificationSoundType, settings.soundVolume) }}>
+                        <Select value={settings.soundType} onValueChange={(v) => { onUpdate({ soundType: v as NotificationSoundType }); SoundSynthesizer.play(v as NotificationSoundType, settings.soundVolume) }}>
                           <SelectTrigger className="flex-1 border-white/10 bg-black/40 text-slate-200 h-10 px-4 rounded-xl"><SelectValue /></SelectTrigger>
                           <SelectContent className="bg-slate-900 border-white/10 text-slate-200">
                             {soundTypeOptions.map((opt) => (<SelectItem key={opt.value} value={opt.value} className="hover:bg-white/5 focus:bg-white/10">{opt.label}</SelectItem>))}
@@ -189,7 +189,7 @@ export function NotificationSettingsModal({
 
                 <div className="grid gap-2">
                   <label className="text-[10px] font-black uppercase text-slate-500">Antecedência do Alerta</label>
-                  <Select value={String(settings.leadTime)} onValueChange={(v: string) => onUpdate({ leadTime: parseInt(v, 10) })}>
+                  <Select value={String(settings.leadTime)} onValueChange={(v) => onUpdate({ leadTime: parseInt(v, 10) })}>
                     <SelectTrigger className="w-full border-white/10 bg-black/40 text-slate-200 h-10 px-4 rounded-xl"><SelectValue /></SelectTrigger>
                     <SelectContent className="bg-slate-900 border-white/10 text-slate-200">{leadTimeOptions.map((opt) => (<SelectItem key={opt.value} value={String(opt.value)} className="hover:bg-white/5 focus:bg-white/10">{opt.label}</SelectItem>))}</SelectContent>
                   </Select>

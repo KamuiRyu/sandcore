@@ -2,13 +2,6 @@ import { memo, useEffect, useRef, useState } from 'react'
 import { uncompletableTypes } from '../../core/entities/MapConfig.entity'
 import type { MapPointReference, SavedCustomPin } from '../../core/entities/MapRoute.entity'
 
-const VILLAGE_COLORS: Record<string, string> = {
-  suna: '#22d3ee', // Cyan
-  konoha: '#f43f5e', // Rose
-  kumo: '#fbbf24', // Amber
-  kiri: '#60a5fa', // Blue
-  iwa: '#10b981', // Emerald
-}
 interface MapCanvasLayerProps {
   officialPoints: (MapPointReference & { isCluster?: boolean; clusterCount?: number })[]
   customPins: (SavedCustomPin & { isCluster?: boolean; clusterCount?: number })[]
@@ -155,14 +148,11 @@ export const MapCanvasLayer = memo(function MapCanvasLayer({
         }
       }
 
-      const pinColor = isCustom 
-        ? (p.color || '#00d6a3') 
-        : (p.type === 'vila' ? (VILLAGE_COLORS[p.iconId] || '#00d6a3') : '#00d6a3')
-
       if (isSelected) {
         ctx.shadowBlur = 15
-        ctx.shadowColor = pinColor
+        ctx.shadowColor = p.color || '#00d6a3'
       }
+
       ctx.drawImage(img, x - pinSize / 2, y - pinSize / 2, pinSize, pinSize)
 
       // Se for recurso padrão (Pedra/Cogumelo comum) OU uma categoria estática (Vila, Arena, etc), desenhar um CHECK verde sobre o ícone
@@ -291,9 +281,7 @@ export const MapCanvasLayer = memo(function MapCanvasLayer({
       ctx.restore()
     }
 
-    officialPoints.forEach((p) => {
-      drawPin(p, false)
-    })
+    officialPoints.forEach((p) => drawPin(p, false))
     customPins.forEach((p) => drawPin(p, true))
 
     ctx.restore()
