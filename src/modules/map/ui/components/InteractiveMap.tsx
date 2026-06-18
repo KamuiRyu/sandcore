@@ -1,0 +1,2232 @@
+import { useState, useMemo, memo, useEffect, useCallback } from "react";
+import {
+  getMarkerIconSrc,
+  getMarkerTypeLabel,
+  markerIconsByType,
+  getMarkerIconLabel,
+  minMapZoom,
+  uncompletableTypes,
+  mapBaseTextureSrc,
+} from "../../core/entities/MapConfig.entity";
+import type {
+  MapPointReference,
+  RouteCheckpoint,
+  SavedCustomPin,
+} from "../../core/entities/MapRoute.entity";
+import { useMapViewModel } from "../viewModels/useMap.viewModel";
+import { getResourceData } from "../../core/entities/ResourceDefinitions.entity";
+import { cn } from "../../../../lib/utils";
+import { ViewportPortal } from "../../../app/ui/components/ViewportPortal";
+import { NotificationSettingsModal } from "./NotificationSettingsModal";
+import { MapCanvasLayer } from "./MapCanvasLayer";
+import { MapCategoriesMenu } from "./MapCategoriesMenu";
+import { MapPinsMenu } from "./MapPinsMenu";
+import { MapRoutesMenu } from "./MapRoutesMenu";
+import { SUB_REGION_BOUNDARIES } from "../../core/entities/SubRegionBoundaries.entity";
+import { motion } from "framer-motion";
+import {
+  AlertCircle,
+  CheckCircle2,
+  CircleCheck,
+  Clock,
+  Edit2,
+  Info,
+  Layers,
+  Lock,
+  MapPin,
+  MessageSquare,
+  Minus,
+  Plus,
+  Route,
+  RefreshCw,
+  Shield,
+  Trash2,
+  X,
+  Star,
+  Crosshair,
+} from "lucide-react";
+
+import { MapFeedbackModal } from "./MapFeedbackModal";
+import { AuthModal } from "../../../authentication/ui/components/AuthModal";
+
+function formatRemainingTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+type HoveredPinInfo = {
+  x: number;
+  y: number;
+  label: string;
+  color?: string;
+  typeLabel?: string;
+  description?: string;
+  tags?: string[];
+  timer?: number | null;
+  isCompleted?: boolean;
+  completedTimerLeft?: number | null;
+  type?: string;
+};
+
+type PinBadgeProps = {
+  color?: string;
+  iconId: string;
+  isSelected?: boolean;
+  label: string;
+  onClick?: (id: string) => void;
+  x: number;
+  y: number;
+  description?: string;
+  tags?: string[];
+  typeLabel?: string;
+  timer?: number | null;
+  isCompleted?: boolean;
+  type?: string;
+  onHoverChange?: (info: HoveredPinInfo | null) => void;
+  isCluster?: boolean;
+  clusterCount?: number;
+  completedAt?: string;
+  globalTick: number;
+  isMoving: boolean;
+  displayedCamera: { scale: number };
+};
+
+const IconImage = memo(function IconImage({
+  iconId,
+  label,
+  className,
+}: {
+  className?: string;
+  iconId: string;
+  label: string;
+}) {
+  const [hasError, setHasError] = useState(false);
+  const src = getMarkerIconSrc(iconId);
+
+  if (!src || hasError) {
+    return (
+      <span
+        className={cn(
+          "grid place-items-center rounded-full bg-[rgba(255,255,255,0.1)] font-mono text-[0.6rem] font-black uppercase tracking-[0.14em] text-white",
+          className,
+        )}
+      >
+        {label.slice(0, 2)}
+      </span>
+    );
+  }
+
+  return (
+    <img
+      alt=""
+      className={className}
+      draggable={false}
+      onError={() => setHasError(true)}
+      src={src}
+    />
+  );
+});
+
+const PinTimer = memo(function PinTimer({
+  duration,
+  completedAt,
+  globalTick,
+}: {
+  duration: number;
+  completedAt: string;
+  globalTick: number;
+}) {
+  const timeLeft = useMemo(() => {
+    const elapsed = Math.floor(
+      (globalTick - new Date(completedAt).getTime()) / 1000,
+    );
+    return Math.max(0, duration - elapsed);
+  }, [globalTick, completedAt, duration]);
+
+  if (timeLeft <= 0) return null;
+
+  return (
+    <span className="absolute z-10 rounded bg-slate-950/90 border border-green-500/40 px-1 py-0.5 font-mono text-[8px] font-bold text-green-400 shadow-md">
+      {formatRemainingTime(timeLeft)}
+    </span>
+  );
+});
+
+const PinBadge = memo(function PinBadge({
+  color,
+  iconId,
+  isSelected,
+  label,
+  onClick,
+  id,
+  screenX,
+  screenY,
+  x,
+  y,
+  description,
+  tags,
+  typeLabel,
+  timer,
+  isCompleted,
+  completedAt,
+  type,
+  onHoverChange,
+  isCluster,
+  clusterCount,
+  globalTick,
+  isMoving,
+  displayedCamera,
+}: PinBadgeProps & {
+  id: string;
+  screenX: number;
+  screenY: number;
+}) {
+  const accentColor = color ?? "rgba(255,220,167,0.92)";
+
+  const handlePointerEnter = useCallback(() => {
+    if (isCluster || isMoving) return;
+    onHoverChange?.({
+      x,
+      y,
+      label,
+      color,
+      typeLabel,
+      description,
+      tags,
+      timer,
+      isCompleted,
+      completedTimerLeft: null,
+      type,
+    });
+  }, [
+    isCluster,
+    isMoving,
+    onHoverChange,
+    x,
+    y,
+    label,
+    color,
+    typeLabel,
+    description,
+    tags,
+    timer,
+    isCompleted,
+    type,
+  ]);
+
+  const handlePointerLeave = useCallback(() => {
+    onHoverChange?.(null);
+  }, [onHoverChange]);
+
+  const handleClick = useCallback(
+    (event: React.MouseEvent) => {
+      event.stopPropagation();
+      onClick?.(id);
+    },
+    [onClick, id],
+  );
+
+  const pinScale = useMemo(() => {
+    // Pins grow slightly as we zoom in
+    return 0.8 * Math.pow(displayedCamera.scale, 0.12);
+  }, [displayedCamera.scale]);
+
+  return (
+    <button
+      aria-label={label}
+      className={cn(
+        "absolute grid h-10 w-10 place-items-center bg-transparent group",
+        isSelected ? "z-30" : "z-20",
+        isCluster ? "z-25" : "",
+        isMoving ? "pointer-events-none" : "",
+      )}
+      onClick={handleClick}
+      onPointerDown={(event) => event.stopPropagation()}
+      onPointerUp={(event) => event.stopPropagation()}
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
+      style={{
+        left: `${screenX}px`,
+        top: `${screenY}px`,
+        transform: `translate(-50%, -50%) scale(${pinScale})`,
+        willChange: "transform",
+      }}
+      type="button"
+    >
+      <span
+        className={cn(
+          "absolute inset-1 rounded-full",
+          !isMoving && "transition-all duration-300",
+          isSelected
+            ? "ring-2 ring-white/85 ring-offset-2 ring-offset-[rgba(6,14,22,0.7)]"
+            : "",
+          isCluster ? "ring-1 ring-cyan-400/50 bg-cyan-950/40" : "",
+        )}
+        style={{
+          boxShadow: isMoving
+            ? undefined
+            : isSelected
+              ? `0 0 22px ${accentColor}`
+              : isCluster
+                ? "0 0 15px rgba(0,214,163,0.3)"
+                : undefined,
+        }}
+      />
+      <IconImage
+        className={cn(
+          "object-contain transition-opacity duration-300",
+          isCluster ? "h-10 w-10 opacity-80" : "h-8 w-8",
+          isCompleted ? "opacity-35 grayscale" : "",
+        )}
+        iconId={iconId}
+        label={label}
+      />
+
+      {isCluster && (
+        <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-cyan-500 font-mono text-[10px] font-black text-black shadow-lg ring-1 ring-white/20">
+          {clusterCount}
+        </span>
+      )}
+
+      {isCompleted && !isCluster && completedAt && timer && (
+        <PinTimer
+          duration={timer}
+          completedAt={completedAt}
+          globalTick={globalTick}
+        />
+      )}
+    </button>
+  );
+});
+
+const RouteCheckpointBadge = memo(function RouteCheckpointBadge({
+  checkpoint,
+  index,
+  screenX,
+  screenY,
+  displayedCamera,
+}: {
+  checkpoint: RouteCheckpoint;
+  index: number;
+  screenX: number;
+  screenY: number;
+  displayedCamera: { scale: number };
+}) {
+  const isPin = !!(checkpoint.pointId || checkpoint.customPinId);
+
+  const badgeScale = useMemo(() => {
+    // Checkpoints grow slightly as we zoom in
+    const baseScale = isPin ? 0.55 : 0.75;
+    return baseScale * Math.pow(displayedCamera.scale, 0.12);
+  }, [displayedCamera.scale, isPin]);
+
+  return (
+    <div
+      className={cn(
+        "absolute grid place-items-center rounded-full border border-white bg-orange-500 font-mono font-black text-white shadow-[0_4px_15px_rgba(0,0,0,0.4)] ring-2 ring-orange-950/50 pointer-events-none z-40",
+        isPin ? "h-5 w-5 text-[0.6rem]" : "h-7 w-7 text-[0.7rem]",
+      )}
+      style={{
+        left: `${screenX}px`,
+        top: `${screenY}px`,
+        transform: isPin
+          ? `translate(-50%, -50%) scale(${badgeScale}) translate(20px, -20px)`
+          : `translate(-50%, -50%) scale(${badgeScale})`,
+      }}
+      title={checkpoint.label || `Checkpoint ${index + 1}`}
+    >
+      {index + 1}
+    </div>
+  );
+});
+
+const MapRouteLayer = memo(function MapRouteLayer({
+  points,
+  color,
+  isMoving,
+}: {
+  points: string;
+  color: string;
+  isMoving: boolean;
+}) {
+  return (
+    <svg
+      className="pointer-events-none absolute inset-0 h-full w-full"
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+    >
+      <defs>
+        <filter
+          id={`route-glow-${color.replace("#", "")}`}
+          x="-20%"
+          y="-20%"
+          width="140%"
+          height="140%"
+        >
+          <feGaussianBlur stdDeviation="0.4" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      {/* Sombra escura para contraste */}
+      <polyline
+        fill="none"
+        points={points}
+        stroke="rgba(0,0,0,0.8)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="5"
+        vectorEffect="non-scaling-stroke"
+      />
+      {/* Linha base com cor da rota */}
+      <polyline
+        fill="none"
+        points={points}
+        stroke={color}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeOpacity="1"
+        strokeWidth="3.5"
+        vectorEffect="non-scaling-stroke"
+      />
+      {/* Linha de brilho/glow */}
+      <polyline
+        fill="none"
+        filter={
+          isMoving ? undefined : `url(#route-glow-${color.replace("#", "")})`
+        }
+        points={points}
+        stroke={color}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeOpacity="0.8"
+        strokeWidth="2"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+});
+
+type ClusteredOfficialPoint = MapPointReference & {
+  isCluster?: boolean;
+  clusterCount?: number;
+};
+type ClusteredCustomPin = SavedCustomPin & {
+  isCluster?: boolean;
+  clusterCount?: number;
+};
+
+export interface InteractiveMapProps {
+  externalSearchQuery?: string;
+}
+
+export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps) {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const {
+    currentRoute,
+    customPins,
+    deleteSavedRoute,
+    duplicateSavedRoute,
+    toast,
+    interactiveMap,
+    loadSavedRoute,
+    officialPoints,
+    officialPinCategories,
+    openCustomPinsSection,
+    publicRoutes,
+    publicRoutesLoading,
+    publicRoutesQuery,
+    routesView,
+    searchQuery,
+    selectCustomPin,
+    startEditingCustomPin,
+    selectOfficialPoint,
+    selectedCustomPinId,
+    selectedOfficialPointId,
+    selectedSavedRouteId,
+    selectedTypes,
+    selectedLayers,
+    toggleLayer,
+    setPublicRoutesQuery,
+    setSearchQuery,
+    setRoutesView,
+    setSidebarSection,
+    sidebarSection,
+    toggleSelectedType,
+    visibleCustomPins,
+    visibleOfficialPoints,
+    removeCustomPin,
+    selectedCustomPin,
+    updateSelectedPinField,
+    mode,
+    setMode,
+    toggleCustomPinVisibility,
+    toggleRouteVisibility,
+    visibleRoutes,
+    routePath,
+    cancelCustomPin,
+    confirmCustomPin,
+    completedPins,
+    togglePinCompleted,
+    getPinTimerRemaining,
+    globalTick,
+    setSelectedOfficialPointId,
+    selectedOfficialPoint,
+    user,
+    editingCustomPinId,
+    setEditingCustomPinId,
+    notificationSettings,
+    updateNotificationSettings,
+    isSettingsModalOpen,
+    setIsSettingsModalOpen,
+    requestPushPermission,
+    isFeedbackModalOpen,
+    setIsFeedbackModalOpen,
+    feedbackTarget,
+    setFeedbackTarget,
+    submitFeedback,
+    updateRouteField,
+    clearRoute,
+    saveCurrentRoute,
+    savedRoutes,
+    shareCurrentRoute,
+    copyRouteJson,
+    removeCheckpoint,
+    moveCheckpoint,
+    updateCheckpointLabel,
+    publishSelectedRoute,
+    unpublishSelectedRoute,
+    // Pagination
+    paginatedSavedRoutes,
+    mineRoutesPage,
+    setMineRoutesPage,
+    totalSavedRoutesPages,
+    paginatedPublicRoutes,
+    publicRoutesPage,
+    setPublicRoutesPage,
+    totalPublicRoutesPages,
+    paginatedCustomPins,
+    customPinsPage,
+    setCustomPinsPage,
+    totalCustomPinsPages,
+    // Search
+    searchHistory,
+    addToHistory,
+    removeFromHistory,
+    clearHistory,
+    searchResults,
+    mapStats,
+    worldStats,
+    statsPeriod,
+    setStatsPeriod,
+    resetAllActiveRespawns,
+    group,
+    groupMembers,
+    isGroupLoading,
+    createGroup,
+    joinGroup,
+    leaveGroup,
+    copyInviteCode,
+    pinVisibility,
+    setPinVisibility,
+    isAuthenticated,
+    referencedOfficialPointIds,
+    referencedCustomPinIds,
+  } = useMapViewModel();
+
+  useEffect(() => {
+    setSearchQuery(externalSearchQuery);
+  }, [externalSearchQuery, setSearchQuery]);
+
+  const {
+    displayedCamera,
+    displayedZoomScale,
+    focusCoords,
+    getCoordinateFromPointer,
+    handlePointerCancel,
+    handlePointerDown,
+    handlePointerLeave,
+    handlePointerMove,
+    handlePointerUp,
+    handleZoomPointerCancel,
+    handleZoomPointerDown,
+    handleZoomPointerMove,
+    handleZoomPointerUp,
+    isDragging,
+    mapSurfaceRef,
+    mapSurfaceSize,
+    mapViewportRef,
+    viewportSize,
+    zoomIn,
+    zoomOut,
+    zoomThumbBottom,
+  } = interactiveMap;
+
+  const getScreenCoords = useCallback(
+    (x: number, y: number) => {
+      const { x: camX, y: camY, scale } = displayedCamera;
+      const { width: sWidth, height: sHeight } = mapSurfaceSize;
+      const { width: vWidth, height: vHeight } = viewportSize;
+
+      if (!sWidth || !vWidth) return { x: 0, y: 0 };
+
+      // Calculate position relative to viewport center
+      const screenX = vWidth / 2 + camX + (x / 100 - 0.5) * (sWidth * scale);
+      const screenY = vHeight / 2 + camY + (y / 100 - 0.5) * (sHeight * scale);
+
+      return { x: Math.round(screenX), y: Math.round(screenY) };
+    },
+    [displayedCamera, mapSurfaceSize, viewportSize],
+  );
+
+  const activePopupPin = useMemo(() => {
+    if (selectedOfficialPoint) {
+      const pinState = completedPins[selectedOfficialPoint.id];
+      const identifiedName = pinState?.subType
+        ? getResourceData(pinState.subType)?.name
+        : undefined;
+
+      return {
+        id: selectedOfficialPoint.id,
+        name: identifiedName || selectedOfficialPoint.name,
+        x: selectedOfficialPoint.x,
+        y: selectedOfficialPoint.y,
+        iconId: selectedOfficialPoint.iconId,
+        typeLabel: getMarkerTypeLabel(selectedOfficialPoint.type),
+        description: selectedOfficialPoint.description,
+        timer: selectedOfficialPoint.timer,
+        isCustom: false,
+        isCompleted: !!pinState && pinState.status !== "ready",
+        isReady: pinState?.status === "ready",
+        subType: pinState?.subType,
+        imageUrl: undefined,
+        creator: undefined,
+        updatedAt: undefined,
+        type: selectedOfficialPoint.type,
+      };
+    }
+    if (
+      selectedCustomPin &&
+      selectedCustomPin.isPlaced !== false &&
+      mode === "explore"
+    ) {
+      const savedPin = selectedCustomPin as SavedCustomPin;
+      return {
+        id: savedPin.id,
+        name: savedPin.name,
+        x: savedPin.x,
+        y: savedPin.y,
+        iconId: savedPin.iconId,
+        typeLabel: "Pino Customizado",
+        description: savedPin.description,
+        timer: undefined,
+        isCustom: true,
+        isCompleted: !!completedPins[savedPin.id],
+        imageUrl: savedPin.imageUrl,
+        creator: savedPin.ownerName
+          ? savedPin.owner === user?.id
+            ? "Você"
+            : savedPin.ownerName
+          : "Você",
+        updatedAt: savedPin.updatedAt,
+      };
+    }
+    return null;
+  }, [selectedOfficialPoint, selectedCustomPin, mode, completedPins, user?.id]);
+
+  const [hoveredPin, setHoveredPin] = useState<HoveredPinInfo | null>(null);
+
+  const popupCoords = useMemo(() => {
+    if (!activePopupPin) return null;
+
+    const coords = getScreenCoords(activePopupPin.x, activePopupPin.y);
+    const vw = viewportSize.width || window.innerWidth;
+
+    const isNearTop = coords.y < 450;
+    const isNearRight = coords.x > vw - 170;
+    const isNearLeft = coords.x < 170;
+
+    return {
+      screenX: coords.x,
+      screenY: coords.y,
+      isNearTop,
+      isNearRight,
+      isNearLeft,
+    };
+  }, [activePopupPin, getScreenCoords, viewportSize.width]);
+
+  const hoveredPinCoords = useMemo(() => {
+    if (!hoveredPin) return null;
+
+    const coords = getScreenCoords(hoveredPin.x, hoveredPin.y);
+
+    const isNearTop = coords.y < 180;
+    const isNearRight =
+      coords.x > (viewportSize.width || window.innerWidth) - 180;
+    const isNearLeft = coords.x < 180;
+
+    return {
+      screenX: coords.x,
+      screenY: coords.y,
+      isNearTop,
+      isNearRight,
+      isNearLeft,
+    };
+  }, [hoveredPin, getScreenCoords, viewportSize.width]);
+
+  const subRegionOffsets = useMemo(() => {
+    if (notificationSettings.showSubRegionNames === false) {
+      return new Map<string, { x: number; y: number }>();
+    }
+    // 1. Get active subregions with projected screen coordinates and estimated bounding boxes
+    const activeLabels = SUB_REGION_BOUNDARIES.map((boundary) => {
+      const coords = getScreenCoords(boundary.center.x, boundary.center.y);
+      const fadeOut = Math.min(
+        Math.max((6.0 - displayedZoomScale) * 0.5, 0),
+        1,
+      );
+      const opacity = fadeOut * 0.85;
+
+      const vw = (viewportSize.width || window.innerWidth) / 100;
+      const fontSize = Math.min(Math.max(9, 1.2 * vw), 12);
+
+      const text = boundary.subRegionId;
+      // Calculate dynamic scale factor for the label based on zoom
+      const labelScale = Math.max(
+        0.75,
+        Math.min(1.5, 0.8 * Math.pow(displayedZoomScale, 0.2)),
+      );
+      const textWidth = (text.length * fontSize * 0.7 + 16) * labelScale;
+      const textHeight = (fontSize + 16) * labelScale;
+
+      return {
+        subRegionId: `${boundary.regionId}-${boundary.subRegionId}`,
+        origX: coords.x,
+        origY: coords.y,
+        x: coords.x,
+        y: coords.y,
+        width: textWidth,
+        height: textHeight,
+        opacity,
+      };
+    }).filter((l) => l.opacity > 0);
+
+    // 2. Resolve collisions iteratively (relaxation loop)
+    const passes = 8;
+    for (let p = 0; p < passes; p++) {
+      let hasCollision = false;
+      for (let i = 0; i < activeLabels.length; i++) {
+        for (let j = i + 1; j < activeLabels.length; j++) {
+          const a = activeLabels[i];
+          const b = activeLabels[j];
+
+          const xOverlap = Math.abs(a.x - b.x) < (a.width + b.width) / 2;
+          const yOverlap = Math.abs(a.y - b.y) < (a.height + b.height) / 2;
+
+          if (xOverlap && yOverlap) {
+            hasCollision = true;
+            const overlapY = (a.height + b.height) / 2 - Math.abs(a.y - b.y);
+            const push = overlapY / 2 + 2;
+
+            if (a.y <= b.y) {
+              a.y -= push;
+              b.y += push;
+            } else {
+              a.y += push;
+              b.y -= push;
+            }
+          }
+        }
+      }
+      if (!hasCollision) break;
+    }
+
+    // 3. Create a map of computed visual offsets (difference from original coordinate)
+    const offsets = new Map<string, { x: number; y: number }>();
+    activeLabels.forEach((label) => {
+      offsets.set(label.subRegionId, {
+        x: label.x - label.origX,
+        y: label.y - label.origY,
+      });
+    });
+
+    return offsets;
+  }, [
+    displayedZoomScale,
+    getScreenCoords,
+    viewportSize.width,
+    notificationSettings.showSubRegionNames,
+  ]);
+
+  const [isSearchActive, setIsSearchActive] = useState(false);
+
+  const [cullingCamera, setCullingCamera] = useState(displayedCamera);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setCullingCamera(displayedCamera);
+    }, 150);
+
+    return () => clearTimeout(timeout);
+  }, [displayedCamera]);
+
+  const [loadHighRes, setLoadHighRes] = useState(false);
+  const [highResLoaded, setHighResLoaded] = useState(false);
+
+  useEffect(() => {
+    if (displayedCamera.scale > 1.25) {
+      const handle = requestAnimationFrame(() => {
+        setLoadHighRes(true);
+      });
+      return () => cancelAnimationFrame(handle);
+    }
+  }, [displayedCamera.scale]);
+
+  const isMoving = useMemo(() => {
+    return (
+      Math.abs(displayedCamera.x - cullingCamera.x) > 0.1 ||
+      Math.abs(displayedCamera.y - cullingCamera.y) > 0.1 ||
+      Math.abs(displayedCamera.scale - cullingCamera.scale) > 0.01
+    );
+  }, [displayedCamera, cullingCamera]);
+
+  const baseTextureSize = 512;
+  const displayedTextureSize = `${Math.round(baseTextureSize * displayedZoomScale)}px ${Math.round(baseTextureSize * displayedZoomScale)}px`;
+
+  const viewportBounds = useMemo(() => {
+    if (!mapSurfaceSize.width || !mapSurfaceSize.height) return null;
+
+    // Durante o arraste, usamos a câmera em tempo real para o culling (quais pins existem),
+    // mas a cullingCamera (debounced) para o clustering. Isso evita que os pins sumam ao mover.
+    const {
+      x: camX,
+      y: camY,
+      scale,
+    } = isDragging ? displayedCamera : cullingCamera;
+    const { width: sWidth, height: sHeight } = mapSurfaceSize;
+
+    const vWidth = window.innerWidth; // Fallback for culling
+    const vHeight = window.innerHeight;
+
+    // Aumentamos o padding durante o movimento para garantir que pins nas bordas não pisquem
+    const padding = isMoving ? 15 : 5;
+
+    const minX =
+      ((-vWidth / 2 - camX) / (scale * sWidth) + 0.5) * 100 - padding;
+    const maxX = ((vWidth / 2 - camX) / (scale * sWidth) + 0.5) * 100 + padding;
+    const minY =
+      ((-vHeight / 2 - camY) / (scale * sHeight) + 0.5) * 100 - padding;
+    const maxY =
+      ((vHeight / 2 - camY) / (scale * sHeight) + 0.5) * 100 + padding;
+
+    return { minX, maxX, minY, maxY };
+  }, [cullingCamera, displayedCamera, mapSurfaceSize, isDragging, isMoving]);
+
+  const culledOfficialPoints = useMemo(() => {
+    if (!viewportBounds) return visibleOfficialPoints;
+    return visibleOfficialPoints.filter(
+      (p: MapPointReference) =>
+        p.x >= viewportBounds.minX &&
+        p.x <= viewportBounds.maxX &&
+        p.y >= viewportBounds.minY &&
+        p.y <= viewportBounds.maxY,
+    );
+  }, [visibleOfficialPoints, viewportBounds]);
+
+  const finalOfficialPoints = useMemo(() => {
+    const scale = cullingCamera.scale;
+    if (scale >= 3.2) {
+      return [...culledOfficialPoints].sort((a, b) => {
+        const aState = completedPins[a.id];
+        const aIsCompleted = !!aState && aState.status !== "ready";
+        const aSelected = a.id === selectedOfficialPointId ? 2 : 0;
+        const aPriority =
+          referencedOfficialPointIds.has(a.id) && !aIsCompleted ? 1 : 0;
+
+        const bState = completedPins[b.id];
+        const bIsCompleted = !!bState && bState.status !== "ready";
+        const bSelected = b.id === selectedOfficialPointId ? 2 : 0;
+        const bPriority =
+          referencedOfficialPointIds.has(b.id) && !bIsCompleted ? 1 : 0;
+
+        return aSelected + aPriority - (bSelected + bPriority);
+      }) as ClusteredOfficialPoint[];
+    }
+
+    const grid = new Map<string, ClusteredOfficialPoint[]>();
+    const gridSize = 3.5 / scale;
+    const result: ClusteredOfficialPoint[] = [];
+
+    for (const p of culledOfficialPoints) {
+      const gx = Math.floor(p.x / gridSize);
+      const gy = Math.floor(p.y / gridSize);
+      const key = `${gx}-${gy}-${p.type}`;
+      if (!grid.has(key)) grid.set(key, []);
+      grid.get(key)!.push(p);
+    }
+
+    for (const [key, group] of grid) {
+      if (group.length > 2) {
+        const avgX =
+          group.reduce((sum: number, p: MapPointReference) => sum + p.x, 0) /
+          group.length;
+        const avgY =
+          group.reduce((sum: number, p: MapPointReference) => sum + p.y, 0) /
+          group.length;
+        result.push({
+          ...group[0],
+          id: `cluster-${key}`,
+          name: `${group.length}x ${getMarkerTypeLabel(group[0].type)}`,
+          x: avgX,
+          y: avgY,
+          isCluster: true,
+          clusterCount: group.length,
+        });
+      } else {
+        result.push(...group);
+      }
+    }
+
+    // Sort: referenced or selected points last (drawn on top)
+    return [...result].sort((a, b) => {
+      const aState = completedPins[a.id];
+      const aIsCompleted = !!aState && aState.status !== "ready";
+
+      const aSelected = a.id === selectedOfficialPointId ? 2 : 0;
+      const aPriority =
+        referencedOfficialPointIds.has(a.id) && !aIsCompleted ? 1 : 0;
+
+      const bState = completedPins[b.id];
+      const bIsCompleted = !!bState && bState.status !== "ready";
+
+      const bSelected = b.id === selectedOfficialPointId ? 2 : 0;
+      const bPriority =
+        referencedOfficialPointIds.has(b.id) && !bIsCompleted ? 1 : 0;
+
+      return aSelected + aPriority - (bSelected + bPriority);
+    });
+  }, [
+    culledOfficialPoints,
+    cullingCamera.scale,
+    referencedOfficialPointIds,
+    selectedOfficialPointId,
+    completedPins,
+  ]);
+
+  const culledCustomPins = useMemo(() => {
+    if (!viewportBounds) return visibleCustomPins;
+    return visibleCustomPins.filter(
+      (p: SavedCustomPin) =>
+        p.x >= viewportBounds.minX &&
+        p.x <= viewportBounds.maxX &&
+        p.y >= viewportBounds.minY &&
+        p.y <= viewportBounds.maxY,
+    );
+  }, [visibleCustomPins, viewportBounds]);
+
+  const finalCustomPins = useMemo(() => {
+    const scale = cullingCamera.scale;
+    if (scale >= 3.2) {
+      return [...culledCustomPins].sort((a, b) => {
+        const aState = completedPins[a.id];
+        const aIsCompleted = !!aState && aState.status !== "ready";
+        const aSelected = a.id === selectedCustomPinId ? 2 : 0;
+        const aPriority =
+          referencedCustomPinIds.has(a.id) && !aIsCompleted ? 1 : 0;
+
+        const bState = completedPins[b.id];
+        const bIsCompleted = !!bState && bState.status !== "ready";
+        const bSelected = b.id === selectedCustomPinId ? 2 : 0;
+        const bPriority =
+          referencedCustomPinIds.has(b.id) && !bIsCompleted ? 1 : 0;
+
+        return aSelected + aPriority - (bSelected + bPriority);
+      }) as ClusteredCustomPin[];
+    }
+
+    const grid = new Map<string, ClusteredCustomPin[]>();
+    const gridSize = 3.5 / scale;
+    const result: ClusteredCustomPin[] = [];
+
+    for (const p of culledCustomPins) {
+      const gx = Math.floor(p.x / gridSize);
+      const gy = Math.floor(p.y / gridSize);
+      const key = `${gx}-${gy}`;
+      if (!grid.has(key)) grid.set(key, []);
+      grid.get(key)!.push(p as ClusteredCustomPin);
+    }
+
+    for (const [key, group] of grid) {
+      if (group.length > 2) {
+        const avgX =
+          group.reduce((sum: number, p: SavedCustomPin) => sum + p.x, 0) /
+          group.length;
+        const avgY =
+          group.reduce((sum: number, p: SavedCustomPin) => sum + p.y, 0) /
+          group.length;
+        result.push({
+          ...group[0],
+          id: `cluster-custom-${key}`,
+          name: `${group.length}x Pinos Customizados`,
+          x: avgX,
+          y: avgY,
+          isCluster: true,
+          clusterCount: group.length,
+        });
+      } else {
+        result.push(...group);
+      }
+    }
+
+    // Sort: referenced or selected pins last (on top)
+    return [...result].sort((a, b) => {
+      const aState = completedPins[a.id];
+      const aIsCompleted = !!aState && aState.status !== "ready";
+
+      const aSelected = a.id === selectedCustomPinId ? 2 : 0;
+      const aPriority =
+        referencedCustomPinIds.has(a.id) && !aIsCompleted ? 1 : 0;
+
+      const bState = completedPins[b.id];
+      const bIsCompleted = !!bState && bState.status !== "ready";
+
+      const bSelected = b.id === selectedCustomPinId ? 2 : 0;
+      const bPriority =
+        referencedCustomPinIds.has(b.id) && !bIsCompleted ? 1 : 0;
+
+      return aSelected + aPriority - (bSelected + bPriority);
+    });
+  }, [
+    culledCustomPins,
+    cullingCamera.scale,
+    referencedCustomPinIds,
+    selectedCustomPinId,
+    completedPins,
+  ]);
+
+  const [iconCache, setIconCache] = useState<Map<string, HTMLImageElement>>(
+    new Map(),
+  );
+
+  // Preload de ícones para evitar flickering durante o movimento e preparar para o Canvas
+  useEffect(() => {
+    const iconsToLoad = new Set(
+      officialPoints.map((p: MapPointReference) => p.iconId),
+    );
+
+    // Adicionar icones de subtipos ativos nos pinos concluidos
+    Object.values(completedPins).forEach((rawState) => {
+      const state = rawState as { subType?: string };
+      if (state.subType) iconsToLoad.add(state.subType);
+    });
+
+    iconsToLoad.forEach((id) => {
+      if (iconCache.has(id)) return;
+      const img = new Image();
+      img.src = getMarkerIconSrc(id);
+      img.onload = () => {
+        setIconCache((prev) => {
+          const next = new Map(prev);
+          next.set(id, img);
+          return next;
+        });
+      };
+    });
+  }, [officialPoints, iconCache, completedPins]);
+
+  const [isOverCanvasPin, setIsOverCanvasPin] = useState(false);
+
+  const onPointerMove = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      handlePointerMove(event);
+
+      if (isDragging || mode === "pin" || mode === "route") {
+        if (isOverCanvasPin) setIsOverCanvasPin(false);
+        return;
+      }
+
+      // Detect hover over canvas pins
+      const coords = getCoordinateFromPointer(event, displayedCamera);
+      if (coords) {
+        const scale = displayedCamera.scale;
+        const threshold = 1.5 / scale;
+        const isOver = finalOfficialPoints.some(
+          (p) =>
+            Math.abs(p.x - coords.x) < threshold &&
+            Math.abs(p.y - coords.y) < threshold,
+        );
+        if (isOver !== isOverCanvasPin) setIsOverCanvasPin(isOver);
+      }
+    },
+    [
+      handlePointerMove,
+      isDragging,
+      mode,
+      isOverCanvasPin,
+      getCoordinateFromPointer,
+      displayedCamera,
+      finalOfficialPoints,
+    ],
+  );
+
+  const mapCursor = useMemo(() => {
+    if (isDragging) return "cursor-grabbing";
+    if (mode === "pin" || mode === "route") return "cursor-crosshair";
+    if (isOverCanvasPin) return "cursor-pointer";
+    return "cursor-grab";
+  }, [isDragging, mode, isOverCanvasPin]);
+
+  return (
+    <div className="flex flex-col h-full w-full relative overflow-hidden">
+      {/* Mode Banner */}
+      {(mode === "pin" ||
+        mode === "route" ||
+        mode === "feedback" ||
+        editingCustomPinId !== null) && (
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[100] animate-[fade-in_200ms_ease-out]">
+          <div
+            className={cn(
+              "flex items-center gap-3.5 px-4 py-2.5 rounded-full border shadow-[0_12px_40px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-2xl",
+              mode === "pin" || editingCustomPinId !== null
+                ? "border-cyan-500/30 bg-cyan-950/80 shadow-cyan-500/10"
+                : mode === "feedback"
+                  ? "border-purple-500/30 bg-purple-950/80 shadow-purple-500/10"
+                  : "border-orange-500/30 bg-orange-950/80 shadow-orange-500/10",
+            )}
+          >
+            <div className="relative flex h-2.5 w-2.5 shrink-0 ml-1">
+              <span
+                className={cn(
+                  "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
+                  mode === "pin" || editingCustomPinId !== null
+                    ? "bg-cyan-400"
+                    : mode === "feedback"
+                      ? "bg-purple-400"
+                      : "bg-orange-400",
+                )}
+              />
+              <span
+                className={cn(
+                  "relative inline-flex rounded-full h-2.5 w-2.5",
+                  mode === "pin" || editingCustomPinId !== null
+                    ? "bg-cyan-500 shadow-[0_0_8px_var(--cyan)]"
+                    : mode === "feedback"
+                      ? "bg-purple-500 shadow-[0_0_8px_var(--purple)]"
+                      : "bg-orange-500 shadow-[0_0_8px_var(--orange)]",
+                )}
+              />
+            </div>
+            
+            <div className="flex flex-col justify-center">
+              <p className="text-[9px] font-black text-white/60 uppercase tracking-widest leading-none mb-0.5">
+                {mode === "feedback"
+                  ? "Feedback"
+                  : mode === "pin" || editingCustomPinId !== null
+                    ? "Marcador"
+                    : "Construtor de Rota"}
+              </p>
+              <p className="text-sm font-bold text-white leading-none whitespace-nowrap">
+                {mode === "feedback"
+                  ? "Modo de Feedback"
+                  : mode === "pin"
+                    ? "Posicionando Pino"
+                    : editingCustomPinId !== null
+                      ? "Editando Pino"
+                      : selectedSavedRouteId
+                        ? "Editando Trajeto"
+                        : "Criando Novo Trajeto"}
+              </p>
+            </div>
+            
+            <span className="h-6 w-px bg-white/15 mx-1" />
+            
+            <p className="text-[11px] font-medium text-slate-300 max-w-[240px] leading-tight">
+              {mode === "feedback"
+                ? "Clique em qualquer lugar do mapa para sugerir um novo ponto ou reportar algo."
+                : mode === "pin"
+                  ? "Clique no mapa para definir o local do seu novo pino."
+                  : editingCustomPinId !== null
+                    ? "Você pode clicar no mapa para mudar a posição deste pino."
+                    : "Clique nos ícones ou no mapa para conectar os pontos."}
+            </p>
+            
+            <button
+              onClick={() => {
+                setMode("explore");
+                if (editingCustomPinId) {
+                  // Se for um novo pino não posicionado, cancelamos
+                  const pin = customPins.find(
+                    (p) => p.id === editingCustomPinId,
+                  );
+                  if (pin && !pin.isPlaced) {
+                    cancelCustomPin();
+                  } else {
+                    setEditingCustomPinId(null);
+                  }
+                }
+              }}
+              className="ml-1 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/5 text-white/70 hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-white/10"
+              title="Cancelar"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <section
+        className="relative flex-1 min-h-0 overflow-hidden bg-[#1f636f] selection:bg-cyan-500/30"
+        style={{ contain: "layout size" }}
+      >
+        <div className="absolute inset-0 overflow-hidden">
+          <div
+            className={cn(
+              "relative flex h-full min-h-0 items-center justify-center overflow-hidden p-0 md:px-5 md:py-20 xl:px-8",
+            )}
+            ref={mapViewportRef}
+          >
+            <div
+              aria-hidden="true"
+              className={cn(
+                "pointer-events-none absolute inset-[-50%] map-background-texture",
+                isDragging ? "will-change-transform" : "",
+              )}
+              style={{
+                backgroundImage: `url(${mapBaseTextureSrc})`,
+                backgroundRepeat: "repeat",
+                backgroundSize: displayedTextureSize,
+                transform: `translate(${Math.round(displayedCamera.x)}px, ${Math.round(displayedCamera.y)}px) scale(${displayedCamera.scale})`,
+                transformOrigin: "center center",
+              }}
+            />
+            <div
+              aria-label="Mapa interativo do Shinobi Legends"
+              className={cn(
+                "relative touch-none select-none overflow-hidden bg-[rgba(4,10,18,0.86)] map-surface-container",
+                mapCursor,
+                isDragging && "will-change-transform",
+              )}
+              ref={mapSurfaceRef}
+              role="application"
+              onPointerCancel={handlePointerCancel}
+              onPointerDown={handlePointerDown}
+              onPointerLeave={handlePointerLeave}
+              onPointerMove={onPointerMove}
+              onPointerUp={handlePointerUp}
+              style={
+                {
+                  height: `${mapSurfaceSize.height}px`,
+                  transform: `translate(${Math.round(displayedCamera.x)}px, ${Math.round(displayedCamera.y)}px) scale(${displayedCamera.scale})`,
+                  transformOrigin: "center center",
+                  width: `${mapSurfaceSize.width}px`,
+                  ["--map-scale" as string]: displayedCamera.scale,
+                } as React.CSSProperties
+              }
+            >
+              <img
+                alt="Mapa do Shinobi Legends"
+                className="block h-full w-full object-contain"
+                draggable={false}
+                src="/images/map/map_base_low.webp"
+                fetchPriority="high"
+              />
+              {loadHighRes && (
+                <img
+                  alt="Mapa do Shinobi Legends (Alta Resolução)"
+                  className={cn(
+                    "block h-full w-full object-contain absolute inset-0 transition-opacity duration-500",
+                    highResLoaded ? "opacity-100" : "opacity-0",
+                  )}
+                  draggable={false}
+                  src="/images/map/map_base.webp"
+                  onLoad={() => setHighResLoaded(true)}
+                />
+              )}
+
+              {/* Sci-Fi Grid Overlay */}
+              <div 
+                className="absolute inset-0 pointer-events-none opacity-[0.15]" 
+                style={{
+                  backgroundImage: `
+                    linear-gradient(to right, rgba(0, 214, 163, 0.35) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(0, 214, 163, 0.35) 1px, transparent 1px)
+                  `,
+                  backgroundSize: '40px 40px',
+                }} 
+              />
+
+              {/* Renderizar todas as rotas visíveis (salvas/públicas) */}
+              {visibleRoutes.map((routeId: string) => {
+                const route =
+                  savedRoutes.find((r) => r.id === routeId) ||
+                  publicRoutes.find((r) => r.id === routeId);
+                if (!route) return null;
+                return (
+                  <MapRouteLayer
+                    key={route.id}
+                    color={route.color}
+                    isMoving={isMoving}
+                    points={route.route.checkpoints
+                      .map((c: RouteCheckpoint) => `${c.x},${c.y}`)
+                      .join(" ")}
+                  />
+                );
+              })}
+
+              {/* Rota Ativa (Modo de Criação/Edição) */}
+              {mode === "route" && routePath ? (
+                <MapRouteLayer
+                  color={currentRoute.color}
+                  isMoving={isMoving}
+                  points={routePath}
+                />
+              ) : null}
+            </div>
+
+            <MapCanvasLayer
+              completedPins={completedPins}
+              customPins={[]}
+              camera={displayedCamera}
+              mapViewportRef={mapViewportRef}
+              icons={iconCache}
+              officialPoints={finalOfficialPoints}
+              selectedCustomPinId={selectedCustomPinId}
+              selectedOfficialPointId={selectedOfficialPointId}
+              mapSurfaceSize={mapSurfaceSize}
+              referencedOfficialPointIds={referencedOfficialPointIds}
+              referencedCustomPinIds={referencedCustomPinIds}
+              globalTick={globalTick}
+              showReadyAlerts={notificationSettings.showReadyAlerts !== false}
+            />
+
+            {/* Labels de Sub-regiões (Ex: Oásis) */}
+            {notificationSettings.showSubRegionNames !== false && (
+              <div className="absolute inset-0 pointer-events-none z-[5] overflow-hidden">
+                {SUB_REGION_BOUNDARIES.map((boundary) => {
+                  const coords = getScreenCoords(
+                    boundary.center.x,
+                    boundary.center.y,
+                  );
+                  const fadeOut = Math.min(
+                    Math.max((6.0 - displayedZoomScale) * 0.5, 0),
+                    1,
+                  );
+                  const opacity = fadeOut * 0.85;
+
+                  if (opacity <= 0) return null;
+
+                  // Obter offset dinâmico calculado pelo resolvedor de colisões
+                  const compositeKey = `${boundary.regionId}-${boundary.subRegionId}`;
+                  const offset = subRegionOffsets.get(compositeKey) || {
+                    x: 0,
+                    y: 0,
+                  };
+                  const labelScale = Math.max(
+                    0.75,
+                    Math.min(1.5, 0.8 * Math.pow(displayedZoomScale, 0.2)),
+                  );
+                  const transformStyle = `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px)) scale(${labelScale})`;
+
+                  return (
+                    <div
+                      key={`label-${compositeKey}`}
+                      className="absolute flex flex-col items-center justify-center text-center select-none"
+                      style={{
+                        left: `${coords.x}px`,
+                        top: `${coords.y}px`,
+                        transform: transformStyle,
+                        opacity,
+                        transition:
+                          "opacity 0.25s ease-out, transform 0.25s ease-out",
+                      }}
+                    >
+                      <span className="font-black uppercase tracking-[0.3em] text-white/90 text-[clamp(9px,1.2vw,12px)] [text-shadow:0_2px_4px_rgba(0,0,0,0.9),0_0_10px_rgba(0,0,0,0.6)]">
+                        {boundary.subRegionId}
+                      </span>
+                      <div className="h-[1px] w-10 bg-[linear-gradient(90deg,transparent,rgba(0,214,163,0.3),transparent)] mt-1 shadow-[0_0_10px_rgba(0,214,163,0.15)]" />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Renderizar todos os pinos customizados (fora do contêiner escalado) */}
+            {finalCustomPins.map((pin) => {
+              const coords = getScreenCoords(pin.x, pin.y);
+              return (
+                <PinBadge
+                  color={pin.color}
+                  iconId={pin.iconId}
+                  isSelected={selectedCustomPinId === pin.id}
+                  key={pin.id}
+                  id={pin.id}
+                  label={pin.name}
+                  onClick={pin.isCluster ? undefined : selectCustomPin}
+                  screenX={coords.x}
+                  screenY={coords.y}
+                  x={pin.x}
+                  y={pin.y}
+                  description={pin.description}
+                  tags={pin.tags}
+                  typeLabel="Pino Customizado"
+                  isCompleted={!!completedPins[pin.id]}
+                  completedAt={completedPins[pin.id]?.completedAt}
+                  onHoverChange={setHoveredPin}
+                  isCluster={pin.isCluster}
+                  clusterCount={pin.clusterCount}
+                  globalTick={globalTick}
+                  isMoving={isMoving}
+                  displayedCamera={displayedCamera}
+                />
+              );
+            })}
+
+            {/* Renderizar checkpoints de todas as rotas visíveis (fora do contêiner escalado) */}
+            {visibleRoutes.map((routeId: string) => {
+              const route =
+                savedRoutes.find((r) => r.id === routeId) ||
+                publicRoutes.find((r) => r.id === routeId);
+              if (!route) return null;
+              return route.route.checkpoints.map(
+                (checkpoint: RouteCheckpoint, index: number) => {
+                  const coords = getScreenCoords(checkpoint.x, checkpoint.y);
+                  return (
+                    <RouteCheckpointBadge
+                      checkpoint={checkpoint}
+                      index={index}
+                      key={`${route.id}-${checkpoint.id}`}
+                      screenX={coords.x}
+                      screenY={coords.y}
+                      displayedCamera={displayedCamera}
+                    />
+                  );
+                },
+              );
+            })}
+
+            {/* Checkpoints da Rota Ativa (fora do contêiner escalado) */}
+            {mode === "route"
+              ? currentRoute.checkpoints.map(
+                  (checkpoint: RouteCheckpoint, index: number) => {
+                    const coords = getScreenCoords(checkpoint.x, checkpoint.y);
+                    return (
+                      <RouteCheckpointBadge
+                        checkpoint={checkpoint}
+                        index={index}
+                        key={`active-${checkpoint.id}`}
+                        screenX={coords.x}
+                        screenY={coords.y}
+                        displayedCamera={displayedCamera}
+                      />
+                    );
+                  },
+                )
+              : null}
+          </div>
+        </div>
+
+
+
+        {/* Floating Zoom & Locate controls (Left Side) */}
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-25 flex flex-col gap-2.5">
+          <div className="flex flex-col rounded-xl border border-white/5 bg-[#0a0d10]/70 p-1 shadow-2xl backdrop-blur-md">
+            <button
+              onClick={zoomIn}
+              className="grid h-9 w-9 place-items-center rounded-lg hover:bg-white/5 text-slate-300 hover:text-white transition-all active:scale-95 cursor-pointer"
+              title="Aproximar"
+              type="button"
+            >
+              <Plus size={16} strokeWidth={2.5} />
+            </button>
+            <div className="h-px bg-white/5 mx-1" />
+            <button
+              onClick={zoomOut}
+              disabled={displayedZoomScale <= minMapZoom}
+              className="grid h-9 w-9 place-items-center rounded-lg hover:bg-white/5 text-slate-300 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-all active:scale-95 cursor-pointer"
+              title="Afastar"
+              type="button"
+            >
+              <Minus size={16} strokeWidth={2.5} />
+            </button>
+          </div>
+          <button
+            onClick={interactiveMap.resetCamera}
+            className="grid h-9 w-9 place-items-center rounded-xl border border-white/5 bg-[#0a0d10]/70 text-cyan-400 hover:text-cyan-300 hover:bg-white/5 shadow-2xl backdrop-blur-md transition-all active:scale-95 cursor-pointer"
+            title="Centralizar Mapa"
+            type="button"
+          >
+            <svg className="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="12" r="3" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+            </svg>
+          </button>
+        </div>
+
+
+      </section>
+
+      {/* Fixed Bottom Tab Bar — same style as header */}
+      <div
+        className="p-3 flex-none bg-[#080c10] border-t border-[#131b24] flex items-center justify-between px-4 select-none z-40"
+        style={{ WebkitAppRegion: 'no-drag' } as any}
+      >
+        {/* Left: Resource Stats */}
+        <div className="flex items-center gap-2 text-[10px] text-slate-500 py-2.5">
+          <MapPin size={11} className="text-cyan-400/70 shrink-0" />
+          <span>
+            <span className="text-slate-300 font-semibold">{officialPoints.length}</span>
+            {" "}recursos
+          </span>
+          <span className="text-white/15">·</span>
+          <span>
+            <span className="text-slate-300 font-semibold">{Object.keys(completedPins).length}</span>
+            {" "}coletados
+          </span>
+          {savedRoutes.length > 0 && (
+            <>
+              <span className="text-white/15">·</span>
+              <span>
+                <span className="text-slate-300 font-semibold">{savedRoutes.length}</span>
+                {" "}{savedRoutes.length === 1 ? "rota" : "rotas"}
+              </span>
+            </>
+          )}
+        </div>
+
+        {/* Center: Navigation Tabs */}
+        <div className="flex items-center gap-0.5 absolute left-1/2 -translate-x-1/2">
+          {([
+            { id: 'officialPins', label: 'Categorias', icon: Layers },
+            { id: 'customPins', label: 'Pins', icon: MapPin },
+            { id: 'routes', label: 'Rotas', icon: Route },
+          ] as const).map((tab) => {
+            const isActive = isSidebarOpen && sidebarSection === tab.id;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  if (isSidebarOpen && sidebarSection === tab.id) {
+                    setIsSidebarOpen(false);
+                  } else {
+                    setSidebarSection(tab.id);
+                    setIsSidebarOpen(true);
+                  }
+                }}
+                className={cn(
+                  "relative flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer",
+                  isActive
+                    ? "bg-[#11161D] border border-[#222B37] text-white"
+                    : "border border-transparent text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]",
+                )}
+                type="button"
+              >
+                <Icon size={13} />
+                <span>{tab.label}</span>
+                {isActive && (
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-cyan-400 rounded-full" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right: Centralizar */}
+        <button
+          onClick={interactiveMap.resetCamera}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#11161D]/65 border border-[#1a222c] text-[10px] text-slate-500 hover:text-white hover:border-[#222B37] transition-all duration-150 active:scale-95 cursor-pointer"
+          type="button"
+          title="Centralizar Mapa"
+        >
+          <Crosshair size={12} className="text-cyan-400/70" />
+          <span>Centralizar</span>
+        </button>
+      </div>
+
+      {/* Floating zoom controls — left side of map */}
+
+      {isAuthModalOpen && (
+        <AuthModal onClose={() => setIsAuthModalOpen(false)} />
+      )}
+
+      {activePopupPin &&
+        popupCoords &&
+        mode === "explore" &&
+        !editingCustomPinId && (
+          <ViewportPortal>
+            <div
+              className="fixed w-[285px] rounded-[20px] border border-white/8 bg-[linear-gradient(180deg,rgba(3,10,13,0.92),rgba(1,5,7,0.88))] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-2xl text-left select-text animate-[fade-in_150ms_ease-out] before:pointer-events-none before:absolute before:inset-[1px] before:rounded-[19px] before:border before:border-white/[0.03] before:content-['']"
+              style={{
+                zIndex: 80,
+                position: "fixed",
+                left: `${popupCoords.screenX}px`,
+                top: `${popupCoords.screenY}px`,
+                transform: `translate(${popupCoords.isNearRight ? "-100%" : popupCoords.isNearLeft ? "0%" : "-50%"}, ${popupCoords.isNearTop ? "0%" : "-100%"}) translateY(${popupCoords.isNearTop ? "32px" : "-32px"}) translateX(${popupCoords.isNearRight ? "-16px" : popupCoords.isNearLeft ? "16px" : "0px"})`,
+                transformOrigin: "0 0",
+                cursor: "default",
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              onPointerUp={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              onWheel={(e) => e.stopPropagation()}
+            >
+              {/* Tech Corner Accent inside card */}
+              <div className="absolute inset-0 tech-corner-accent opacity-20 pointer-events-none" />
+
+              {/* Header Actions (Report & Close) */}
+              <div className="absolute top-3 right-3 flex items-center gap-1.5 z-50">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFeedbackTarget({
+                      x: activePopupPin.x,
+                      y: activePopupPin.y,
+                      pointId: activePopupPin.id,
+                      pointName: activePopupPin.name,
+                    });
+                    setIsFeedbackModalOpen(true);
+                  }}
+                  className="grid h-7 w-7 place-items-center rounded-full border border-white/5 bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 hover:border-purple-500/20 transition cursor-pointer group"
+                  title="Reportar problema ou sugerir alteração"
+                >
+                  <MessageSquare
+                    size={13}
+                    className="transition-transform group-hover:scale-110"
+                  />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (activePopupPin.isCustom) {
+                      selectCustomPin(null);
+                    } else {
+                      setSelectedOfficialPointId(null);
+                    }
+                  }}
+                  className="grid h-7 w-7 place-items-center rounded-full border border-white/5 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 hover:border-white/12 transition cursor-pointer group"
+                  aria-label="Fechar popup"
+                >
+                  <X
+                    size={14}
+                    className="transition-transform group-hover:scale-110"
+                  />
+                </button>
+              </div>
+              {/* Title & Category Tag */}
+              <div className="pr-8 mb-2.5">
+                <h3 className="text-[15px] font-black text-white truncate tracking-tight leading-none">
+                  {activePopupPin.name}
+                </h3>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <span className="rounded-md bg-white/5 px-2 py-0.5 text-[9.5px] font-mono font-bold uppercase tracking-wider text-cyan-400/95 border border-cyan-500/10">
+                    {activePopupPin.typeLabel}
+                  </span>
+                </div>
+              </div>
+
+              {/* Image Section (if present) */}
+              {activePopupPin.imageUrl ? (
+                <div className="w-full h-36 rounded-[14px] overflow-hidden border border-white/8 mb-2.5 relative bg-slate-950">
+                  <img
+                    src={activePopupPin.imageUrl}
+                    alt={activePopupPin.name}
+                    className="w-full h-full object-cover"
+                    draggable={false}
+                  />
+                </div>
+              ) : null}
+
+              {/* Description Box */}
+              {activePopupPin.description ? (
+                <p className="text-xs text-slate-300 bg-black/25 p-2.5 rounded-[12px] border border-white/5 leading-relaxed mb-2.5 whitespace-pre-line">
+                  {activePopupPin.description.replace(/\\n/g, "\n")}
+                </p>
+              ) : (
+                <div className="h-1.5" />
+              )}
+
+              {/* Contributor Row (for custom pins or official info) */}
+              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400/90 border-t border-white/5 pt-2 mb-2.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[#8a91a3]">Contribuidor:</span>
+                  <span className="text-cyan-400 font-bold">
+                    {activePopupPin.isCustom
+                      ? activePopupPin.creator
+                      : "Shinobi Legends"}
+                  </span>
+                </div>
+                {activePopupPin.updatedAt && (
+                  <span className="text-[9.5px] text-[#8a91a3]">
+                    Modificado:{" "}
+                    {new Date(activePopupPin.updatedAt).toLocaleDateString(
+                      "pt-BR",
+                    )}
+                  </span>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              {(!activePopupPin.type ||
+                !uncompletableTypes.includes(activePopupPin.type as any) ||
+                activePopupPin.type === "merchant") && (
+                <div className="mt-2.5 grid gap-2">
+                  {(activePopupPin.type === "ore" ||
+                    activePopupPin.type === "mushroom") &&
+                    !activePopupPin.isCompleted && (
+                      <div className="grid gap-2.5 p-3 rounded-[14px] border border-white/[0.06] bg-black/25 shadow-[inset_0_1px_2px_rgba(255,255,255,0.02)] backdrop-blur-md relative overflow-hidden">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[var(--cyan)] animate-pulse shadow-[0_0_8px_var(--cyan)]" />
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[var(--cyan)]">
+                              Identificar{" "}
+                              {activePopupPin.type === "ore"
+                                ? "Minério"
+                                : "Cogumelo"}
+                            </span>
+                          </div>
+                          {!isAuthenticated && (
+                            <Shield
+                              className="text-red-400 opacity-50"
+                              size={10}
+                            />
+                          )}
+                        </div>
+
+                        {!isAuthenticated ? (
+                          <div className="py-2 px-1 text-center bg-black/20 rounded-xl border border-white/[0.02]">
+                            <p className="text-[10px] text-slate-500 italic leading-tight">
+                              Faça login para identificar recursos e sincronizar
+                              timers com seu grupo.
+                            </p>
+                          </div>
+                        ) : (
+                          <>
+                            {["ore", "mushroom"].includes(
+                              activePopupPin.type || "",
+                            ) &&
+                              (() => {
+                                const lastSubtype =
+                                  notificationSettings.rememberLastSubtype &&
+                                  activePopupPin.type
+                                    ? notificationSettings.lastSelectedSubTypes[
+                                        activePopupPin.type
+                                      ]
+                                    : undefined;
+
+                                const subTypeToUse =
+                                  activePopupPin.subType ||
+                                  lastSubtype ||
+                                  (activePopupPin.type === "ore"
+                                    ? "ore_1"
+                                    : "mushroom_1");
+
+                                const isDefault =
+                                  subTypeToUse === "ore_1" ||
+                                  subTypeToUse === "mushroom_1";
+
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      togglePinCompleted(
+                                        activePopupPin.id,
+                                        subTypeToUse,
+                                      );
+
+                                      if (
+                                        notificationSettings.rememberLastSubtype &&
+                                        activePopupPin.type
+                                      ) {
+                                        updateNotificationSettings({
+                                          ...notificationSettings,
+                                          lastSelectedSubTypes: {
+                                            ...notificationSettings.lastSelectedSubTypes,
+                                            [activePopupPin.type]: subTypeToUse,
+                                          },
+                                        });
+                                      }
+                                    }}
+                                    className={cn(
+                                      "group relative overflow-hidden flex w-full items-center justify-center gap-2 rounded-xl px-2.5 py-2.5 text-[10px] font-black uppercase tracking-wide transition-all duration-300 mb-2 cursor-pointer shadow-md active:scale-[0.97]",
+                                      "bg-gradient-to-r from-[var(--cyan)] to-[#00b894] text-slate-950 hover:brightness-110 shadow-[0_4px_12px_rgba(0,214,163,0.25)] before:absolute before:inset-0 before:-skew-x-12 before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent before:-translate-x-full hover:before:translate-x-full before:transition-transform before:duration-700",
+                                    )}
+                                  >
+                                    {isDefault ? (
+                                      <>
+                                        <CircleCheck
+                                          size={14}
+                                          className="shrink-0 drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)] z-[1]"
+                                        />
+                                        <span className="z-[1]">
+                                          Padrão / Já passei
+                                        </span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <RefreshCw
+                                          size={14}
+                                          className="shrink-0 drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)] z-[1]"
+                                        />
+                                        <span className="z-[1]">
+                                          ({getMarkerIconLabel(subTypeToUse)})
+                                        </span>
+                                      </>
+                                    )}
+                                  </button>
+                                );
+                              })()}
+
+                            <div className="grid grid-cols-5 gap-2 justify-items-center">
+                              {markerIconsByType[activePopupPin.type]
+                                .filter(
+                                  (iconId) =>
+                                    iconId !== "ore_1" &&
+                                    iconId !== "mushroom_1",
+                                )
+                                .map((iconId) => {
+                                  const isLastUsed =
+                                    notificationSettings.lastSelectedSubTypes[
+                                      activePopupPin.type!
+                                    ] === iconId;
+                                  return (
+                                    <button
+                                      key={iconId}
+                                      type="button"
+                                      onClick={() => {
+                                        togglePinCompleted(
+                                          activePopupPin.id,
+                                          iconId,
+                                        );
+                                        if (
+                                          notificationSettings.rememberLastSubtype
+                                        ) {
+                                          updateNotificationSettings({
+                                            ...notificationSettings,
+                                            lastSelectedSubTypes: {
+                                              ...notificationSettings.lastSelectedSubTypes,
+                                              [activePopupPin.type!]: iconId,
+                                            },
+                                          });
+                                        }
+                                      }}
+                                      className={cn(
+                                        "relative group flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-gradient-to-b from-slate-900/60 to-slate-950/80 transition-all duration-300 hover:border-[var(--cyan)]/50 hover:bg-[var(--cyan)]/10 hover:scale-105 cursor-pointer shadow-sm",
+                                        isLastUsed &&
+                                          "border-[var(--cyan)] bg-gradient-to-b from-cyan-950/40 to-cyan-900/60 shadow-[0_0_15px_rgba(0,214,163,0.3)] scale-105",
+                                      )}
+                                      title={getMarkerIconLabel(iconId)}
+                                    >
+                                      <img
+                                        src={getMarkerIconSrc(iconId)}
+                                        alt=""
+                                        className="h-6 w-6 object-contain transition-transform group-hover:scale-110"
+                                      />
+                                      {isLastUsed && (
+                                        <div className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-[var(--cyan)] border-2 border-[#0a0f18] flex items-center justify-center shadow-[0_0_8px_var(--cyan)]">
+                                          <span className="w-1.5 h-1.5 bg-[#0a0f18] rounded-full" />
+                                        </div>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                  {isAuthenticated && group && !activePopupPin.isCompleted && (
+                    <div className="flex rounded-xl bg-white/[0.03] p-1 border border-white/5">
+                      <button
+                        onClick={() => setPinVisibility("private")}
+                        className={cn(
+                          "flex flex-1 items-center justify-center gap-2 rounded-lg py-1 text-[10px] font-black uppercase tracking-wider transition-all pointer-events-auto",
+                          pinVisibility === "private"
+                            ? "bg-white/10 text-white shadow-sm"
+                            : "text-slate-500 hover:text-slate-300",
+                        )}
+                      >
+                        <Lock size={12} />
+                        Pessoal
+                      </button>
+                      <button
+                        onClick={() => setPinVisibility("group")}
+                        className={cn(
+                          "flex flex-1 items-center justify-center gap-2 rounded-lg py-1 text-[10px] font-black uppercase tracking-wider transition-all pointer-events-auto",
+                          pinVisibility === "group"
+                            ? "bg-[var(--cyan)]/20 text-[var(--cyan)] shadow-sm"
+                            : "text-slate-500 hover:text-slate-300",
+                        )}
+                      >
+                        <Shield size={12} />
+                        Grupo
+                      </button>
+                    </div>
+                  )}
+
+                  {activePopupPin.isCustom ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSidebarSection("customPins");
+                          setIsSidebarOpen(true);
+                          startEditingCustomPin(activePopupPin.id);
+                        }}
+                        className="flex items-center justify-center gap-2 rounded-[10px] border border-white/10 bg-white/5 py-2 text-[11px] font-bold text-white transition hover:bg-white/10 active:scale-95 pointer-events-auto"
+                      >
+                        <Edit2 size={12} />
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => togglePinCompleted(activePopupPin.id)}
+                        className={cn(
+                          "flex items-center justify-center gap-2 rounded-[10px] py-2 text-[11px] font-bold text-white transition active:scale-95 pointer-events-auto",
+                          activePopupPin.isCompleted
+                            ? "bg-slate-700/50 hover:bg-slate-700"
+                            : "bg-[var(--cyan)]/20 text-[var(--cyan)] border border-[var(--cyan)]/30 hover:bg-[var(--cyan)]/30",
+                        )}
+                      >
+                        <CheckCircle2 size={12} />
+                        {activePopupPin.isCompleted ? "Desmarcar" : "Concluir"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid gap-2">
+                      {activePopupPin.isCompleted ? (
+                        <div className="grid gap-2">
+                          {/* Timer status badge */}
+                          <div className="flex items-center justify-between px-2.5 py-2 rounded-xl border border-white/5 bg-[#161c26]/60 shadow-inner">
+                            <span className="flex items-center gap-2 text-slate-400 font-mono text-[9.5px] font-bold uppercase tracking-widest">
+                              <Clock
+                                size={12}
+                                className="text-[var(--cyan)] animate-pulse"
+                              />
+                              {activePopupPin.type === "merchant"
+                                ? "Presente"
+                                : "Coletado"}
+                            </span>
+                            <span className="text-white font-mono font-black text-xs tracking-wide">
+                              {activePopupPin.timer
+                                ? (() => {
+                                    const remaining = getPinTimerRemaining(
+                                      activePopupPin.id,
+                                      activePopupPin.timer,
+                                    );
+                                    if (
+                                      remaining <= 0 &&
+                                      activePopupPin.type !== "merchant"
+                                    ) {
+                                      return activePopupPin.subType ===
+                                        "ore_1" ||
+                                        activePopupPin.subType === "mushroom_1"
+                                        ? "Padrão / Marcado"
+                                        : "Concluído";
+                                    }
+                                    return formatRemainingTime(remaining);
+                                  })()
+                                : "Concluído"}
+                            </span>
+                          </div>
+
+                          {/* Action Buttons Row */}
+                          <div className="flex gap-2">
+                            {activePopupPin.type &&
+                              [
+                                "ore",
+                                "mushroom",
+                                "stick",
+                                "perpetual",
+                                "hibiscus",
+                                "cotton",
+                                "borago",
+                              ].includes(activePopupPin.type) && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (!isAuthenticated) return;
+                                    const state =
+                                      completedPins[activePopupPin.id];
+                                    togglePinCompleted(
+                                      activePopupPin.id,
+                                      state?.subType,
+                                      true,
+                                    );
+                                  }}
+                                  disabled={!isAuthenticated}
+                                  className="flex-1 flex items-center justify-center gap-1.5 rounded-[10px] border border-[#00d6a3]/20 bg-[#00d6a3]/10 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--cyan)] hover:bg-[#00d6a3]/20 active:scale-95 transition-all cursor-pointer pointer-events-auto disabled:opacity-30 disabled:grayscale"
+                                  title={
+                                    isAuthenticated
+                                      ? "Reiniciar tempo agora (mesmo recurso)"
+                                      : "Faça login para gerenciar timers"
+                                  }
+                                >
+                                  <RefreshCw size={12} />
+                                  {isAuthenticated ? (
+                                    "Reiniciar"
+                                  ) : (
+                                    <Shield size={12} />
+                                  )}
+                                </button>
+                              )}
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                isAuthenticated &&
+                                togglePinCompleted(activePopupPin.id)
+                              }
+                              disabled={!isAuthenticated}
+                              className="flex-1 flex items-center justify-center gap-1.5 rounded-[10px] border border-red-500/20 bg-red-500/10 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-red-400 hover:bg-red-500/20 active:scale-95 transition-all cursor-pointer pointer-events-auto disabled:opacity-30"
+                              title={
+                                isAuthenticated
+                                  ? "Limpar marcação"
+                                  : "Login necessário"
+                              }
+                            >
+                              {isAuthenticated ? (
+                                <Trash2 size={12} />
+                              ) : (
+                                <Shield size={12} />
+                              )}
+                              {isAuthenticated ? "Desmarcar" : "Lock"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Not Completed State */
+                        <button
+                          type="button"
+                          onClick={() =>
+                            isAuthenticated &&
+                            togglePinCompleted(activePopupPin.id)
+                          }
+                          disabled={!isAuthenticated}
+                          className={cn(
+                            "relative overflow-hidden w-full flex items-center justify-center gap-2 rounded-[10px] px-3 py-2.5 text-xs font-black uppercase tracking-widest transition active:scale-[0.98] cursor-pointer pointer-events-auto disabled:opacity-50 disabled:grayscale disabled:pointer-events-none",
+                            "bg-gradient-to-r from-[var(--cyan)] to-[#00b894] text-slate-950 hover:brightness-110 shadow-[0_4px_16px_rgba(0,214,163,0.25)] hover:shadow-[0_6px_20px_rgba(0,214,163,0.45)] before:absolute before:inset-0 before:-skew-x-12 before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent before:-translate-x-full hover:before:translate-x-full before:transition-transform before:duration-700",
+                            // Escondemos o botão genérico apenas para Ore e Mushroom, pois estes exigem identificação
+                            (activePopupPin.type === "ore" ||
+                              activePopupPin.type === "mushroom") &&
+                              "hidden",
+                          )}
+                        >
+                          <CheckCircle2 size={14} />
+                          {isAuthenticated
+                            ? activePopupPin.type === "merchant"
+                              ? "Localizado / Está aqui"
+                              : "Concluir Coleta"
+                            : "Login para Coletar"}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </ViewportPortal>
+        )}
+      <MapFeedbackModal
+        isOpen={isFeedbackModalOpen}
+        onClose={() => {
+          setIsFeedbackModalOpen(false);
+          setFeedbackTarget(null);
+        }}
+        target={feedbackTarget}
+        onSubmit={submitFeedback}
+      />
+
+      {hoveredPin && hoveredPinCoords && (
+        <ViewportPortal>
+          <div
+            className={cn(
+              "pointer-events-none fixed z-[70] w-56 rounded-xl border border-white/8 bg-[linear-gradient(180deg,rgba(3,10,13,0.96),rgba(1,5,7,0.94))] p-3 shadow-[0_12px_24px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-md text-left select-none transition-all duration-300 animate-[fade-in_150ms_ease-out]",
+              hoveredPinCoords.isNearTop ? "mt-3" : "mb-3",
+            )}
+            style={{
+              position: "fixed",
+              left: `${hoveredPinCoords.screenX}px`,
+              top: `${hoveredPinCoords.screenY}px`,
+              transform: `translate(${hoveredPinCoords.isNearRight ? "-100%" : hoveredPinCoords.isNearLeft ? "0%" : "-50%"}, ${hoveredPinCoords.isNearTop ? "0%" : "-100%"}) translateY(${hoveredPinCoords.isNearTop ? "36px" : "-36px"}) translateX(${hoveredPinCoords.isNearRight ? "24px" : hoveredPinCoords.isNearLeft ? "-24px" : "0px"})`,
+              transformOrigin: "0 0",
+            }}
+          >
+            <div className="absolute inset-0 tech-corner-accent opacity-20 pointer-events-none" />
+            <h4 className="text-xs font-bold text-white truncate leading-tight">
+              {hoveredPin.label}
+            </h4>
+            <p
+              className="mt-0.5 text-[9px] font-mono font-bold uppercase tracking-wider leading-none"
+              style={{ color: hoveredPin.color || "#00d6a3" }}
+            >
+              {hoveredPin.typeLabel || "Pino Customizado"}
+            </p>
+
+            {hoveredPin.description && (
+              <p className="mt-1.5 text-[11px] text-slate-300 line-clamp-3 leading-normal border-t border-white/5 pt-1.5 whitespace-pre-line">
+                {hoveredPin.description.replace(/\\n/g, "\n")}
+              </p>
+            )}
+
+            {hoveredPin.tags && hoveredPin.tags.length > 0 && (
+              <div className="mt-1.5 flex flex-wrap gap-1 border-t border-white/5 pt-1.5">
+                {hoveredPin.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-md bg-white/5 border border-white/8 px-1 py-0.5 text-[8.5px] font-mono text-slate-400"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {hoveredPin.timer ? (
+              <div className="mt-2 flex items-center justify-between border-t border-cyan-500/20 pt-2">
+                <span className="text-[9px] font-mono text-cyan-400">
+                  {hoveredPin.type === "merchant"
+                    ? "Timer Despawn"
+                    : "Timer Respawn"}
+                </span>
+                {hoveredPin.isCompleted ? (
+                  <span className="text-[10px] font-bold font-mono text-green-400 animate-pulse">
+                    {formatRemainingTime(hoveredPin.completedTimerLeft || 0)}
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-mono text-slate-400">
+                    Pronto
+                  </span>
+                )}
+              </div>
+            ) : null}
+          </div>
+        </ViewportPortal>
+      )}
+
+      {toast && (
+        <ViewportPortal>
+          <div
+            className={`library-toast toast-${toast.type || "success"}`}
+            role="status"
+          >
+            {toast.type === "delete" ? (
+              <Trash2 aria-hidden="true" />
+            ) : toast.type === "error" ? (
+              <AlertCircle aria-hidden="true" />
+            ) : toast.type === "info" ? (
+              <Info aria-hidden="true" />
+            ) : (
+              <CircleCheck aria-hidden="true" />
+            )}
+            <span>
+              <strong>{toast.title}</strong>
+              <small>{toast.description}</small>
+            </span>
+          </div>
+        </ViewportPortal>
+      )}
+
+      <MapCategoriesMenu
+        isOpen={isSidebarOpen && sidebarSection === "officialPins"}
+        onClose={() => setIsSidebarOpen(false)}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        searchHistory={searchHistory}
+        removeFromHistory={removeFromHistory}
+        addToHistory={addToHistory}
+        clearHistory={clearHistory}
+        searchResults={searchResults}
+        selectCustomPin={selectCustomPin}
+        selectOfficialPoint={selectOfficialPoint}
+        focusCoords={focusCoords}
+        officialPinCategories={officialPinCategories}
+        selectedTypes={selectedTypes}
+        toggleSelectedType={toggleSelectedType}
+      />
+
+      <MapPinsMenu
+        isOpen={isSidebarOpen && sidebarSection === "customPins"}
+        onClose={() => setIsSidebarOpen(false)}
+        selectedCustomPin={selectedCustomPin}
+        editingCustomPinId={editingCustomPinId}
+        cancelCustomPin={cancelCustomPin}
+        confirmCustomPin={confirmCustomPin}
+        updateSelectedPinField={updateSelectedPinField}
+        customPins={customPins}
+        removeCustomPin={removeCustomPin}
+        toggleCustomPinVisibility={toggleCustomPinVisibility}
+        paginatedCustomPins={paginatedCustomPins}
+        customPinsPage={customPinsPage}
+        totalCustomPinsPages={totalCustomPinsPages}
+        setCustomPinsPage={setCustomPinsPage}
+        mode={mode}
+        setMode={setMode}
+        openCustomPinsSection={openCustomPinsSection}
+        isAuthenticated={isAuthenticated}
+        openLoginModal={() => setIsAuthModalOpen(true)}
+        focusCoords={focusCoords}
+        selectCustomPin={selectCustomPin}
+        startEditingCustomPin={startEditingCustomPin}
+      />
+
+      <MapRoutesMenu
+        isOpen={isSidebarOpen && sidebarSection === "routes"}
+        onClose={() => setIsSidebarOpen(false)}
+        routesView={routesView}
+        setRoutesView={setRoutesView}
+        publicRoutesQuery={publicRoutesQuery}
+        setPublicRoutesQuery={setPublicRoutesQuery}
+        publicRoutesLoading={publicRoutesLoading}
+        paginatedSavedRoutes={paginatedSavedRoutes}
+        mineRoutesPage={mineRoutesPage}
+        totalSavedRoutesPages={totalSavedRoutesPages}
+        setMineRoutesPage={setMineRoutesPage}
+        paginatedPublicRoutes={paginatedPublicRoutes}
+        publicRoutesPage={publicRoutesPage}
+        totalPublicRoutesPages={totalPublicRoutesPages}
+        setPublicRoutesPage={setPublicRoutesPage}
+        loadSavedRoute={loadSavedRoute}
+        deleteSavedRoute={deleteSavedRoute}
+        duplicateSavedRoute={duplicateSavedRoute}
+        publishSelectedRoute={publishSelectedRoute}
+        unpublishSelectedRoute={unpublishSelectedRoute}
+        toggleRouteVisibility={toggleRouteVisibility}
+        visibleRoutes={visibleRoutes}
+        selectedSavedRouteId={selectedSavedRouteId}
+        currentRoute={currentRoute}
+        updateRouteField={updateRouteField}
+        clearRoute={clearRoute}
+        saveCurrentRoute={saveCurrentRoute}
+        shareCurrentRoute={shareCurrentRoute}
+        copyRouteJson={copyRouteJson}
+        removeCheckpoint={removeCheckpoint}
+        moveCheckpoint={moveCheckpoint}
+        updateCheckpointLabel={updateCheckpointLabel}
+        mode={mode}
+        setMode={setMode}
+        isAuthenticated={isAuthenticated}
+        openLoginModal={() => setIsAuthModalOpen(true)}
+      />
+
+      {isSettingsModalOpen && (
+        <NotificationSettingsModal
+          onClose={() => setIsSettingsModalOpen(false)}
+          settings={notificationSettings}
+          onUpdate={updateNotificationSettings}
+          onRequestPushPermission={requestPushPermission}
+        />
+      )}
+    </div>
+  );
+}

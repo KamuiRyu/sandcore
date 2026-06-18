@@ -81,15 +81,12 @@ export const LoginScreen = () => {
             {/* Custom Horizontal Line with Mini Shuriken SVG */}
             <div className="flex items-center justify-center gap-3 w-full mt-3">
               <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-teal-500/30"></div>
-              <svg 
-                className="w-4 h-4 text-teal-500/80 animate-[spin_20s_linear_infinite] flex-none" 
-                viewBox="0 0 24 24" 
-                fill="currentColor" 
-                fillRule="evenodd" 
-                clipRule="evenodd"
-              >
-                <path d="M12 2Q12 12 2 12Q12 12 12 22Q12 12 22 12Q12 12 12 2ZM12 9.5A2.5 2.5 0 1 1 12 14.5A2.5 2.5 0 0 1 12 9.5Z" />
-              </svg>
+              <img 
+                src="/images/logo_mini.webp" 
+                alt="Logo" 
+                className="w-4 h-4 animate-[spin_20s_linear_infinite] flex-none object-contain" 
+                draggable={false}
+              />
               <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-teal-500/30"></div>
             </div>
           </div>

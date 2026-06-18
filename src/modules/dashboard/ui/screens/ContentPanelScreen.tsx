@@ -44,9 +44,12 @@ export const ContentPanelScreen = ({ activeTab }: ContentPanelScreenProps) => {
       {!isMapTab ? (
         <div className="absolute top-0 left-0 right-0 h-8 flex items-center justify-between pl-4 pr-0 select-none z-50 bg-[#0B0E12]" style={{ WebkitAppRegion: 'drag' } as any}>
           <div className="flex items-center gap-2">
-            <svg className="w-3.5 h-3.5 text-teal-500 animate-[pulse_2s_infinite]" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L14.8 9.2L22 12L14.8 14.8L12 22L9.2 14.8L2 12L9.2 9.2L12 2Z" />
-            </svg>
+            <img 
+              src="/images/logo_mini.webp" 
+              alt="Logo" 
+              className="w-3.5 h-3.5 object-contain" 
+              draggable={false}
+            />
             <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase">
               Shinobi Map • {activeTab === 'groups' ? 'Grupos' : 'Configurações'}
             </span>
@@ -75,19 +78,23 @@ export const ContentPanelScreen = ({ activeTab }: ContentPanelScreenProps) => {
           </div>
         </div>
       ) : (
-        <div className="h-14 bg-[#0B0E12] border-b border-[#1E2732] px-4 flex items-center justify-between gap-4 select-none z-50 flex-none" style={{ WebkitAppRegion: 'drag' } as any}>
+        <div className="h-14 bg-[#080c10] border-b border-[#131b24] px-4 flex items-center justify-between gap-4 select-none z-50 flex-none" style={{ WebkitAppRegion: 'drag' } as any}>
           {/* Logo */}
-          <div className="flex items-center gap-2 flex-none">
-            <svg className="w-5.5 h-5.5 text-teal-400" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2Q12 12 2 12Q12 12 12 22Q12 12 22 12Q12 12 12 2ZM12 9.5A2.5 2.5 0 1 1 12 14.5A2.5 2.5 0 0 1 12 9.5Z" />
+          <div className="flex items-center gap-2.5 flex-none">
+            <svg 
+              className="w-5 h-5 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.7)]" 
+              viewBox="0 0 24 24" 
+              fill="currentColor"
+            >
+              <path d="M12 2c0 5.523 4.477 10 10 10-5.523 0-10 4.477-10 10 0-5.523-4.477-10-10-10 5.523 0 10-4.477 10-10z" />
             </svg>
             <span className="font-bold text-sm tracking-widest text-slate-200">SHINOBI MAP</span>
           </div>
 
           {/* Search, Help, Filters */}
           <div className="flex-1 max-w-md flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
-            <div className="flex-1 relative">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+            <div className="flex-1 relative flex items-center">
+              <span className="absolute left-3 flex items-center pointer-events-none text-slate-500">
                 <Search size={14} />
               </span>
               <input 
@@ -95,17 +102,18 @@ export const ContentPanelScreen = ({ activeTab }: ContentPanelScreenProps) => {
                 placeholder="Buscar local, recurso, NPC..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#11161D] border border-[#222B37] rounded-lg py-1.5 pl-9 pr-8 text-xs text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none transition-colors"
+                className="w-full bg-[#11161D]/65 border border-[#222B37] rounded-lg py-1.5 pl-9 pr-9 text-xs text-slate-200 placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none transition-colors backdrop-blur-sm"
               />
+              <button 
+                className="absolute right-2.5 text-slate-500 hover:text-slate-300 transition-colors flex items-center justify-center p-0.5 rounded-full hover:bg-white/5 cursor-pointer" 
+                title="Ajuda"
+              >
+                <HelpCircle size={14} />
+              </button>
             </div>
-            
-            {/* Help Button */}
-            <button className="bg-[#11161D] hover:bg-[#1C232E] border border-[#222B37] rounded-lg p-2 flex items-center justify-center text-slate-400 hover:text-slate-200 transition-colors cursor-pointer" title="Ajuda">
-              <HelpCircle size={14} />
-            </button>
 
             {/* Filters toggle */}
-            <button className="bg-[#11161D] hover:bg-[#1C232E] border border-[#222B37] rounded-lg py-1.5 px-3 flex items-center gap-1.5 text-xs text-slate-300 hover:text-white transition-colors cursor-pointer">
+            <button className="bg-[#11161D]/65 hover:bg-[#1C232E]/80 border border-[#222B37] rounded-lg py-1.5 px-3 flex items-center gap-1.5 text-xs text-slate-300 hover:text-white transition-all cursor-pointer backdrop-blur-sm">
               <Filter size={13} />
               <span>Filtros</span>
             </button>

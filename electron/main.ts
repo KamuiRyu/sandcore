@@ -142,7 +142,7 @@ function createSidebarWindow() {
   })
 
   // Open DevTools automatically to see errors - can be commented out later
-  //sidebarWin.webContents.openDevTools()
+  sidebarWin.webContents.openDevTools()
 
   if (process.env.VITE_DEV_SERVER_URL) {
     sidebarWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}?windowType=sidebar`)
