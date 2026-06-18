@@ -37,11 +37,13 @@ module.exports = {
     artifactName: "ShinobiMap_" + versionStr + "_portable.${ext}",
   },
 
-  publish: {
-    provider: "github",
-    owner: "KamuiRyu",
-    repo: "slp-map",
-    releaseType: "release",
-    allowPrerelease: true,
-  },
+  publish: [
+    {
+      provider: "github",
+      owner: "KamuiRyu",
+      repo: "slp-map",
+      releaseType: "release",
+      allowPrerelease: true,
+    },
+  ],
 };
