@@ -52,11 +52,26 @@ export const AppDetailsScreen = () => {
 
       // Listen for updates from main process
       const handleUpdateStatus = (_event: any, data: { status: any; version?: string; message?: string }) => {
-        setUpdateStatus(data.status)
+        let status = data.status
+        const msg = data.message || ''
+        const lowerMsg = msg.toLowerCase()
+
+        // If the error indicates no versions are published or not found on GitHub, treat it as "no updates available"
+        if (
+          status === 'error' &&
+          (lowerMsg.includes('no published versions on github') ||
+            lowerMsg.includes('notfound') ||
+            lowerMsg.includes('not found') ||
+            lowerMsg.includes('404'))
+        ) {
+          status = 'not-available'
+        }
+
+        setUpdateStatus(status)
         if (data.version) setUpdateVersion(data.version)
         if (data.message) setUpdaterError(data.message)
 
-        if (data.status === 'not-available') {
+        if (status === 'not-available') {
           setTimeout(() => {
             setUpdateStatus('idle')
           }, 3000)
