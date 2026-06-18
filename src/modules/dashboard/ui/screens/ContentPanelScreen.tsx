@@ -5,23 +5,23 @@ import { MapScreen } from '../../../map/ui/screens/MapScreen'
 import { SettingsScreen } from '../../../settings/ui/screens/SettingsScreen'
 
 interface ContentPanelScreenProps {
-  activeTab: string
+  activeTab: string | null
+  lastActiveTab: string
 }
 
-export const ContentPanelScreen = ({ activeTab }: ContentPanelScreenProps) => {
+export const ContentPanelScreen = ({ activeTab, lastActiveTab }: ContentPanelScreenProps) => {
   const [isClosing, setIsClosing] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-    const animTimer = setTimeout(() => {
+    if (activeTab) {
+      setIsClosing(false)
       setIsMounted(true)
-    }, 150)
-
-    return () => {
-      clearTimeout(animTimer)
+    } else {
+      setIsClosing(true)
     }
-  }, [])
+  }, [activeTab])
 
   const handleClose = () => {
     setIsClosing(true)
@@ -30,11 +30,11 @@ export const ContentPanelScreen = ({ activeTab }: ContentPanelScreenProps) => {
     }, 300)
   }
 
-  const isMapTab = activeTab === 'map'
+  const isMapTab = lastActiveTab === 'map'
 
   return (
     <div 
-      key={activeTab} 
+      key={lastActiveTab} 
       className={`flex flex-col relative bg-[#080A0C] text-slate-200 font-sans overflow-hidden rounded-xl border border-[#1A222C] transition-[opacity,transform,filter] duration-300 ease-out 
         ${isMounted && !isClosing ? 'opacity-100 scale-100 blur-none' : 'opacity-0 scale-95 blur-sm'} 
         ${isMapTab ? 'w-[1200px] h-[800px]' : 'w-[400px] h-[360px]'}
@@ -155,11 +155,11 @@ export const ContentPanelScreen = ({ activeTab }: ContentPanelScreenProps) => {
 
       {/* Main Content Area */}
       <div className={`flex-1 overflow-hidden h-full flex flex-col ${!isMapTab ? 'pt-8' : ''}`}>
-        {activeTab === 'map' && <MapScreen searchQuery={searchQuery} />}
+        {lastActiveTab === 'map' && <MapScreen searchQuery={searchQuery} />}
         {!isMapTab && (
           <div className="flex-1 bg-[#0A0D10] p-5 flex flex-col justify-between overflow-hidden animate-in fade-in duration-300">
-            {activeTab === 'groups' && <GroupsScreen />}
-            {activeTab === 'settings' && <SettingsScreen />}
+            {lastActiveTab === 'groups' && <GroupsScreen />}
+            {lastActiveTab === 'settings' && <SettingsScreen />}
           </div>
         )}
       </div>

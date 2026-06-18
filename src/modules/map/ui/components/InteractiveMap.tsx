@@ -317,7 +317,7 @@ const FocusBeacon = memo(function FocusBeacon({
       `}</style>
       {/* Outer rings (pointer-events-none so map still receives input) */}
       <div
-        className="pointer-events-none fixed z-[79]"
+        className="pointer-events-none absolute z-[79]"
         style={{ left: screenX, top: screenY }}
       >
         {/* Ring 1 — fastest */}
@@ -331,6 +331,7 @@ const FocusBeacon = memo(function FocusBeacon({
             boxShadow: `0 0 12px ${accentFaded}`,
             animation: "beacon-ring 1.6s ease-out infinite",
             animationDelay: "0s",
+            animationFillMode: "backwards",
           }}
         />
         {/* Ring 2 — medium */}
@@ -344,6 +345,7 @@ const FocusBeacon = memo(function FocusBeacon({
             boxShadow: `0 0 12px ${accentFaded}`,
             animation: "beacon-ring 1.6s ease-out infinite",
             animationDelay: "0.45s",
+            animationFillMode: "backwards",
           }}
         />
         {/* Ring 3 — slowest */}
@@ -357,6 +359,7 @@ const FocusBeacon = memo(function FocusBeacon({
             boxShadow: `0 0 12px ${accentFaded}`,
             animation: "beacon-ring 1.6s ease-out infinite",
             animationDelay: "0.9s",
+            animationFillMode: "backwards",
           }}
         />
         {/* Solid center dot */}
@@ -498,11 +501,47 @@ type ClusteredCustomPin = SavedCustomPin & {
   clusterCount?: number;
 };
 
+const getAllowedOresForSubRegion = (subRegionId: string | undefined): string[] => {
+  if (!subRegionId) return ["ore_1", "ore_2", "ore_3", "ore_4", "ore_5", "ore_6", "ore_7", "ore_8", "ore_9"];
+  
+  const sub = subRegionId.trim().toLowerCase();
+  
+  // Cobre (ore_4)
+  const allowedCobre = ["iwagakure"].includes(sub);
+  // Alumínio (ore_2)
+  const allowedAluminio = ["vale do fim"].includes(sub);
+  // Ferro (ore_6)
+  const allowedFerro = ["tetsugakure"].includes(sub);
+  // Ouro (ore_7)
+  const allowedOuro = ["iwagakure"].includes(sub);
+  // Platina (ore_8)
+  const allowedPlatina = ["tetsugakure"].includes(sub);
+  // Ametista (ore_3), Ruby (ore_9), Diamante (ore_5)
+  const allowedGems = ["ilha doton", "ilha dotou", "caverna tetsu", "caverna fuji"].includes(sub);
+  
+  const list: string[] = [];
+  // A pedra (ore_1) sempre tem que aparecer junto com o minério da região
+  list.push("ore_1");
+  
+  if (allowedAluminio) list.push("ore_2");
+  if (allowedGems) list.push("ore_3"); // Ametista
+  if (allowedCobre) list.push("ore_4");
+  if (allowedGems) list.push("ore_5"); // Diamante
+  if (allowedFerro) list.push("ore_6");
+  if (allowedOuro) list.push("ore_7");
+  if (allowedPlatina) list.push("ore_8");
+  if (allowedGems) list.push("ore_9"); // Ruby
+  
+  return list;
+};
+
 export interface InteractiveMapProps {
   externalSearchQuery?: string;
 }
 
-export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps) {
+export function InteractiveMap({
+  externalSearchQuery = "",
+}: InteractiveMapProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const {
@@ -627,12 +666,18 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
       setSidebarSection("search");
       setIsSidebarOpen(true);
     }
-  }, [externalSearchQuery, setSearchQuery, setSidebarSection, setIsSidebarOpen]);
+  }, [
+    externalSearchQuery,
+    setSearchQuery,
+    setSidebarSection,
+    setIsSidebarOpen,
+  ]);
 
   useEffect(() => {
     const handleOpenSettings = () => setIsSettingsModalOpen(true);
-    window.addEventListener('open-map-settings', handleOpenSettings);
-    return () => window.removeEventListener('open-map-settings', handleOpenSettings);
+    window.addEventListener("open-map-settings", handleOpenSettings);
+    return () =>
+      window.removeEventListener("open-map-settings", handleOpenSettings);
   }, [setIsSettingsModalOpen]);
 
   const {
@@ -700,6 +745,9 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
         creator: undefined,
         updatedAt: undefined,
         type: selectedOfficialPoint.type,
+        regionId: selectedOfficialPoint.regionId,
+        subRegionId: selectedOfficialPoint.subRegionId,
+        allowedOres: getAllowedOresForSubRegion(selectedOfficialPoint.subRegionId),
       };
     }
     if (
@@ -726,6 +774,7 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
             : savedPin.ownerName
           : "Você",
         updatedAt: savedPin.updatedAt,
+        allowedOres: ["ore_1", "ore_2", "ore_3", "ore_4", "ore_5", "ore_6", "ore_7", "ore_8", "ore_9"],
       };
     }
     return null;
@@ -1501,11 +1550,33 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
                   },
                 )
               : null}
+            {/* Focus Beacon — inside the viewport container for correct absolute positioning */}
+            {activePopupPin &&
+              mode === "explore" &&
+              !editingCustomPinId &&
+              !isMoving &&
+              (() => {
+                const beaconCoords = getScreenCoords(
+                  activePopupPin.x,
+                  activePopupPin.y,
+                );
+                return (
+                  <FocusBeacon
+                    screenX={beaconCoords.x}
+                    screenY={beaconCoords.y}
+                    color={
+                      activePopupPin.isCustom
+                        ? (activePopupPin as any).color
+                        : undefined
+                    }
+                  />
+                );
+              })()}
           </div>
         </div>
 
         {/* Painel Flutuante de Atalhos Rápidos (Canto Superior Direito) */}
-        <div className="absolute top-3 right-3 sm:top-5 sm:right-5 z-25 flex flex-col gap-2 rounded-full border border-[#00d6a3]/15 bg-[#041418]/28 p-2 shadow-none backdrop-blur-[20px]">
+        <div className="absolute top-3 right-3 sm:top-5 sm:right-5 z-[60] flex flex-col gap-2 rounded-full border border-[#00d6a3]/15 bg-[#041418]/28 p-2 shadow-none backdrop-blur-[20px]">
           {/* Adicionar Pin */}
           <button
             onClick={() => {
@@ -1649,7 +1720,7 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
           </button>
         </div>
 
-        <div className="absolute bottom-3 right-3 sm:bottom-5 sm:right-5 z-10 rounded-full border border-[#00d6a3]/15 bg-[#041418]/28 px-2 py-3 shadow-none backdrop-blur-[20px]">
+        <div className="absolute bottom-3 right-3 sm:bottom-5 sm:right-5 z-[60] rounded-full border border-[#00d6a3]/15 bg-[#041418]/28 px-2 py-3 shadow-none backdrop-blur-[20px]">
           <div className="grid justify-items-center gap-2">
             <button
               aria-label="Aproximar mapa"
@@ -1779,35 +1850,22 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
         <AuthModal onClose={() => setIsAuthModalOpen(false)} />
       )}
 
-      {/* Focus Beacon — rendered below the popup card so rings appear around the pin */}
-      {activePopupPin &&
-        popupCoords &&
-        mode === "explore" &&
-        !editingCustomPinId && (
-          <ViewportPortal>
-            <FocusBeacon
-              screenX={popupCoords.screenX}
-              screenY={popupCoords.screenY}
-              color={activePopupPin.isCustom ? (activePopupPin as any).color : undefined}
-            />
-          </ViewportPortal>
-        )}
-
       {activePopupPin &&
         popupCoords &&
         mode === "explore" &&
         !editingCustomPinId && (
           <ViewportPortal>
             <div
-              className="fixed w-[310px] rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(3,10,13,0.92),rgba(1,5,7,0.88))] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-2xl text-left select-text animate-[fade-in_150ms_ease-out] before:pointer-events-none before:absolute before:inset-[1px] before:rounded-[23px] before:border before:border-white/[0.03] before:content-['']"
+              className="fixed w-[260px] rounded-[18px] border border-white/8 bg-[linear-gradient(180deg,rgba(3,10,13,0.95),rgba(1,5,7,0.92))] p-3 shadow-[0_20px_48px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-2xl text-left select-text animate-[fade-in_150ms_ease-out] before:pointer-events-none before:absolute before:inset-[1px] before:rounded-[17px] before:border before:border-white/[0.03] before:content-[''] flex flex-col"
               style={{
                 zIndex: 80,
                 position: "fixed",
                 left: `${popupCoords.screenX}px`,
                 top: `${popupCoords.screenY}px`,
-                transform: `translate(${popupCoords.isNearRight ? "-100%" : popupCoords.isNearLeft ? "0%" : "-50%"}, ${popupCoords.isNearTop ? "0%" : "-100%"}) translateY(${popupCoords.isNearTop ? "32px" : "-32px"}) translateX(${popupCoords.isNearRight ? "-16px" : popupCoords.isNearLeft ? "16px" : "0px"})`,
+                transform: `translate(${popupCoords.isNearRight ? "-100%" : popupCoords.isNearLeft ? "0%" : "-50%"}, ${popupCoords.isNearTop ? "0%" : "-100%"}) translateY(${popupCoords.isNearTop ? "52px" : "-52px"}) translateX(${popupCoords.isNearRight ? "-16px" : popupCoords.isNearLeft ? "16px" : "0px"})`,
                 transformOrigin: "0 0",
                 cursor: "default",
+                height: "250px",
               }}
               onPointerDown={(e) => e.stopPropagation()}
               onPointerUp={(e) => e.stopPropagation()}
@@ -1817,458 +1875,505 @@ export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps
               {/* Tech Corner Accent inside card */}
               <div className="absolute inset-0 tech-corner-accent opacity-20 pointer-events-none" />
 
-              {/* Header Actions (Report & Close) */}
-              <div className="absolute top-4 right-4 flex items-center gap-1.5 z-50">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFeedbackTarget({
-                      x: activePopupPin.x,
-                      y: activePopupPin.y,
-                      pointId: activePopupPin.id,
-                      pointName: activePopupPin.name,
-                    });
-                    setIsFeedbackModalOpen(true);
-                  }}
-                  className="grid h-7 w-7 place-items-center rounded-full border border-white/5 bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 hover:border-purple-500/20 transition cursor-pointer group"
-                  title="Reportar problema ou sugerir alteração"
-                >
-                  <MessageSquare
-                    size={13}
-                    className="transition-transform group-hover:scale-110"
-                  />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (activePopupPin.isCustom) {
-                      selectCustomPin(null);
-                    } else {
-                      setSelectedOfficialPointId(null);
-                    }
-                  }}
-                  className="grid h-7 w-7 place-items-center rounded-full border border-white/5 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 hover:border-white/12 transition cursor-pointer group"
-                  aria-label="Fechar popup"
-                >
-                  <X
-                    size={14}
-                    className="transition-transform group-hover:scale-110"
-                  />
-                </button>
-              </div>
-              {/* Title & Category Tag */}
-              <div className="pr-8 mb-3">
-                <h3 className="text-[15px] font-black text-white truncate tracking-tight leading-none">
-                  {activePopupPin.name}
-                </h3>
-                <div className="mt-2.5 flex flex-wrap gap-1.5">
-                  <span className="rounded-md bg-white/5 px-2 py-0.5 text-[9.5px] font-mono font-bold uppercase tracking-wider text-cyan-400/95 border border-cyan-500/10">
-                    {activePopupPin.typeLabel}
-                  </span>
+              {/* Compact header: name + badge + actions all in one row */}
+              <div className="flex items-start justify-between gap-2 mb-1.5 shrink-0">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-[13px] font-black text-white truncate tracking-tight leading-none">
+                    {activePopupPin.name}
+                  </h3>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <span className="rounded-md bg-white/5 px-1.5 py-0.5 text-[8px] font-mono font-bold uppercase tracking-wider text-cyan-400/90 border border-cyan-500/10">
+                      {activePopupPin.typeLabel}
+                    </span>
+                    {/* Contributor inline */}
+                    <span className="text-[8px] font-mono text-slate-500 truncate">
+                      {activePopupPin.isCustom
+                        ? activePopupPin.creator
+                        : "Shinobi Legends"}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFeedbackTarget({
+                        x: activePopupPin.x,
+                        y: activePopupPin.y,
+                        pointId: activePopupPin.id,
+                        pointName: activePopupPin.name,
+                      });
+                      setIsFeedbackModalOpen(true);
+                    }}
+                    className="grid h-6 w-6 place-items-center rounded-full border border-white/5 bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition cursor-pointer"
+                    title="Reportar problema"
+                  >
+                    <MessageSquare size={11} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (activePopupPin.isCustom) {
+                        selectCustomPin(null);
+                      } else {
+                        setSelectedOfficialPointId(null);
+                      }
+                    }}
+                    className="grid h-6 w-6 place-items-center rounded-full border border-white/5 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                    aria-label="Fechar popup"
+                  >
+                    <X size={12} />
+                  </button>
                 </div>
               </div>
 
-              {/* Image Section (if present) */}
-              {activePopupPin.imageUrl ? (
-                <div className="w-full h-36 rounded-[14px] overflow-hidden border border-white/8 mb-3 relative bg-slate-950">
-                  <img
-                    src={activePopupPin.imageUrl}
-                    alt={activePopupPin.name}
-                    className="w-full h-full object-cover"
-                    draggable={false}
-                  />
-                </div>
-              ) : null}
+              {/* Scrollable content area — scroll only for description-only pins */}
+              {(() => {
+                const hasActionButtons =
+                  !activePopupPin.type ||
+                  !uncompletableTypes.includes(activePopupPin.type as any) ||
+                  activePopupPin.type === "merchant";
+                return (
+                  <div className="flex-1 flex flex-col min-h-0">
+                    {/* Description & Image scroll container */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar pr-0.5 min-h-0">
+                      {/* Description — full text, no truncation */}
+                      {activePopupPin.description && (
+                        <p className="text-[9.5px] text-slate-400 leading-snug mb-1.5 whitespace-pre-line">
+                          {activePopupPin.description.replace(/\\n/g, "\n")}
+                        </p>
+                      )}
 
-              {/* Description Box */}
-              {activePopupPin.description ? (
-                <p className="text-xs text-slate-300 bg-black/25 p-3 rounded-[14px] border border-white/5 leading-relaxed mb-3 whitespace-pre-line">
-                  {activePopupPin.description.replace(/\\n/g, "\n")}
-                </p>
-              ) : (
-                <div className="h-2" />
-              )}
-
-              {/* Contributor Row (for custom pins or official info) */}
-              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400/90 border-t border-white/5 pt-2.5 mb-3.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[#8a91a3]">Contribuidor:</span>
-                  <span className="text-cyan-400 font-bold">
-                    {activePopupPin.isCustom
-                      ? activePopupPin.creator
-                      : "Shinobi Legends"}
-                  </span>
-                </div>
-                {activePopupPin.updatedAt && (
-                  <span className="text-[9.5px] text-[#8a91a3]">
-                    Modificado:{" "}
-                    {new Date(activePopupPin.updatedAt).toLocaleDateString(
-                      "pt-BR",
-                    )}
-                  </span>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              {(!activePopupPin.type ||
-                !uncompletableTypes.includes(activePopupPin.type as any) ||
-                activePopupPin.type === "merchant") && (
-                <div className="mt-4 grid gap-2">
-                  {(activePopupPin.type === "ore" ||
-                    activePopupPin.type === "mushroom") &&
-                    !activePopupPin.isCompleted && (
-                      <div className="grid gap-3.5 p-3.5 rounded-2xl border border-white/[0.06] bg-black/25 shadow-[inset_0_1px_2px_rgba(255,255,255,0.02)] backdrop-blur-md relative overflow-hidden">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-[var(--cyan)] animate-pulse shadow-[0_0_8px_var(--cyan)]" />
-                            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[var(--cyan)]">
-                              Identificar{" "}
-                              {activePopupPin.type === "ore"
-                                ? "Minério"
-                                : "Cogumelo"}
-                            </span>
-                          </div>
-                          {!isAuthenticated && (
-                            <Shield
-                              className="text-red-400 opacity-50"
-                              size={10}
-                            />
-                          )}
+                      {/* Image Section */}
+                      {activePopupPin.imageUrl && (
+                        <div className="w-full h-16 rounded-[8px] overflow-hidden border border-white/8 mb-1.5 bg-slate-950 shrink-0">
+                          <img
+                            src={activePopupPin.imageUrl}
+                            alt={activePopupPin.name}
+                            className="w-full h-full object-cover"
+                            draggable={false}
+                          />
                         </div>
+                      )}
+                    </div>
 
-                        {!isAuthenticated ? (
-                          <div className="py-2.5 px-1 text-center bg-black/20 rounded-xl border border-white/[0.02]">
-                            <p className="text-[10px] text-slate-500 italic leading-tight">
-                              Faça login para identificar recursos e sincronizar
-                              timers com seu grupo.
-                            </p>
-                          </div>
-                        ) : (
-                          <>
-                            {["ore", "mushroom"].includes(
-                              activePopupPin.type || "",
-                            ) &&
-                              (() => {
-                                const lastSubtype =
-                                  notificationSettings.rememberLastSubtype &&
-                                  activePopupPin.type
-                                    ? notificationSettings.lastSelectedSubTypes[
-                                        activePopupPin.type
-                                      ]
-                                    : undefined;
+                    {/* Action Buttons */}
+                    {hasActionButtons && (
+                      <div className="grid gap-1.5 shrink-0 mt-1.5">
+                        {(activePopupPin.type === "ore" ||
+                          activePopupPin.type === "mushroom") &&
+                          !activePopupPin.isCompleted && (
+                            <div className="grid gap-1.5 p-2 rounded-xl border border-white/[0.06] bg-black/20 relative overflow-hidden">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--cyan)] animate-pulse shadow-[0_0_8px_var(--cyan)]" />
+                                  <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-[var(--cyan)]">
+                                    Identificar{" "}
+                                    {activePopupPin.type === "ore"
+                                      ? "Minério"
+                                      : "Cogumelo"}
+                                  </span>
+                                </div>
+                                {!isAuthenticated && (
+                                  <Shield
+                                    className="text-red-400 opacity-50"
+                                    size={10}
+                                  />
+                                )}
+                              </div>
 
-                                const subTypeToUse =
-                                  activePopupPin.subType ||
-                                  lastSubtype ||
-                                  (activePopupPin.type === "ore"
-                                    ? "ore_1"
-                                    : "mushroom_1");
-
-                                const isDefault =
-                                  subTypeToUse === "ore_1" ||
-                                  subTypeToUse === "mushroom_1";
-
-                                return (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      togglePinCompleted(
-                                        activePopupPin.id,
-                                        subTypeToUse,
-                                      );
-
-                                      if (
+                              {!isAuthenticated ? (
+                                <div className="py-2.5 px-1 text-center bg-black/20 rounded-xl border border-white/[0.02]">
+                                  <p className="text-[10px] text-slate-500 italic leading-tight">
+                                    Faça login para identificar recursos e
+                                    sincronizar timers com seu grupo.
+                                  </p>
+                                </div>
+                              ) : (
+                                <>
+                                  {["ore", "mushroom"].includes(
+                                    activePopupPin.type || "",
+                                  ) &&
+                                    (() => {
+                                      const lastSubtype =
                                         notificationSettings.rememberLastSubtype &&
                                         activePopupPin.type
-                                      ) {
-                                        updateNotificationSettings({
-                                          ...notificationSettings,
-                                          lastSelectedSubTypes: {
-                                            ...notificationSettings.lastSelectedSubTypes,
-                                            [activePopupPin.type]: subTypeToUse,
-                                          },
-                                        });
-                                      }
+                                          ? notificationSettings
+                                              .lastSelectedSubTypes[
+                                              activePopupPin.type
+                                            ]
+                                          : undefined;
+
+                                      const subTypeToUse =
+                                        activePopupPin.subType ||
+                                        lastSubtype ||
+                                        (activePopupPin.type === "ore"
+                                          ? "ore_1"
+                                          : "mushroom_1");
+
+                                      const isDefault =
+                                        subTypeToUse === "ore_1" ||
+                                        subTypeToUse === "mushroom_1";
+
+                                      const showMainButton =
+                                        activePopupPin.type !== "ore" ||
+                                        (activePopupPin as any).allowedOres?.includes("ore_1");
+
+                                      if (!showMainButton) return null;
+
+                                      return (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            togglePinCompleted(
+                                              activePopupPin.id,
+                                              subTypeToUse,
+                                            );
+
+                                            if (
+                                              notificationSettings.rememberLastSubtype &&
+                                              activePopupPin.type
+                                            ) {
+                                              updateNotificationSettings({
+                                                ...notificationSettings,
+                                                lastSelectedSubTypes: {
+                                                  ...notificationSettings.lastSelectedSubTypes,
+                                                  [activePopupPin.type]:
+                                                    subTypeToUse,
+                                                },
+                                              });
+                                            }
+                                          }}
+                                          className={cn(
+                                            "group relative overflow-hidden flex w-full items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-[9px] font-black uppercase tracking-wide transition-all duration-300 cursor-pointer shadow-md active:scale-[0.97]",
+                                            "bg-gradient-to-r from-[var(--cyan)] to-[#00b894] text-slate-950 hover:brightness-110 shadow-[0_3px_10px_rgba(0,214,163,0.25)] before:absolute before:inset-0 before:-skew-x-12 before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent before:-translate-x-full hover:before:translate-x-full before:transition-transform before:duration-700",
+                                          )}
+                                        >
+                                          {isDefault ? (
+                                            <>
+                                              <CircleCheck
+                                                size={11}
+                                                className="shrink-0 z-[1]"
+                                              />
+                                              <span className="z-[1]">
+                                                Padrão / Já passei
+                                              </span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <RefreshCw
+                                                size={11}
+                                                className="shrink-0 z-[1]"
+                                              />
+                                              <span className="z-[1]">
+                                                (
+                                                {getMarkerIconLabel(
+                                                  subTypeToUse,
+                                                )}
+                                                )
+                                              </span>
+                                            </>
+                                          )}
+                                        </button>
+                                      );
+                                    })()}
+
+                                  {/* Icons: horizontal scroll row to keep height compact */}
+                                  <div
+                                    className="flex gap-2 overflow-x-auto pb-0.5 pt-0.5 no-scrollbar cursor-grab active:cursor-grabbing select-none"
+                                    onMouseDown={(e) => {
+                                      const container = e.currentTarget;
+                                      container.dataset.isDown = "true";
+                                      container.dataset.startX = e.pageX.toString();
+                                      container.dataset.scrollLeft = container.scrollLeft.toString();
+                                      container.dataset.moved = "false";
                                     }}
-                                    className={cn(
-                                      "group relative overflow-hidden flex w-full items-center justify-center gap-2 rounded-xl px-3 py-3 text-[10px] font-black uppercase tracking-wide transition-all duration-300 mb-2.5 cursor-pointer shadow-lg active:scale-[0.97]",
-                                      "bg-gradient-to-r from-[var(--cyan)] to-[#00b894] text-slate-950 hover:brightness-110 shadow-[0_4px_16px_rgba(0,214,163,0.25)] before:absolute before:inset-0 before:-skew-x-12 before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent before:-translate-x-full hover:before:translate-x-full before:transition-transform before:duration-700",
-                                    )}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.dataset.isDown = "false";
+                                    }}
+                                    onMouseUp={(e) => {
+                                      e.currentTarget.dataset.isDown = "false";
+                                    }}
+                                    onMouseMove={(e) => {
+                                      const container = e.currentTarget;
+                                      if (container.dataset.isDown !== "true") return;
+                                      const x = e.pageX;
+                                      const startX = parseFloat(container.dataset.startX || "0");
+                                      const scrollLeft = parseFloat(container.dataset.scrollLeft || "0");
+                                      const diff = Math.abs(x - startX);
+                                      if (diff > 5) {
+                                        container.dataset.moved = "true";
+                                      }
+                                      const walk = (x - startX) * 1.5;
+                                      container.scrollLeft = scrollLeft - walk;
+                                    }}
                                   >
-                                    {isDefault ? (
-                                      <>
-                                        <CircleCheck
-                                          size={14}
-                                          className="shrink-0 drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)] z-[1]"
-                                        />
-                                        <span className="z-[1]">
-                                          Padrão / Já passei
-                                        </span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <RefreshCw
-                                          size={14}
-                                          className="shrink-0 drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)] z-[1]"
-                                        />
-                                        <span className="z-[1]">
-                                          ({getMarkerIconLabel(subTypeToUse)})
-                                        </span>
-                                      </>
-                                    )}
-                                  </button>
-                                );
-                              })()}
-
-                            <div className="grid grid-cols-5 gap-2.5">
-                              {markerIconsByType[activePopupPin.type]
-                                .filter(
-                                  (iconId) =>
-                                    iconId !== "ore_1" &&
-                                    iconId !== "mushroom_1",
-                                )
-                                .map((iconId) => {
-                                  const isLastUsed =
-                                    notificationSettings.lastSelectedSubTypes[
-                                      activePopupPin.type!
-                                    ] === iconId;
-                                  return (
-                                    <button
-                                      key={iconId}
-                                      type="button"
-                                      onClick={() => {
-                                        togglePinCompleted(
-                                          activePopupPin.id,
-                                          iconId,
+                                    {markerIconsByType[activePopupPin.type]
+                                      .filter(
+                                        (iconId) =>
+                                          iconId !== "mushroom_1" &&
+                                          (activePopupPin.type !== "ore" ||
+                                            (activePopupPin as any).allowedOres?.includes(iconId)),
+                                      )
+                                      .map((iconId) => {
+                                        const isLastUsed =
+                                          notificationSettings
+                                            .lastSelectedSubTypes[
+                                            activePopupPin.type!
+                                          ] === iconId;
+                                        return (
+                                          <button
+                                            key={iconId}
+                                            type="button"
+                                            onClick={(e) => {
+                                              const container = e.currentTarget.parentElement;
+                                              if (container && container.dataset.moved === "true") {
+                                                e.stopPropagation();
+                                                return;
+                                              }
+                                              togglePinCompleted(
+                                                activePopupPin.id,
+                                                iconId,
+                                              );
+                                              if (
+                                                notificationSettings.rememberLastSubtype
+                                              ) {
+                                                updateNotificationSettings({
+                                                  ...notificationSettings,
+                                                  lastSelectedSubTypes: {
+                                                    ...notificationSettings.lastSelectedSubTypes,
+                                                    [activePopupPin.type!]:
+                                                      iconId,
+                                                  },
+                                                });
+                                              }
+                                            }}
+                                            className={cn(
+                                              "relative flex-shrink-0 group flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-gradient-to-b from-slate-900/60 to-slate-950/80 transition-all duration-200 hover:border-[var(--cyan)]/50 hover:bg-[var(--cyan)]/10 hover:scale-105 cursor-pointer",
+                                              isLastUsed &&
+                                                "border-[var(--cyan)] bg-gradient-to-b from-cyan-950/40 to-cyan-900/60 shadow-[0_0_15px_rgba(0,214,163,0.3)] scale-105",
+                                            )}
+                                            title={getMarkerIconLabel(iconId)}
+                                          >
+                                            <img
+                                              src={getMarkerIconSrc(iconId)}
+                                              alt=""
+                                              className="h-6 w-6 object-contain transition-transform group-hover:scale-110"
+                                            />
+                                            {isLastUsed && (
+                                              <div className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-[var(--cyan)] border-2 border-[#0a0f18] flex items-center justify-center shadow-[0_0_8px_var(--cyan)]">
+                                                <span className="w-1.5 h-1.5 bg-[#0a0f18] rounded-full" />
+                                              </div>
+                                            )}
+                                          </button>
                                         );
-                                        if (
-                                          notificationSettings.rememberLastSubtype
-                                        ) {
-                                          updateNotificationSettings({
-                                            ...notificationSettings,
-                                            lastSelectedSubTypes: {
-                                              ...notificationSettings.lastSelectedSubTypes,
-                                              [activePopupPin.type!]: iconId,
-                                            },
-                                          });
-                                        }
-                                      }}
-                                      className={cn(
-                                        "relative group flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-gradient-to-b from-slate-900/60 to-slate-950/80 transition-all duration-300 hover:border-[var(--cyan)]/50 hover:bg-[var(--cyan)]/10 hover:scale-105 cursor-pointer shadow-sm",
-                                        isLastUsed &&
-                                          "border-[var(--cyan)] bg-gradient-to-b from-cyan-950/40 to-cyan-900/60 shadow-[0_0_15px_rgba(0,214,163,0.3)] scale-105",
-                                      )}
-                                      title={getMarkerIconLabel(iconId)}
-                                    >
-                                      <img
-                                        src={getMarkerIconSrc(iconId)}
-                                        alt=""
-                                        className="h-7 w-7 object-contain transition-transform group-hover:scale-110"
-                                      />
-                                      {isLastUsed && (
-                                        <div className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-[var(--cyan)] border-2 border-[#0a0f18] flex items-center justify-center shadow-[0_0_8px_var(--cyan)]">
-                                          <span className="w-1.5 h-1.5 bg-[#0a0f18] rounded-full" />
-                                        </div>
-                                      )}
-                                    </button>
-                                  );
-                                })}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )}
-
-                  {isAuthenticated && group && !activePopupPin.isCompleted && (
-                    <div className="flex rounded-xl bg-white/[0.03] p-1 border border-white/5">
-                      <button
-                        onClick={() => setPinVisibility("private")}
-                        className={cn(
-                          "flex flex-1 items-center justify-center gap-2 rounded-lg py-1.5 text-[10px] font-black uppercase tracking-wider transition-all pointer-events-auto",
-                          pinVisibility === "private"
-                            ? "bg-white/10 text-white shadow-sm"
-                            : "text-slate-500 hover:text-slate-300",
-                        )}
-                      >
-                        <Lock size={12} />
-                        Pessoal
-                      </button>
-                      <button
-                        onClick={() => setPinVisibility("group")}
-                        className={cn(
-                          "flex flex-1 items-center justify-center gap-2 rounded-lg py-1.5 text-[10px] font-black uppercase tracking-wider transition-all pointer-events-auto",
-                          pinVisibility === "group"
-                            ? "bg-[var(--cyan)]/20 text-[var(--cyan)] shadow-sm"
-                            : "text-slate-500 hover:text-slate-300",
-                        )}
-                      >
-                        <Shield size={12} />
-                        Grupo
-                      </button>
-                    </div>
-                  )}
-
-                  {activePopupPin.isCustom ? (
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSidebarSection("customPins");
-                          setIsSidebarOpen(true);
-                          startEditingCustomPin(activePopupPin.id);
-                        }}
-                        className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-2.5 text-xs font-bold text-white transition hover:bg-white/10 active:scale-95 pointer-events-auto"
-                      >
-                        <Edit2 size={13} />
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => togglePinCompleted(activePopupPin.id)}
-                        className={cn(
-                          "flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold text-white transition active:scale-95 pointer-events-auto",
-                          activePopupPin.isCompleted
-                            ? "bg-slate-700/50 hover:bg-slate-700"
-                            : "bg-[var(--cyan)]/20 text-[var(--cyan)] border border-[var(--cyan)]/30 hover:bg-[var(--cyan)]/30",
-                        )}
-                      >
-                        <CheckCircle2 size={13} />
-                        {activePopupPin.isCompleted ? "Desmarcar" : "Concluir"}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="grid gap-2.5">
-                      {activePopupPin.isCompleted ? (
-                        <div className="grid gap-2">
-                          {/* Timer status badge */}
-                          <div className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-white/5 bg-[#161c26]/60 shadow-inner">
-                            <span className="flex items-center gap-2 text-slate-400 font-mono text-[9.5px] font-bold uppercase tracking-widest">
-                              <Clock
-                                size={13}
-                                className="text-[var(--cyan)] animate-pulse"
-                              />
-                              {activePopupPin.type === "merchant"
-                                ? "Presente"
-                                : "Coletado"}
-                            </span>
-                            <span className="text-white font-mono font-black text-xs tracking-wide">
-                              {activePopupPin.timer
-                                ? (() => {
-                                    const remaining = getPinTimerRemaining(
-                                      activePopupPin.id,
-                                      activePopupPin.timer,
-                                    );
-                                    if (
-                                      remaining <= 0 &&
-                                      activePopupPin.type !== "merchant"
-                                    ) {
-                                      return activePopupPin.subType ===
-                                        "ore_1" ||
-                                        activePopupPin.subType === "mushroom_1"
-                                        ? "Padrão / Marcado"
-                                        : "Concluído";
-                                    }
-                                    return formatRemainingTime(remaining);
-                                  })()
-                                : "Concluído"}
-                            </span>
-                          </div>
-
-                          {/* Action Buttons Row */}
-                          <div className="flex gap-2">
-                            {activePopupPin.type &&
-                              [
-                                "ore",
-                                "mushroom",
-                                "stick",
-                                "perpetual",
-                                "hibiscus",
-                                "cotton",
-                                "borago",
-                              ].includes(activePopupPin.type) && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (!isAuthenticated) return;
-                                    const state =
-                                      completedPins[activePopupPin.id];
-                                    togglePinCompleted(
-                                      activePopupPin.id,
-                                      state?.subType,
-                                      true,
-                                    );
-                                  }}
-                                  disabled={!isAuthenticated}
-                                  className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-[#00d6a3]/20 bg-[#00d6a3]/10 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--cyan)] hover:bg-[#00d6a3]/20 active:scale-95 transition-all cursor-pointer pointer-events-auto disabled:opacity-30 disabled:grayscale"
-                                  title={
-                                    isAuthenticated
-                                      ? "Reiniciar tempo agora (mesmo recurso)"
-                                      : "Faça login para gerenciar timers"
-                                  }
-                                >
-                                  <RefreshCw size={12} />
-                                  {isAuthenticated ? (
-                                    "Reiniciar"
-                                  ) : (
-                                    <Shield size={12} />
-                                  )}
-                                </button>
+                                      })}
+                                  </div>
+                                </>
                               )}
+                            </div>
+                          )}
 
+                        {isAuthenticated &&
+                          group &&
+                          !activePopupPin.isCompleted && (
+                            <div className="flex rounded-lg bg-white/[0.03] p-0.5 border border-white/5">
+                              <button
+                                onClick={() => setPinVisibility("private")}
+                                className={cn(
+                                  "flex flex-1 items-center justify-center gap-1.5 rounded-md py-1 text-[9px] font-black uppercase tracking-wider transition-all pointer-events-auto",
+                                  pinVisibility === "private"
+                                    ? "bg-white/10 text-white shadow-sm"
+                                    : "text-slate-500 hover:text-slate-300",
+                                )}
+                              >
+                                <Lock size={12} />
+                                Pessoal
+                              </button>
+                              <button
+                                onClick={() => setPinVisibility("group")}
+                                className={cn(
+                                  "flex flex-1 items-center justify-center gap-1.5 rounded-md py-1 text-[9px] font-black uppercase tracking-wider transition-all pointer-events-auto",
+                                  pinVisibility === "group"
+                                    ? "bg-[var(--cyan)]/20 text-[var(--cyan)] shadow-sm"
+                                    : "text-slate-500 hover:text-slate-300",
+                                )}
+                              >
+                                <Shield size={12} />
+                                Grupo
+                              </button>
+                            </div>
+                          )}
+
+                        {activePopupPin.isCustom ? (
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSidebarSection("customPins");
+                                setIsSidebarOpen(true);
+                                startEditingCustomPin(activePopupPin.id);
+                              }}
+                              className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-2.5 text-xs font-bold text-white transition hover:bg-white/10 active:scale-95 pointer-events-auto"
+                            >
+                              <Edit2 size={13} />
+                              Editar
+                            </button>
                             <button
                               type="button"
                               onClick={() =>
-                                isAuthenticated &&
                                 togglePinCompleted(activePopupPin.id)
                               }
-                              disabled={!isAuthenticated}
-                              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-red-500/20 bg-red-500/10 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-red-400 hover:bg-red-500/20 active:scale-95 transition-all cursor-pointer pointer-events-auto disabled:opacity-30"
-                              title={
-                                isAuthenticated
-                                  ? "Limpar marcação"
-                                  : "Login necessário"
-                              }
-                            >
-                              {isAuthenticated ? (
-                                <Trash2 size={12} />
-                              ) : (
-                                <Shield size={12} />
+                              className={cn(
+                                "flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold text-white transition active:scale-95 pointer-events-auto",
+                                activePopupPin.isCompleted
+                                  ? "bg-slate-700/50 hover:bg-slate-700"
+                                  : "bg-[var(--cyan)]/20 text-[var(--cyan)] border border-[var(--cyan)]/30 hover:bg-[var(--cyan)]/30",
                               )}
-                              {isAuthenticated ? "Desmarcar" : "Lock"}
+                            >
+                              <CheckCircle2 size={13} />
+                              {activePopupPin.isCompleted
+                                ? "Desmarcar"
+                                : "Concluir"}
                             </button>
                           </div>
-                        </div>
-                      ) : (
-                        /* Not Completed State */
-                        <button
-                          type="button"
-                          onClick={() =>
-                            isAuthenticated &&
-                            togglePinCompleted(activePopupPin.id)
-                          }
-                          disabled={!isAuthenticated}
-                          className={cn(
-                            "relative overflow-hidden w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-black uppercase tracking-widest transition active:scale-[0.98] cursor-pointer pointer-events-auto disabled:opacity-50 disabled:grayscale disabled:pointer-events-none",
-                            "bg-gradient-to-r from-[var(--cyan)] to-[#00b894] text-slate-950 hover:brightness-110 shadow-[0_4px_16px_rgba(0,214,163,0.25)] hover:shadow-[0_6px_20px_rgba(0,214,163,0.45)] before:absolute before:inset-0 before:-skew-x-12 before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent before:-translate-x-full hover:before:translate-x-full before:transition-transform before:duration-700",
-                            // Escondemos o botão genérico apenas para Ore e Mushroom, pois estes exigem identificação
-                            (activePopupPin.type === "ore" ||
-                              activePopupPin.type === "mushroom") &&
-                              "hidden",
-                          )}
-                        >
-                          <CheckCircle2 size={14} />
-                          {isAuthenticated
-                            ? activePopupPin.type === "merchant"
-                              ? "Localizado / Está aqui"
-                              : "Concluir Coleta"
-                            : "Login para Coletar"}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+                        ) : (
+                          <div className="grid gap-2.5">
+                            {activePopupPin.isCompleted ? (
+                              <div className="grid gap-2">
+                                {/* Timer status badge */}
+                                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-white/5 bg-[#161c26]/60 shadow-inner">
+                                  <span className="flex items-center gap-2 text-slate-400 font-mono text-[9.5px] font-bold uppercase tracking-widest">
+                                    <Clock
+                                      size={13}
+                                      className="text-[var(--cyan)] animate-pulse"
+                                    />
+                                    {activePopupPin.type === "merchant"
+                                      ? "Presente"
+                                      : "Coletado"}
+                                  </span>
+                                  <span className="text-white font-mono font-black text-xs tracking-wide">
+                                    {activePopupPin.timer
+                                      ? (() => {
+                                          const remaining =
+                                            getPinTimerRemaining(
+                                              activePopupPin.id,
+                                              activePopupPin.timer,
+                                            );
+                                          if (
+                                            remaining <= 0 &&
+                                            activePopupPin.type !== "merchant"
+                                          ) {
+                                            return activePopupPin.subType ===
+                                              "ore_1" ||
+                                              activePopupPin.subType ===
+                                                "mushroom_1"
+                                              ? "Padrão / Marcado"
+                                              : "Concluído";
+                                          }
+                                          return formatRemainingTime(remaining);
+                                        })()
+                                      : "Concluído"}
+                                  </span>
+                                </div>
+
+                                {/* Action Buttons Row */}
+                                <div className="flex gap-2">
+                                  {activePopupPin.type &&
+                                    [
+                                      "ore",
+                                      "mushroom",
+                                      "stick",
+                                      "perpetual",
+                                      "hibiscus",
+                                      "cotton",
+                                      "borago",
+                                    ].includes(activePopupPin.type) && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (!isAuthenticated) return;
+                                          const state =
+                                            completedPins[activePopupPin.id];
+                                          togglePinCompleted(
+                                            activePopupPin.id,
+                                            state?.subType,
+                                            true,
+                                          );
+                                        }}
+                                        disabled={!isAuthenticated}
+                                        className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-[#00d6a3]/20 bg-[#00d6a3]/10 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--cyan)] hover:bg-[#00d6a3]/20 active:scale-95 transition-all cursor-pointer pointer-events-auto disabled:opacity-30 disabled:grayscale"
+                                        title={
+                                          isAuthenticated
+                                            ? "Reiniciar tempo agora (mesmo recurso)"
+                                            : "Faça login para gerenciar timers"
+                                        }
+                                      >
+                                        <RefreshCw size={12} />
+                                        {isAuthenticated ? (
+                                          "Reiniciar"
+                                        ) : (
+                                          <Shield size={12} />
+                                        )}
+                                      </button>
+                                    )}
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      isAuthenticated &&
+                                      togglePinCompleted(activePopupPin.id)
+                                    }
+                                    disabled={!isAuthenticated}
+                                    className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-red-500/20 bg-red-500/10 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-red-400 hover:bg-red-500/20 active:scale-95 transition-all cursor-pointer pointer-events-auto disabled:opacity-30"
+                                    title={
+                                      isAuthenticated
+                                        ? "Limpar marcação"
+                                        : "Login necessário"
+                                    }
+                                  >
+                                    {isAuthenticated ? (
+                                      <Trash2 size={12} />
+                                    ) : (
+                                      <Shield size={12} />
+                                    )}
+                                    {isAuthenticated ? "Desmarcar" : "Lock"}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              /* Not Completed State */
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  isAuthenticated &&
+                                  togglePinCompleted(activePopupPin.id)
+                                }
+                                disabled={!isAuthenticated}
+                                className={cn(
+                                  "relative overflow-hidden w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-black uppercase tracking-widest transition active:scale-[0.98] cursor-pointer pointer-events-auto disabled:opacity-50 disabled:grayscale disabled:pointer-events-none",
+                                  "bg-gradient-to-r from-[var(--cyan)] to-[#00b894] text-slate-950 hover:brightness-110 shadow-[0_4px_16px_rgba(0,214,163,0.25)] hover:shadow-[0_6px_20px_rgba(0,214,163,0.45)] before:absolute before:inset-0 before:-skew-x-12 before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent before:-translate-x-full hover:before:translate-x-full before:transition-transform before:duration-700",
+                                  // Escondemos o botão genérico apenas para Ore e Mushroom, pois estes exigem identificação
+                                  (activePopupPin.type === "ore" ||
+                                    activePopupPin.type === "mushroom") &&
+                                    "hidden",
+                                )}
+                              >
+                                <CheckCircle2 size={14} />
+                                {isAuthenticated
+                                  ? activePopupPin.type === "merchant"
+                                    ? "Localizado / Está aqui"
+                                    : "Concluir Coleta"
+                                  : "Login para Coletar"}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </ViewportPortal>
         )}

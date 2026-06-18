@@ -373,7 +373,7 @@ export const MapSidebar = memo(function MapSidebar({
   };
 
   return (
-    <div className="pointer-events-none absolute left-0 top-1/2 z-30 -translate-y-1/2 h-[calc(100%-2rem)] sm:h-[calc(100%-3rem)] flex items-center pl-3 sm:pl-5">
+    <div className="pointer-events-none absolute left-0 top-1/2 z-[60] -translate-y-1/2 h-[calc(100%-2rem)] sm:h-[calc(100%-3rem)] flex items-center pl-3 sm:pl-5">
       {!isSidebarOpen && (
         <button
           onClick={() => setIsSidebarOpen(true)}
@@ -425,13 +425,6 @@ export const MapSidebar = memo(function MapSidebar({
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-              <button
-                onClick={() => setIsSettingsModalOpen(true)}
-                className="grid h-8 w-8 place-items-center rounded-lg border border-white/5 bg-white/[0.02] text-slate-400 hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-[var(--cyan)] transition-all duration-300 active:scale-90 cursor-pointer shadow-sm"
-                title="Configurações do Mapa"
-              >
-                <Settings size={15} />
-              </button>
               <button
                 onClick={() => setIsSidebarOpen(false)}
                 className="grid h-8 w-8 place-items-center rounded-lg border border-white/5 bg-white/[0.02] text-slate-400 hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 transition-all duration-300 active:scale-90 cursor-pointer shadow-sm"
