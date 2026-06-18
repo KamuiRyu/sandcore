@@ -72,7 +72,7 @@ export const DashboardScreen = () => {
       <div className="absolute top-0 left-0 right-0 h-8 flex items-center justify-between pl-4 pr-0 select-none z-50" style={{ WebkitAppRegion: 'drag' } as any}>
         <div className="flex items-center gap-2">
           <img 
-            src="/images/logo_mini.webp" 
+            src="./images/logo_mini.webp" 
             alt="Logo" 
             className="w-3.5 h-3.5 object-contain" 
             draggable={false}
@@ -127,7 +127,7 @@ export const DashboardScreen = () => {
                 <div className="absolute left-[-11px] top-1/2 -translate-y-1/2 w-1 h-5 bg-teal-400 rounded-r-md" />
               )}
               <img 
-                src="/images/logo_mini.webp" 
+                src="./images/logo_mini.webp" 
                 alt="Logo" 
                 className="w-6 h-6 group-hover:rotate-90 transition-transform duration-500 ease-out object-contain" 
                 draggable={false}

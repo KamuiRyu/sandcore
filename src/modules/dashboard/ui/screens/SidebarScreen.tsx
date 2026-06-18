@@ -63,7 +63,7 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
                   
                   {item.id === 'details' ? (
                     <img 
-                      src="/images/logo_mini.webp" 
+                      src="./images/logo_mini.webp" 
                       alt="Logo" 
                       className="w-7 h-7 group-hover:rotate-90 transition-transform duration-500 ease-out object-contain" 
                       draggable={false}

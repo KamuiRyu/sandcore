@@ -2,8 +2,8 @@ export { mapRegions, defaultMapRegion, getSubRegions } from './Regions.entity'
 export type { MapRegionId } from './Regions.entity'
 import type { MapLayerId, MapMarkerIconId, MapMarkerType } from './MapCalibration.entity'
 
-export const mapImageSrc = '/images/map/map_base.webp'
-export const mapBaseTextureSrc = '/images/map/base_texture.webp'
+export const mapImageSrc = './images/map/map_base.webp'
+export const mapBaseTextureSrc = './images/map/base_texture.webp'
 export const mapImageWidth = 4485
 export const mapImageHeight = 3606
 export const mapAspectRatio = mapImageWidth / mapImageHeight
@@ -92,44 +92,44 @@ export const markerIconsByType: Record<MapMarkerType, MapMarkerIconId[]> = {
 }
 
 export const markerIconSrcById: Record<MapMarkerIconId, string> = {
-  kumo: '/images/map/icons/kumo.webp',
-  konoha: '/images/map/icons/konoha.webp',
-  kiri: '/images/map/icons/kiri.webp',
-  iwa: '/images/map/icons/iwa.webp',
-  suna: '/images/map/icons/suna.webp',
-  arena: '/images/map/icons/arena.webp',
-  house: '/images/map/icons/house.webp',
-  bank: '/images/map/icons/bank.webp',
-  cemetery: '/images/map/icons/cemetery.webp',
-  clothing_store: '/images/map/icons/clothing_store.webp',
-  cotton: '/images/map/icons/cotton.webp',
-  fishing_platform: '/images/map/icons/fishing_platform.webp',
-  gunsmith: '/images/map/icons/gunsmith.webp',
-  smith: '/images/map/icons/smith.webp',
-  hibiscus: '/images/map/icons/hibiscus.webp',
-  hospital: '/images/map/icons/hospital.webp',
-  jingle_bells: '/images/map/icons/jingle_bells.webp',
-  mushroom_1: '/images/map/icons/mushroom_1.webp',
-  mushroom_2: '/images/map/icons/mushroom_2.webp',
-  mushroom_3: '/images/map/icons/mushroom_3.webp',
-  mushroom_4: '/images/map/icons/mushroom_4.webp',
-  mushroom_5: '/images/map/icons/mushroom_5.webp',
-  ninja_academy: '/images/map/icons/ninja_academy.webp',
-  ore_1: '/images/map/icons/ore_1.webp',
-  ore_2: '/images/map/icons/ore_2.webp',
-  ore_3: '/images/map/icons/ore_3.webp',
-  ore_4: '/images/map/icons/ore_4.webp',
-  ore_5: '/images/map/icons/ore_5.webp',
-  ore_6: '/images/map/icons/ore_6.webp',
-  ore_7: '/images/map/icons/ore_7.webp',
-  ore_8: '/images/map/icons/ore_8.webp',
-  ore_9: '/images/map/icons/ore_9.webp',
-  perpetual: '/images/map/icons/perpetual.webp',
-  police: '/images/map/icons/police.webp',
-  restaurant: '/images/map/icons/restaurant.webp',
-  stick: '/images/map/icons/stick.webp',
-  merchant: '/images/map/icons/merchant.webp',
-  borago: '/images/map/icons/borago.webp'
+  kumo: './images/map/icons/kumo.webp',
+  konoha: './images/map/icons/konoha.webp',
+  kiri: './images/map/icons/kiri.webp',
+  iwa: './images/map/icons/iwa.webp',
+  suna: './images/map/icons/suna.webp',
+  arena: './images/map/icons/arena.webp',
+  house: './images/map/icons/house.webp',
+  bank: './images/map/icons/bank.webp',
+  cemetery: './images/map/icons/cemetery.webp',
+  clothing_store: './images/map/icons/clothing_store.webp',
+  cotton: './images/map/icons/cotton.webp',
+  fishing_platform: './images/map/icons/fishing_platform.webp',
+  gunsmith: './images/map/icons/gunsmith.webp',
+  smith: './images/map/icons/smith.webp',
+  hibiscus: './images/map/icons/hibiscus.webp',
+  hospital: './images/map/icons/hospital.webp',
+  jingle_bells: './images/map/icons/jingle_bells.webp',
+  mushroom_1: './images/map/icons/mushroom_1.webp',
+  mushroom_2: './images/map/icons/mushroom_2.webp',
+  mushroom_3: './images/map/icons/mushroom_3.webp',
+  mushroom_4: './images/map/icons/mushroom_4.webp',
+  mushroom_5: './images/map/icons/mushroom_5.webp',
+  ninja_academy: './images/map/icons/ninja_academy.webp',
+  ore_1: './images/map/icons/ore_1.webp',
+  ore_2: './images/map/icons/ore_2.webp',
+  ore_3: './images/map/icons/ore_3.webp',
+  ore_4: './images/map/icons/ore_4.webp',
+  ore_5: './images/map/icons/ore_5.webp',
+  ore_6: './images/map/icons/ore_6.webp',
+  ore_7: './images/map/icons/ore_7.webp',
+  ore_8: './images/map/icons/ore_8.webp',
+  ore_9: './images/map/icons/ore_9.webp',
+  perpetual: './images/map/icons/perpetual.webp',
+  police: './images/map/icons/police.webp',
+  restaurant: './images/map/icons/restaurant.webp',
+  stick: './images/map/icons/stick.webp',
+  merchant: './images/map/icons/merchant.webp',
+  borago: './images/map/icons/borago.webp'
 }
 
 export const defaultMarkerType = markerTypes[0]
@@ -234,10 +234,10 @@ export type CustomPinIcon = {
 
 export const customPinIcons: CustomPinIcon[] = [
   // Adicione aqui os ícones quando os assets estiverem prontos. Exemplo:
-  { id: 'pin', src: '/images/map/custom_pin_icons/pin.webp', label: 'Pin' },
-  { id: 'exclamation', src: '/images/map/custom_pin_icons/exclamation.webp', label: 'Exclamacao' },
-  { id: 'flag', src: '/images/map/custom_pin_icons/flag.webp', label: 'Bandeira' },
-  { id: 'interrogation', src: '/images/map/custom_pin_icons/interrogation.webp', label: 'Interrogacao' },
+  { id: 'pin', src: './images/map/custom_pin_icons/pin.webp', label: 'Pin' },
+  { id: 'exclamation', src: './images/map/custom_pin_icons/exclamation.webp', label: 'Exclamacao' },
+  { id: 'flag', src: './images/map/custom_pin_icons/flag.webp', label: 'Bandeira' },
+  { id: 'interrogation', src: './images/map/custom_pin_icons/interrogation.webp', label: 'Interrogacao' },
 ]
 
 export function getCustomPinIconSrc(iconId: string): string | undefined {

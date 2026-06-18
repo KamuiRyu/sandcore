@@ -158,7 +158,7 @@ export const AppDetailsScreen = () => {
         <div className="bg-[#11161D]/55 border border-slate-800/60 p-4 rounded-xl flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center flex-none">
             <img 
-              src="/images/logo_mini.webp" 
+              src="./images/logo_mini.webp" 
               alt="Logo" 
               className="w-7 h-7 object-contain"
               draggable={false}

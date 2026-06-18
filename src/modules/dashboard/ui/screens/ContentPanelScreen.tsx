@@ -47,7 +47,7 @@ export const ContentPanelScreen = ({ activeTab, lastActiveTab }: ContentPanelScr
         <div className="absolute top-0 left-0 right-0 h-8 flex items-center justify-between pl-4 pr-0 select-none z-50 bg-[#0B0E12]" style={{ WebkitAppRegion: 'drag' } as any}>
           <div className="flex items-center gap-2">
             <img 
-              src="/images/logo_mini.webp" 
+              src="./images/logo_mini.webp" 
               alt="Logo" 
               className="w-3.5 h-3.5 object-contain" 
               draggable={false}
@@ -88,7 +88,7 @@ export const ContentPanelScreen = ({ activeTab, lastActiveTab }: ContentPanelScr
           {/* Logo */}
           <div className="flex items-center gap-2 flex-none">
             <img 
-              src="/images/logo_mini.webp" 
+              src="./images/logo_mini.webp" 
               alt="Logo" 
               className="w-5 h-5 object-contain" 
               draggable={false}

@@ -1367,7 +1367,7 @@ export function InteractiveMap({
                 alt="Mapa do Shinobi Legends"
                 className="block h-full w-full object-contain"
                 draggable={false}
-                src="/images/map/map_base_low.webp"
+                src="./images/map/map_base_low.webp"
                 fetchPriority="high"
               />
               {loadHighRes && (
@@ -1378,7 +1378,7 @@ export function InteractiveMap({
                     highResLoaded ? "opacity-100" : "opacity-0",
                   )}
                   draggable={false}
-                  src="/images/map/map_base.webp"
+                  src="./images/map/map_base.webp"
                   onLoad={() => setHighResLoaded(true)}
                 />
               )}
