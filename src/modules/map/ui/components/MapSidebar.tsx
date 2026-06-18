@@ -49,35 +49,21 @@ type SidebarSection =
   | "officialPins"
   | "customPins"
   | "routes"
-  | "stats"
-  | "group";
+  | "search";
 type RoutesView = "mine" | "public";
-
-interface SearchResult {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  iconId: string;
-  isCustom: boolean;
-  color?: string;
-  type?: MapMarkerType;
-}
 
 interface MapSidebarProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
   sidebarSection: SidebarSection;
   setSidebarSection: (section: SidebarSection) => void;
-  isSearchActive: boolean;
-  setIsSearchActive: (active: boolean) => void;
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
-  searchHistory: string[];
-  removeFromHistory: (item: string) => void;
-  addToHistory: (item: string) => void;
-  clearHistory: () => void;
-  searchResults: SearchResult[];
+  sidebarSearchQuery: string;
+  setSidebarSearchQuery: (query: string) => void;
+  searchResults: any[];
+  paginatedSearchResults: any[];
+  searchPage: number;
+  setSearchPage: (page: number) => void;
+  totalSearchPages: number;
   selectCustomPin: (id: string | null) => void;
   startEditingCustomPin: (id: string) => void;
   selectOfficialPoint: (id: string | null) => void;
@@ -291,15 +277,13 @@ export const MapSidebar = memo(function MapSidebar({
   setIsSidebarOpen,
   sidebarSection,
   setSidebarSection,
-  isSearchActive,
-  setIsSearchActive,
-  searchQuery,
-  setSearchQuery,
-  searchHistory,
-  removeFromHistory,
-  addToHistory,
-  clearHistory,
+  sidebarSearchQuery,
+  setSidebarSearchQuery,
   searchResults,
+  paginatedSearchResults,
+  searchPage,
+  setSearchPage,
+  totalSearchPages,
   selectCustomPin,
   startEditingCustomPin,
   selectOfficialPoint,
@@ -459,778 +443,157 @@ export const MapSidebar = memo(function MapSidebar({
           </div>
 
           <div className="flex items-center gap-1 p-2 bg-black/20 border-b border-white/5">
-            <button
-              onClick={() => setIsSearchActive(true)}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer",
-                isSearchActive
-                  ? "bg-[var(--cyan)] text-slate-950 shadow-[0_0_15px_rgba(0,214,163,0.3)]"
-                  : "text-slate-500 hover:text-slate-300 hover:bg-white/5",
-              )}
-            >
-              <Search size={13} strokeWidth={3} />
-              Pesquisar
-            </button>
-            <button
-              onClick={() => setIsSearchActive(false)}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer",
-                !isSearchActive
-                  ? "bg-white/10 text-white shadow-lg"
-                  : "text-slate-500 hover:text-slate-300 hover:bg-white/5",
-              )}
-            >
+            <div className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-white/10 text-white shadow-lg">
               <Layers size={13} strokeWidth={2.5} />
               Categorias
-            </button>
+            </div>
           </div>
 
-          {isSearchActive ? (
-            <div className="flex flex-1 flex-col overflow-hidden">
-              <div className="px-5 pt-5 pb-3">
-                <div className="relative group">
-                  <label className="block">
-                    <Search
-                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[var(--cyan)] transition-colors"
-                      size={15}
-                    />
-                    <input
-                      className="w-full rounded-2xl border border-white/10 bg-black/40 py-3.5 pl-11 pr-4 text-sm text-white placeholder-slate-600 outline-none transition-all duration-300 focus:border-[var(--cyan)]/40 focus:bg-black/60 focus:ring-4 focus:ring-[var(--cyan)]/5"
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Buscar por nome ou tipo..."
-                      type="text"
-                      value={searchQuery}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && searchQuery.trim()) {
-                          addToHistory(searchQuery);
-                        }
-                      }}
-                    />
-                  </label>
-                </div>
-              </div>
-
-              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 custom-scrollbar relative z-10">
-                {!searchQuery.trim() ? (
-                  <div className="grid gap-4 animate-[fade-in_150ms_ease-out]">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">
-                        Histórico de pesquisa
-                      </h3>
-                      {searchHistory.length > 0 && (
-                        <button
-                          onClick={clearHistory}
-                          className="text-[10px] font-mono font-bold uppercase text-red-400 hover:text-red-350 transition cursor-pointer"
-                        >
-                          Limpar tudo
-                        </button>
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="px-5 py-4 border-b border-white/5 bg-black/10">
+              <div className="grid grid-cols-4 gap-1.5">
+                <button
+                  className={cn(
+                    "relative rounded-xl py-2 pl-1 pr-1 transition-all duration-300 active:scale-95 cursor-pointer overflow-hidden group flex flex-col items-center justify-center gap-1",
+                    sidebarSection === "officialPins"
+                      ? "border border-[#00d6a3]/30 bg-[#00d6a3]/10 text-[#00d6a3] shadow-[0_0_12px_rgba(0,214,163,0.18)]"
+                      : "border border-transparent bg-transparent text-slate-400 hover:bg-white/[0.02] hover:text-slate-200",
+                  )}
+                  onClick={() => setSidebarSection("officialPins")}
+                  type="button"
+                >
+                  <span className="relative z-10 shrink-0">
+                    <Layers
+                      size={13}
+                      className={cn(
+                        "transition-transform duration-300",
+                        sidebarSection === "officialPins"
+                          ? "scale-110 text-[var(--cyan)] drop-shadow-[0_0_4px_rgba(0,214,163,0.5)]"
+                          : "text-slate-400 group-hover:text-slate-250",
                       )}
-                    </div>
-
-                    {searchHistory.length === 0 ? (
-                      <div className="rounded-[20px] border border-dashed border-white/10 bg-white/[0.01] px-4 py-8 text-center text-xs text-slate-500">
-                        Nenhum histórico de pesquisa recente.
-                      </div>
-                    ) : (
-                      <div className="grid gap-2">
-                        {searchHistory.map((item, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.01] hover:border-white/12 hover:bg-white/[0.03] p-3 transition duration-200 group"
-                          >
-                            <button
-                              onClick={() => {
-                                setSearchQuery(item);
-                              }}
-                              className="flex-1 text-left text-sm text-slate-300 hover:text-white transition truncate cursor-pointer bg-transparent border-0 p-0 outline-none"
-                            >
-                              {item}
-                            </button>
-                            <button
-                              onClick={() => removeFromHistory(item)}
-                              className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400 transition cursor-pointer p-1 bg-transparent border-0"
-                              title="Remover"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    />
+                  </span>
+                  <div className="flex flex-col text-center leading-none relative z-10 min-w-0">
+                    <span
+                      className={cn(
+                        "text-[8px] font-mono font-bold tracking-wider uppercase transition-colors duration-300",
+                        sidebarSection === "officialPins"
+                          ? "text-[var(--cyan)]"
+                          : "text-slate-500 group-hover:text-slate-350",
+                      )}
+                    >
+                      Oficiais
+                    </span>
                   </div>
-                ) : (
-                  <div className="grid gap-4 animate-[fade-in_150ms_ease-out]">
-                    <h3 className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">
-                      Resultados ({searchResults.length})
-                    </h3>
-
-                    {searchResults.length === 0 ? (
-                      <div className="rounded-[20px] border border-dashed border-white/10 bg-white/[0.01] px-4 py-8 text-center text-xs text-slate-500">
-                        Nenhum ponto encontrado para "{searchQuery}".
-                      </div>
-                    ) : (
-                      <div className="grid gap-2.5">
-                        {searchResults.map((point) => (
-                          <div
-                            key={point.id}
-                            onClick={() => {
-                              addToHistory(searchQuery);
-                              if (point.isCustom) {
-                                selectCustomPin(point.id);
-                              } else {
-                                selectOfficialPoint(point.id);
-                              }
-                              focusCoords({ x: point.x, y: point.y });
-                            }}
-                            className="flex items-center gap-3.5 rounded-xl border border-white/5 bg-white/[0.01] hover:border-cyan-500/40 hover:bg-[linear-gradient(180deg,rgba(0,214,163,0.06),rgba(9,15,28,0.75))] hover:shadow-[0_8px_24px_rgba(0,0,0,0.3)] p-3 transition duration-300 group cursor-pointer relative"
-                          >
-                            <div className="absolute inset-0 tech-corner-accent opacity-0 group-hover:opacity-40 transition-opacity pointer-events-none" />
-
-                            <div
-                              className="grid h-11 w-11 place-items-center rounded-xl border border-white/8 shadow-md relative overflow-hidden shrink-0"
-                              style={{
-                                backgroundColor: point.isCustom
-                                  ? point.color || "#00d6a3"
-                                  : "rgba(3,10,13,0.86)",
-                              }}
-                            >
-                              <IconImage
-                                className="h-8 w-8 object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.45)] relative z-10"
-                                iconId={point.iconId}
-                                label={point.name}
-                              />
-                              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.15),transparent)] pointer-events-none" />
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-bold text-slate-200 group-hover:text-white transition-colors">
-                                {point.name}
-                              </p>
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                <p className="text-[10px] font-mono text-slate-500">
-                                  {point.x.toFixed(1)}, {point.y.toFixed(1)}
-                                </p>
-                                <span className="h-0.5 w-0.5 rounded-full bg-slate-700" />
-                                <p className="truncate text-[9px] font-bold text-[var(--cyan)] uppercase tracking-tight opacity-70">
-                                  {point.isCustom
-                                    ? "PIN PERSONALIZADO"
-                                    : getMarkerTypeLabel(
-                                        point.type as MapMarkerType,
-                                      )}
-                                </p>
-                              </div>
-                            </div>
-
-                            <ChevronRight
-                              className="text-slate-700 group-hover:text-[var(--cyan)] transition-colors"
-                              size={14}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                </button>
+                <button
+                  className={cn(
+                    "relative rounded-xl py-2 pl-1 pr-1 transition-all duration-300 active:scale-95 cursor-pointer overflow-hidden group flex flex-col items-center justify-center gap-1",
+                    sidebarSection === "customPins"
+                      ? "border border-[#00d6a3]/30 bg-[#00d6a3]/10 text-[#00d6a3] shadow-[0_0_12px_rgba(0,214,163,0.18)]"
+                      : "border border-transparent bg-transparent text-slate-400 hover:bg-white/[0.02] hover:text-slate-200",
+                  )}
+                  onClick={() => setSidebarSection("customPins")}
+                  type="button"
+                >
+                  <span className="relative z-10 shrink-0">
+                    <MapPin
+                      size={13}
+                      className={cn(
+                        "transition-transform duration-300",
+                        sidebarSection === "customPins"
+                          ? "scale-110 text-[var(--cyan)] drop-shadow-[0_0_4px_rgba(0,214,163,0.5)]"
+                          : "text-slate-400 group-hover:text-slate-250",
+                      )}
+                    />
+                  </span>
+                  <div className="flex flex-col text-center leading-none relative z-10 min-w-0">
+                    <span
+                      className={cn(
+                        "text-[8px] font-mono font-bold tracking-wider uppercase transition-colors duration-300",
+                        sidebarSection === "customPins"
+                          ? "text-[var(--cyan)]"
+                          : "text-slate-500 group-hover:text-slate-350",
+                      )}
+                    >
+                      Meus
+                    </span>
                   </div>
-                )}
+                </button>
+                <button
+                  className={cn(
+                    "relative rounded-xl py-2 pl-1 pr-1 transition-all duration-300 active:scale-95 cursor-pointer overflow-hidden group flex flex-col items-center justify-center gap-1",
+                    sidebarSection === "routes"
+                      ? "border border-[#00d6a3]/30 bg-[#00d6a3]/10 text-[#00d6a3] shadow-[0_0_12px_rgba(0,214,163,0.18)]"
+                      : "border border-transparent bg-transparent text-slate-400 hover:bg-white/[0.02] hover:text-slate-200",
+                  )}
+                  onClick={() => setSidebarSection("routes")}
+                  type="button"
+                >
+                  <span className="relative z-10 shrink-0">
+                    <Route
+                      size={13}
+                      className={cn(
+                        "transition-transform duration-300",
+                        sidebarSection === "routes"
+                          ? "scale-110 text-[var(--cyan)] drop-shadow-[0_0_4px_rgba(0,214,163,0.5)]"
+                          : "text-slate-400 group-hover:text-slate-250",
+                      )}
+                    />
+                  </span>
+                  <div className="flex flex-col text-center leading-none relative z-10 min-w-0">
+                    <span
+                      className={cn(
+                        "text-[8px] font-mono font-bold tracking-wider uppercase transition-colors duration-300",
+                        sidebarSection === "routes"
+                          ? "text-[var(--cyan)]"
+                          : "text-slate-500 group-hover:text-slate-350",
+                      )}
+                    >
+                      Rotas
+                    </span>
+                  </div>
+                </button>
+                <button
+                  className={cn(
+                    "relative rounded-xl py-2 pl-1 pr-1 transition-all duration-300 active:scale-95 cursor-pointer overflow-hidden group flex flex-col items-center justify-center gap-1",
+                    sidebarSection === "search"
+                      ? "border border-[#00d6a3]/30 bg-[#00d6a3]/10 text-[#00d6a3] shadow-[0_0_12px_rgba(0,214,163,0.18)]"
+                      : "border border-transparent bg-transparent text-slate-400 hover:bg-white/[0.02] hover:text-slate-200",
+                  )}
+                  onClick={() => setSidebarSection("search")}
+                  type="button"
+                >
+                  <span className="relative z-10 shrink-0">
+                    <Search
+                      size={13}
+                      className={cn(
+                        "transition-transform duration-300",
+                        sidebarSection === "search"
+                          ? "scale-110 text-[var(--cyan)] drop-shadow-[0_0_4px_rgba(0,214,163,0.5)]"
+                          : "text-slate-400 group-hover:text-slate-250",
+                      )}
+                    />
+                  </span>
+                  <div className="flex flex-col text-center leading-none relative z-10 min-w-0">
+                    <span
+                      className={cn(
+                        "text-[8px] font-mono font-bold tracking-wider uppercase transition-colors duration-300",
+                        sidebarSection === "search"
+                          ? "text-[var(--cyan)]"
+                          : "text-slate-500 group-hover:text-slate-350",
+                      )}
+                    >
+                      Busca
+                    </span>
+                  </div>
+                </button>
               </div>
             </div>
-          ) : (
-            <div className="flex flex-1 flex-col overflow-hidden">
-              <div className="px-5 py-4 border-b border-white/5 bg-black/10">
-                <div className="grid grid-cols-5 gap-1.5">
-                  <button
-                    className={cn(
-                      "relative rounded-xl py-2 pl-1 pr-1 transition-all duration-300 active:scale-95 cursor-pointer overflow-hidden group flex flex-col items-center justify-center gap-1",
-                      sidebarSection === "officialPins"
-                        ? "border border-[#00d6a3]/30 bg-[#00d6a3]/10 text-[#00d6a3] shadow-[0_0_12px_rgba(0,214,163,0.18)]"
-                        : "border border-transparent bg-transparent text-slate-400 hover:bg-white/[0.02] hover:text-slate-200",
-                    )}
-                    onClick={() => setSidebarSection("officialPins")}
-                    type="button"
-                  >
-                    <span className="relative z-10 shrink-0">
-                      <Layers
-                        size={13}
-                        className={cn(
-                          "transition-transform duration-300",
-                          sidebarSection === "officialPins"
-                            ? "scale-110 text-[var(--cyan)] drop-shadow-[0_0_4px_rgba(0,214,163,0.5)]"
-                            : "text-slate-400 group-hover:text-slate-250",
-                        )}
-                      />
-                    </span>
-                    <div className="flex flex-col text-center leading-none relative z-10 min-w-0">
-                      <span
-                        className={cn(
-                          "text-[8px] font-mono font-bold tracking-wider uppercase transition-colors duration-300",
-                          sidebarSection === "officialPins"
-                            ? "text-[var(--cyan)]"
-                            : "text-slate-500 group-hover:text-slate-350",
-                        )}
-                      >
-                        Pins
-                      </span>
-                    </div>
-                  </button>
-                  <button
-                    className={cn(
-                      "relative rounded-xl py-2 pl-1 pr-1 transition-all duration-300 active:scale-95 cursor-pointer overflow-hidden group flex flex-col items-center justify-center gap-1",
-                      sidebarSection === "customPins"
-                        ? "border border-[#00d6a3]/30 bg-[#00d6a3]/10 text-[#00d6a3] shadow-[0_0_12px_rgba(0,214,163,0.18)]"
-                        : "border border-transparent bg-transparent text-slate-400 hover:bg-white/[0.02] hover:text-slate-200",
-                    )}
-                    onClick={() => setSidebarSection("customPins")}
-                    type="button"
-                  >
-                    <span className="relative z-10 shrink-0">
-                      <MapPin
-                        size={13}
-                        className={cn(
-                          "transition-transform duration-300",
-                          sidebarSection === "customPins"
-                            ? "scale-110 text-[var(--cyan)] drop-shadow-[0_0_4px_rgba(0,214,163,0.5)]"
-                            : "text-slate-400 group-hover:text-slate-250",
-                        )}
-                      />
-                    </span>
-                    <div className="flex flex-col text-center leading-none relative z-10 min-w-0">
-                      <span
-                        className={cn(
-                          "text-[8px] font-mono font-bold tracking-wider uppercase transition-colors duration-300",
-                          sidebarSection === "customPins"
-                            ? "text-[var(--cyan)]"
-                            : "text-slate-500 group-hover:text-slate-350",
-                        )}
-                      >
-                        Meus
-                      </span>
-                    </div>
-                  </button>
-                  <button
-                    className={cn(
-                      "relative rounded-xl py-2 pl-1 pr-1 transition-all duration-300 active:scale-95 cursor-pointer overflow-hidden group flex flex-col items-center justify-center gap-1",
-                      sidebarSection === "routes"
-                        ? "border border-[#00d6a3]/30 bg-[#00d6a3]/10 text-[#00d6a3] shadow-[0_0_12px_rgba(0,214,163,0.18)]"
-                        : "border border-transparent bg-transparent text-slate-400 hover:bg-white/[0.02] hover:text-slate-200",
-                    )}
-                    onClick={() => setSidebarSection("routes")}
-                    type="button"
-                  >
-                    <span className="relative z-10 shrink-0">
-                      <Route
-                        size={13}
-                        className={cn(
-                          "transition-transform duration-300",
-                          sidebarSection === "routes"
-                            ? "scale-110 text-[var(--cyan)] drop-shadow-[0_0_4px_rgba(0,214,163,0.5)]"
-                            : "text-slate-400 group-hover:text-slate-250",
-                        )}
-                      />
-                    </span>
-                    <div className="flex flex-col text-center leading-none relative z-10 min-w-0">
-                      <span
-                        className={cn(
-                          "text-[8px] font-mono font-bold tracking-wider uppercase transition-colors duration-300",
-                          sidebarSection === "routes"
-                            ? "text-[var(--cyan)]"
-                            : "text-slate-500 group-hover:text-slate-350",
-                        )}
-                      >
-                        Rotas
-                      </span>
-                    </div>
-                  </button>
-                  <button
-                    className={cn(
-                      "relative rounded-xl py-2 pl-1 pr-1 transition-all duration-300 active:scale-95 cursor-pointer overflow-hidden group flex flex-col items-center justify-center gap-1",
-                      sidebarSection === "stats"
-                        ? "border border-[#00d6a3]/30 bg-[#00d6a3]/10 text-[#00d6a3] shadow-[0_0_12px_rgba(0,214,163,0.18)]"
-                        : "border border-transparent bg-transparent text-slate-400 hover:bg-white/[0.02] hover:text-slate-200",
-                    )}
-                    onClick={() => setSidebarSection("stats")}
-                    type="button"
-                  >
-                    <span className="relative z-10 shrink-0">
-                      <Compass
-                        size={13}
-                        className={cn(
-                          "transition-transform duration-300",
-                          sidebarSection === "stats"
-                            ? "scale-110 text-[var(--cyan)] drop-shadow-[0_0_4px_rgba(0,214,163,0.5)]"
-                            : "text-slate-400 group-hover:text-slate-250",
-                        )}
-                      />
-                    </span>
-                    <div className="flex flex-col text-center leading-none relative z-10 min-w-0">
-                      <span
-                        className={cn(
-                          "text-[8px] font-mono font-bold tracking-wider uppercase transition-colors duration-300",
-                          sidebarSection === "stats"
-                            ? "text-[var(--cyan)]"
-                            : "text-slate-500 group-hover:text-slate-350",
-                        )}
-                      >
-                        Stats
-                      </span>
-                    </div>
-                  </button>
-                  <button
-                    className={cn(
-                      "relative rounded-xl py-2 pl-1 pr-1 transition-all duration-300 active:scale-95 cursor-pointer overflow-hidden group flex flex-col items-center justify-center gap-1",
-                      sidebarSection === "group"
-                        ? "border border-[#00d6a3]/30 bg-[#00d6a3]/10 text-[#00d6a3] shadow-[0_0_12px_rgba(0,214,163,0.18)]"
-                        : "border border-transparent bg-transparent text-slate-400 hover:bg-white/[0.02] hover:text-slate-200",
-                    )}
-                    onClick={() => setSidebarSection("group")}
-                    type="button"
-                  >
-                    <span className="relative z-10 shrink-0">
-                      <Shield
-                        size={13}
-                        className={cn(
-                          "transition-transform duration-300",
-                          sidebarSection === "group"
-                            ? "scale-110 text-[var(--cyan)] drop-shadow-[0_0_4px_rgba(0,214,163,0.5)]"
-                            : "text-slate-400 group-hover:text-slate-250",
-                        )}
-                      />
-                    </span>
-                    <div className="flex flex-col text-center leading-none relative z-10 min-w-0">
-                      <span
-                        className={cn(
-                          "text-[8px] font-mono font-bold tracking-wider uppercase transition-colors duration-300",
-                          sidebarSection === "group"
-                            ? "text-[var(--cyan)]"
-                            : "text-slate-500 group-hover:text-slate-350",
-                        )}
-                      >
-                        Grupo
-                      </span>
-                    </div>
-                  </button>
-                </div>
-              </div>
 
-              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 custom-scrollbar relative z-10">
-                <div className="grid gap-5">
-                  {sidebarSection === "stats" ? (
-                    <section className="rounded-[26px] border border-white/5 bg-black/25 p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_12px_36px_rgba(0,0,0,0.2)]">
-                      {!isAuthenticated ? (
-                        <LockedFeature
-                          title="Diário de Coleta"
-                          description="Suas estatísticas de farm são salvas na nuvem para você acompanhar sua evolução diária."
-                          onLogin={openLoginModal}
-                        />
-                      ) : (
-                        <>
-                          <div className="mb-6 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <span className="grid h-9 w-9 place-items-center rounded-xl border border-white/8 bg-white/5 text-cyan-200">
-                                <Compass size={16} />
-                              </span>
-                              <div>
-                                <p className="text-[0.62rem] font-black uppercase tracking-[0.2em] text-slate-400">
-                                  Estastísticas
-                                </p>
-                                <h3 className="text-base font-bold tracking-tight text-white">
-                                  Diário de Coleta
-                                </h3>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={resetAllActiveRespawns}
-                                className="p-2 text-slate-500 hover:text-red-400 transition-colors cursor-pointer"
-                                title="Resetar TODAS as marcações agora"
-                              >
-                                <Trash2 size={15} />
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="mb-4 flex rounded-xl bg-white/[0.03] p-1 border border-white/5">
-                            {[
-                              { id: "today", label: "Hoje" },
-                              { id: "weekly", label: "Semana" },
-                              { id: "monthly", label: "Mês" },
-                              { id: "total", label: "Total" },
-                            ].map((p) => (
-                              <button
-                                key={p.id}
-                                onClick={() =>
-                                  setStatsPeriod(p.id as StatsPeriod)
-                                }
-                                className={cn(
-                                  "flex-1 rounded-lg py-1.5 text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer",
-                                  statsPeriod === p.id
-                                    ? "bg-white/10 text-[var(--cyan)] shadow-sm"
-                                    : "text-slate-500 hover:text-slate-300",
-                                )}
-                              >
-                                {p.label}
-                              </button>
-                            ))}
-                          </div>
-
-                          <div className="grid gap-3">
-                            <div className="grid grid-cols-3 gap-2">
-                              <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-3 text-center">
-                                <p className="text-[0.55rem] font-mono font-bold uppercase tracking-widest text-slate-500 mb-1">
-                                  Ores (Nodes)
-                                </p>
-                                <p className="text-sm font-black text-white">
-                                  {safeWorldStats.marked_ores}
-                                  <span className="text-slate-600">
-                                    /{safeWorldStats.total_ores}
-                                  </span>
-                                </p>
-                              </div>
-                              <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-3 text-center">
-                                <p className="text-[0.55rem] font-mono font-bold uppercase tracking-widest text-slate-500 mb-1">
-                                  Mush (Nodes)
-                                </p>
-                                <p className="text-sm font-black text-white">
-                                  {safeWorldStats.marked_mushrooms}
-                                  <span className="text-slate-600">
-                                    /{safeWorldStats.total_mushrooms}
-                                  </span>
-                                </p>
-                              </div>
-                              <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-3 text-center">
-                                <p className="text-[0.55rem] font-mono font-bold uppercase tracking-widest text-slate-500 mb-1">
-                                  Plant (Nodes)
-                                </p>
-                                <p className="text-sm font-black text-white">
-                                  {safeWorldStats.marked_plants +
-                                    safeWorldStats.marked_sticks}
-                                  <span className="text-slate-600">
-                                    /
-                                    {safeWorldStats.total_plants +
-                                      safeWorldStats.total_sticks}
-                                  </span>
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-center">
-                              <p className="text-[0.6rem] font-mono font-bold uppercase tracking-widest text-slate-500 mb-1">
-                                Total Coletas no Período
-                              </p>
-                              <p className="text-2xl font-black text-white">
-                                {Object.values(
-                                  safeMapStats.ore_count || {},
-                                ).reduce((a, b) => a + b, 0) +
-                                  Object.values(
-                                    safeMapStats.mushroom_count || {},
-                                  ).reduce((a, b) => a + b, 0) +
-                                  Object.values(
-                                    safeMapStats.plant_count || {},
-                                  ).reduce((a, b) => a + b, 0) +
-                                  (safeMapStats.stick_count || 0)}
-                              </p>
-                            </div>
-
-                            <div className="space-y-4 mt-2">
-                              <div>
-                                <div className="flex items-center justify-between mb-2 px-1">
-                                  <span className="text-[10px] font-black uppercase tracking-widest text-white/60">
-                                    Minérios
-                                  </span>
-                                  <span className="text-[10px] font-mono text-[var(--cyan)]">
-                                    {Object.values(
-                                      safeMapStats.ore_count || {},
-                                    ).reduce((a, b) => a + b, 0)}
-                                  </span>
-                                </div>
-                                <div className="grid grid-cols-3 gap-2">
-                                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-                                    <div
-                                      key={n}
-                                      className="flex flex-col items-center gap-1 p-2 rounded-xl bg-white/[0.03] border border-white/5"
-                                    >
-                                      <img
-                                        src={getMarkerIconSrc(`ore_${n}`)}
-                                        alt=""
-                                        className="h-6 w-6 object-contain opacity-70"
-                                      />
-                                      <span className="text-[11px] font-black text-white">
-                                        {safeMapStats.ore_count[`ore_${n}`] ||
-                                          0}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="flex items-center justify-between mb-2 px-1">
-                                  <span className="text-[10px] font-black uppercase tracking-widest text-white/60">
-                                    Cogumelos
-                                  </span>
-                                  <span className="text-[10px] font-mono text-[var(--cyan)]">
-                                    {Object.keys(
-                                      safeMapStats.mushroom_count || {},
-                                    )
-                                      .filter((k) => k.startsWith("mushroom_"))
-                                      .reduce(
-                                        (sum, key) =>
-                                          sum +
-                                          (safeMapStats.mushroom_count[key] ||
-                                            0),
-                                        0,
-                                      )}
-                                  </span>
-                                </div>
-                                <div className="grid grid-cols-5 gap-2">
-                                  {[1, 2, 3, 4, 5].map((n) => (
-                                    <div
-                                      key={n}
-                                      className="flex flex-col items-center gap-1 p-2 rounded-xl bg-white/[0.03] border border-white/5"
-                                    >
-                                      <img
-                                        src={getMarkerIconSrc(`mushroom_${n}`)}
-                                        alt=""
-                                        className="h-5 w-5 object-contain opacity-70"
-                                      />
-                                      <span className="text-[10px] font-black text-white">
-                                        {safeMapStats.mushroom_count[
-                                          `mushroom_${n}`
-                                        ] || 0}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="flex items-center justify-between mb-2 px-1">
-                                  <span className="text-[10px] font-black uppercase tracking-widest text-white/60">
-                                    Recursos Variados
-                                  </span>
-                                  <span className="text-[10px] font-mono text-[var(--cyan)]">
-                                    {(safeMapStats.plant_count["perpetual"] ||
-                                      0) +
-                                      (safeMapStats.plant_count["hibiscus"] ||
-                                        0) +
-                                      (safeMapStats.plant_count["cotton"] ||
-                                        0) +
-                                      (safeMapStats.plant_count["borago"] ||
-                                        0) +
-                                      (safeMapStats.stick_count || 0)}
-                                  </span>
-                                </div>
-                                <div className="grid grid-cols-5 gap-2">
-                                  {[
-                                    { id: "perpetual", label: "Perpétua" },
-                                    { id: "hibiscus", label: "Hibisco" },
-                                    { id: "cotton", label: "Algodão" },
-                                    { id: "borago", label: "Borago" },
-                                    { id: "stick", label: "Galho" },
-                                  ].map((item) => (
-                                    <div
-                                      key={item.id}
-                                      className="flex flex-col items-center gap-1 p-2 rounded-xl bg-white/[0.03] border border-white/5"
-                                      title={item.label}
-                                    >
-                                      <img
-                                        src={getMarkerIconSrc(item.id)}
-                                        alt=""
-                                        className="h-5 w-5 object-contain opacity-70"
-                                      />
-                                      <span className="text-[10px] font-black text-white">
-                                        {item.id === "stick"
-                                          ? safeMapStats.stick_count
-                                          : safeMapStats.plant_count[item.id] ||
-                                            0}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </section>
-                  ) : null}
-
-                  {sidebarSection === "group" ? (
-                    <section className="rounded-[26px] border border-white/5 bg-black/25 p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_12px_36px_rgba(0,0,0,0.2)]">
-                      {!isAuthenticated ? (
-                        <LockedFeature
-                          title="Área Restrita"
-                          description="O Sistema de Clã exige autenticação para sincronizar dados em tempo real com seu grupo."
-                          onLogin={openLoginModal}
-                        />
-                      ) : (
-                        <>
-                          <div className="mb-6 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <span className="grid h-9 w-9 place-items-center rounded-xl border border-white/8 bg-white/5 text-[var(--cyan)]">
-                                <Shield size={16} />
-                              </span>
-                              <div>
-                                <p className="text-[0.62rem] font-black uppercase tracking-[0.2em] text-slate-400">
-                                  Coordenação
-                                </p>
-                                <h3 className="text-base font-bold tracking-tight text-white">
-                                  Sistema de Clã
-                                </h3>
-                              </div>
-                            </div>
-                          </div>
-
-                          {!group ? (
-                            <div className="grid gap-6 animate-[fade-in_150ms_ease-out]">
-                              <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.01] p-5 text-center">
-                                <Users
-                                  size={32}
-                                  className="mx-auto text-slate-600 mb-3 opacity-20"
-                                />
-                                <p className="text-xs text-slate-400 leading-relaxed mb-4">
-                                  Você não faz parte de nenhum grupo tático.
-                                  Crie o seu ou entre em um existente.
-                                </p>
-                              </div>
-
-                              <div className="grid gap-5">
-                                <div className="grid gap-2.5">
-                                  <label className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500 ml-1">
-                                    Entrar no Grupo
-                                  </label>
-                                  <div className="flex gap-2">
-                                    <input
-                                      type="text"
-                                      placeholder="Código (ex: AKA-123)"
-                                      value={joinCode}
-                                      onChange={(e) =>
-                                        setJoinCode(
-                                          e.target.value.toUpperCase(),
-                                        )
-                                      }
-                                      className="flex-1 rounded-xl border border-white/8 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 transition"
-                                    />
-                                    <button
-                                      onClick={() => joinGroup(joinCode)}
-                                      disabled={!joinCode || isGroupLoading}
-                                      className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--cyan)] text-black hover:brightness-110 active:scale-95 transition disabled:opacity-50 cursor-pointer"
-                                    >
-                                      <UserPlus size={18} />
-                                    </button>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-4 py-1">
-                                  <div className="h-px flex-1 bg-white/5" />
-                                  <span className="text-[9px] font-mono font-bold text-slate-600">
-                                    OU
-                                  </span>
-                                  <div className="h-px flex-1 bg-white/5" />
-                                </div>
-
-                                <div className="grid gap-2.5">
-                                  <label className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500 ml-1">
-                                    Criar Novo Clã
-                                  </label>
-                                  <div className="flex gap-2">
-                                    <input
-                                      type="text"
-                                      placeholder="Nome do seu clã"
-                                      value={newGroupName}
-                                      onChange={(e) =>
-                                        setNewGroupName(e.target.value)
-                                      }
-                                      className="flex-1 rounded-xl border border-white/8 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-cyan-500/50 transition"
-                                    />
-                                    <button
-                                      onClick={() => createGroup(newGroupName)}
-                                      disabled={!newGroupName || isGroupLoading}
-                                      className="grid h-10 w-10 place-items-center rounded-xl bg-white text-black hover:bg-slate-200 active:scale-95 transition disabled:opacity-50 cursor-pointer"
-                                    >
-                                      <Plus size={18} strokeWidth={3} />
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="grid gap-5 animate-[fade-in_150ms_ease-out]">
-                              <div className="rounded-2xl border border-cyan-500/20 bg-cyan-950/10 p-4 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition">
-                                  <Shield size={64} />
-                                </div>
-                                <div className="relative z-10">
-                                  <h4 className="text-lg font-black text-white">
-                                    {group.name}
-                                  </h4>
-                                  <div className="mt-3 flex items-center justify-between gap-3">
-                                    <div className="grid gap-0.5">
-                                      <span className="text-[9px] font-mono font-bold uppercase text-slate-500">
-                                        Código de Convite
-                                      </span>
-                                      <span className="text-sm font-mono font-black text-[var(--cyan)] tracking-wider">
-                                        {group.inviteCode}
-                                      </span>
-                                    </div>
-                                    <button
-                                      onClick={copyInviteCode}
-                                      className="flex h-9 items-center gap-2 rounded-lg bg-white/5 border border-white/10 px-3 text-[10px] font-black uppercase text-white hover:bg-white/10 transition active:scale-95 cursor-pointer"
-                                    >
-                                      <Copy size={12} />
-                                      Copiar
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="grid gap-3">
-                                <div className="flex items-center justify-between px-1">
-                                  <span className="text-[10px] font-black uppercase tracking-widest text-white/60">
-                                    Membros ({members.length})
-                                  </span>
-                                </div>
-                                <div className="grid gap-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
-                                  {members.map((member) => (
-                                    <div
-                                      key={member.id}
-                                      className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.03] border border-white/5"
-                                    >
-                                      <div className="flex items-center gap-2.5">
-                                        <div className="h-8 w-8 rounded-lg bg-[var(--cyan)]/10 flex items-center justify-center text-[var(--cyan)] font-black text-xs border border-[var(--cyan)]/20 uppercase">
-                                          {member.userName.charAt(0)}
-                                        </div>
-                                        <div className="grid">
-                                          <span className="text-xs font-bold text-white">
-                                            {member.userName}
-                                          </span>
-                                          <span className="text-[9px] font-mono text-slate-500 uppercase">
-                                            {member.role}
-                                          </span>
-                                        </div>
-                                      </div>
-                                      {member.role === "admin" && (
-                                        <Shield
-                                          size={12}
-                                          className="text-[var(--cyan)] opacity-50"
-                                        />
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-
-                              <button
-                                onClick={leaveGroup}
-                                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-950/10 py-3 text-[11px] font-black uppercase tracking-widest text-red-400 hover:bg-red-500/10 transition active:scale-95 cursor-pointer"
-                              >
-                                <LogOut size={14} />
-                                Sair do Grupo
-                              </button>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </section>
-                  ) : null}
-
-                  {sidebarSection === "officialPins" ? (
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 custom-scrollbar relative z-10">
+              <div className="grid gap-5">
+                {sidebarSection === "officialPins" ? (
                     <section className="rounded-[26px] border border-white/5 bg-black/25 p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_12px_36px_rgba(0,0,0,0.2)]">
                       <div className="mb-4 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
@@ -1254,6 +617,22 @@ export const MapSidebar = memo(function MapSidebar({
                           }{" "}
                           grupos
                         </span>
+                      </div>
+
+                      <div className="relative group mb-5">
+                        <Search
+                          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[var(--cyan)] transition-colors"
+                          size={14}
+                        />
+                        <input
+                          className="w-full rounded-xl border border-white/8 bg-black/40 py-2.5 pl-10 pr-4 text-xs text-white placeholder-slate-600 outline-none transition-all duration-300 focus:border-[var(--cyan)]/40 focus:bg-black/60"
+                          onChange={(e) =>
+                            setSidebarSearchQuery(e.target.value)
+                          }
+                          placeholder="Filtrar categorias..."
+                          type="text"
+                          value={sidebarSearchQuery}
+                        />
                       </div>
 
                       <div className="grid grid-cols-3 gap-2.5">
@@ -2293,10 +1672,101 @@ export const MapSidebar = memo(function MapSidebar({
                       )}
                     </div>
                   ) : null}
+
+                  {sidebarSection === "search" ? (
+                    <div className="grid gap-4 animate-[fade-in_150ms_ease-out]">
+                      <section className="rounded-[26px] border border-white/5 bg-black/25 p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_12px_36px_rgba(0,0,0,0.2)]">
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <span className="grid h-9 w-9 place-items-center rounded-xl border border-white/8 bg-white/5 text-cyan-200">
+                              <Search size={16} />
+                            </span>
+                            <div>
+                              <p className="text-[0.62rem] font-black uppercase tracking-[0.2em] text-slate-400">
+                                Global
+                              </p>
+                              <h3 className="text-base font-bold tracking-tight text-white">
+                                Resultados da Busca
+                              </h3>
+                            </div>
+                          </div>
+                          <span className="rounded-full border border-white/8 bg-white/5 px-2.5 py-0.5 font-mono text-[0.58rem] font-bold text-slate-400 uppercase tracking-wider">
+                            {searchResults.length} itens
+                          </span>
+                        </div>
+
+                        {searchResults.length === 0 ? (
+                          <div className="py-12 text-center">
+                            <Compass size={32} className="mx-auto text-slate-700 mb-3 opacity-20" />
+                            <p className="text-sm text-slate-500 italic">
+                              Nenhum recurso encontrado.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="grid gap-2">
+                            {paginatedSearchResults.map((item: any) => (
+                              <div
+                                key={item.id}
+                                onClick={() => {
+                                  if (item.isRoute) {
+                                    loadSavedRoute(item.id);
+                                  } else {
+                                    focusCoords({ x: item.x, y: item.y });
+                                    if (item.isCustom) {
+                                      selectCustomPin(item.id);
+                                    } else {
+                                      selectOfficialPoint(item.id);
+                                    }
+                                  }
+                                }}
+                                className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.01] p-3 hover:border-white/15 hover:bg-white/[0.03] transition-all cursor-pointer group"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div
+                                    className="h-9 w-9 rounded-lg border border-white/10 flex items-center justify-center shrink-0"
+                                    style={{
+                                      backgroundColor: item.color || "transparent",
+                                    }}
+                                  >
+                                    {item.isRoute ? (
+                                      <Route size={16} className="text-orange-400" />
+                                    ) : (
+                                      <IconImage
+                                        iconId={item.iconId}
+                                        label={item.name}
+                                        className="h-6 w-6 object-contain"
+                                      />
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-bold text-slate-200 group-hover:text-white truncate">
+                                      {item.name}
+                                    </p>
+                                    <p className="text-[10px] font-mono text-slate-500">
+                                      {item.isRoute ? "Rota" : (item.type || "Custom")} 
+                                      {!item.isRoute && ` • ${item.x.toFixed(1)}, ${item.y.toFixed(1)}`}
+                                      {item.isRoute && item.route?.checkpoints && ` • ${item.route.checkpoints.length} pts`}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="p-1.5 text-slate-600 group-hover:text-[var(--cyan)] transition-colors">
+                                  <ChevronRight size={14} />
+                                </div>
+                              </div>
+                            ))}
+                            <PaginationControls
+                              currentPage={searchPage}
+                              totalPages={totalSearchPages}
+                              onPageChange={setSearchPage}
+                            />
+                          </div>
+                        )}
+                      </section>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
-          )}
         </div>
       </aside>
     </div>

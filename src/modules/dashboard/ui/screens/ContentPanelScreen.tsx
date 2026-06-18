@@ -56,7 +56,7 @@ export const ContentPanelScreen = ({ activeTab }: ContentPanelScreenProps) => {
           </div>
           <div className="flex items-center h-full">
             <button 
-              onClick={() => window.ipcRenderer?.send('minimize-panel-window')} 
+              onClick={handleClose} 
               className="h-full w-11 hover:bg-white/5 transition flex items-center justify-center cursor-pointer text-slate-400 hover:text-white"
               style={{ WebkitAppRegion: 'no-drag' } as any}
               title="Minimizar"
@@ -99,7 +99,7 @@ export const ContentPanelScreen = ({ activeTab }: ContentPanelScreenProps) => {
               </span>
               <input 
                 type="text" 
-                placeholder="Buscar local, recurso, NPC..."
+                placeholder="Buscar recursos no mapa..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-[#11161D]/65 border border-[#222B37] rounded-lg py-1.5 pl-9 pr-9 text-xs text-slate-200 placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none transition-colors backdrop-blur-sm"
@@ -132,7 +132,7 @@ export const ContentPanelScreen = ({ activeTab }: ContentPanelScreenProps) => {
               </svg>
             </button>
             <button 
-              onClick={() => window.ipcRenderer?.send('minimize-panel-window')} 
+              onClick={handleClose} 
               className="w-8 h-8 rounded-lg hover:bg-white/5 transition flex items-center justify-center cursor-pointer text-slate-400 hover:text-white"
               title="Minimizar"
             >

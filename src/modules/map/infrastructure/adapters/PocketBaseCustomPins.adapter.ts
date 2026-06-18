@@ -159,15 +159,19 @@ export const pocketBaseCustomPinsRepository: CustomPinsRepository = {
     }
   },
 
-  async listMine() {
+  async listMine(page = 1, perPage = 15) {
     try {
-      const records = await pb.collection(customPinsCollection).getFullList({
+      const records = await pb.collection(customPinsCollection).getList(page, perPage, {
         sort: '-updated',
         expand: 'owner',
         requestKey: null,
       })
 
-      return records.map(toSavedCustomPin)
+      return {
+        items: records.items.map(toSavedCustomPin),
+        totalItems: records.totalItems,
+        totalPages: records.totalPages,
+      }
     } catch (error) {
       throw new Error(getCustomPinsErrorMessage(error), { cause: error })
     }

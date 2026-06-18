@@ -296,6 +296,88 @@ const PinBadge = memo(function PinBadge({
   );
 });
 
+const FocusBeacon = memo(function FocusBeacon({
+  screenX,
+  screenY,
+  color,
+}: {
+  screenX: number;
+  screenY: number;
+  color?: string;
+}) {
+  const accent = color ?? "rgba(0,214,163,1)";
+  const accentFaded = "rgba(0,214,163,0.15)";
+  return (
+    <>
+      <style>{`
+        @keyframes beacon-ring {
+          0%   { transform: translate(-50%, -50%) scale(0.4); opacity: 0.9; }
+          100% { transform: translate(-50%, -50%) scale(2.8); opacity: 0; }
+        }
+      `}</style>
+      {/* Outer rings (pointer-events-none so map still receives input) */}
+      <div
+        className="pointer-events-none fixed z-[79]"
+        style={{ left: screenX, top: screenY }}
+      >
+        {/* Ring 1 — fastest */}
+        <span
+          style={{
+            position: "absolute",
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            border: `2px solid ${accent}`,
+            boxShadow: `0 0 12px ${accentFaded}`,
+            animation: "beacon-ring 1.6s ease-out infinite",
+            animationDelay: "0s",
+          }}
+        />
+        {/* Ring 2 — medium */}
+        <span
+          style={{
+            position: "absolute",
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            border: `2px solid ${accent}`,
+            boxShadow: `0 0 12px ${accentFaded}`,
+            animation: "beacon-ring 1.6s ease-out infinite",
+            animationDelay: "0.45s",
+          }}
+        />
+        {/* Ring 3 — slowest */}
+        <span
+          style={{
+            position: "absolute",
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            border: `2px solid ${accent}`,
+            boxShadow: `0 0 12px ${accentFaded}`,
+            animation: "beacon-ring 1.6s ease-out infinite",
+            animationDelay: "0.9s",
+          }}
+        />
+        {/* Solid center dot */}
+        <span
+          style={{
+            position: "absolute",
+            width: 10,
+            height: 10,
+            borderRadius: "50%",
+            backgroundColor: accent,
+            boxShadow: `0 0 10px ${accent}, 0 0 20px ${accent}`,
+            transform: "translate(-50%, -50%)",
+            top: 0,
+            left: 0,
+          }}
+        />
+      </div>
+    </>
+  );
+});
+
 const RouteCheckpointBadge = memo(function RouteCheckpointBadge({
   checkpoint,
   index,
@@ -416,7 +498,11 @@ type ClusteredCustomPin = SavedCustomPin & {
   clusterCount?: number;
 };
 
-export function InteractiveMap() {
+export interface InteractiveMapProps {
+  externalSearchQuery?: string;
+}
+
+export function InteractiveMap({ externalSearchQuery = "" }: InteractiveMapProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const {
@@ -445,7 +531,9 @@ export function InteractiveMap() {
     setPublicRoutesQuery,
     setSearchQuery,
     setRoutesView,
+    setSidebarSearchQuery,
     setSidebarSection,
+    sidebarSearchQuery,
     sidebarSection,
     toggleSelectedType,
     visibleCustomPins,
@@ -505,6 +593,10 @@ export function InteractiveMap() {
     setCustomPinsPage,
     totalCustomPinsPages,
     // Search
+    paginatedSearchResults,
+    searchPage,
+    setSearchPage,
+    totalSearchPages,
     searchHistory,
     addToHistory,
     removeFromHistory,
@@ -528,6 +620,14 @@ export function InteractiveMap() {
     referencedOfficialPointIds,
     referencedCustomPinIds,
   } = useMapViewModel();
+
+  useEffect(() => {
+    setSearchQuery(externalSearchQuery);
+    if (externalSearchQuery.trim()) {
+      setSidebarSection("search");
+      setIsSidebarOpen(true);
+    }
+  }, [externalSearchQuery, setSearchQuery, setSidebarSection, setIsSidebarOpen]);
 
   useEffect(() => {
     const handleOpenSettings = () => setIsSettingsModalOpen(true);
@@ -754,8 +854,6 @@ export function InteractiveMap() {
     viewportSize.width,
     notificationSettings.showSubRegionNames,
   ]);
-
-  const [isSearchActive, setIsSearchActive] = useState(false);
 
   const [cullingCamera, setCullingCamera] = useState(displayedCamera);
 
@@ -1600,15 +1698,8 @@ export function InteractiveMap() {
           setIsSidebarOpen={setIsSidebarOpen}
           sidebarSection={sidebarSection}
           setSidebarSection={setSidebarSection}
-          isSearchActive={isSearchActive}
-          setIsSearchActive={setIsSearchActive}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          searchHistory={searchHistory}
-          removeFromHistory={removeFromHistory}
-          addToHistory={addToHistory}
-          clearHistory={clearHistory}
-          searchResults={searchResults}
+          sidebarSearchQuery={sidebarSearchQuery}
+          setSidebarSearchQuery={setSidebarSearchQuery}
           selectCustomPin={selectCustomPin}
           startEditingCustomPin={startEditingCustomPin}
           selectOfficialPoint={selectOfficialPoint}
@@ -1628,6 +1719,11 @@ export function InteractiveMap() {
           customPinsPage={customPinsPage}
           totalCustomPinsPages={totalCustomPinsPages}
           setCustomPinsPage={setCustomPinsPage}
+          paginatedSearchResults={paginatedSearchResults}
+          searchPage={searchPage}
+          setSearchPage={setSearchPage}
+          totalSearchPages={totalSearchPages}
+          searchResults={searchResults}
           routesView={routesView}
           setRoutesView={setRoutesView}
           publicRoutesQuery={publicRoutesQuery}
@@ -1682,6 +1778,20 @@ export function InteractiveMap() {
       {isAuthModalOpen && (
         <AuthModal onClose={() => setIsAuthModalOpen(false)} />
       )}
+
+      {/* Focus Beacon — rendered below the popup card so rings appear around the pin */}
+      {activePopupPin &&
+        popupCoords &&
+        mode === "explore" &&
+        !editingCustomPinId && (
+          <ViewportPortal>
+            <FocusBeacon
+              screenX={popupCoords.screenX}
+              screenY={popupCoords.screenY}
+              color={activePopupPin.isCustom ? (activePopupPin as any).color : undefined}
+            />
+          </ViewportPortal>
+        )}
 
       {activePopupPin &&
         popupCoords &&

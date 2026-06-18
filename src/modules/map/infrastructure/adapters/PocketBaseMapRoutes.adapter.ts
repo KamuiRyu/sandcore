@@ -209,16 +209,20 @@ export const pocketBaseMapRoutesRepository: MapRoutesRepository = {
     }
   },
 
-  async listMine() {
+  async listMine(page = 1, perPage = 15) {
     try {
-      const records = await pb.collection(mapRoutesCollection).getFullList({
+      const records = await pb.collection(mapRoutesCollection).getList(page, perPage, {
         sort: '-updated',
         requestKey: null,
       })
 
-      return records
-        .map((record) => toSavedMapRoute(record))
-        .filter((route): route is SavedMapRoute => Boolean(route))
+      return {
+        items: records.items
+          .map((record) => toSavedMapRoute(record))
+          .filter((route): route is SavedMapRoute => Boolean(route)),
+        totalItems: records.totalItems,
+        totalPages: records.totalPages,
+      }
     } catch (error) {
       throw new Error(getMapRoutesErrorMessage(error), { cause: error })
     }
@@ -255,21 +259,25 @@ export const pocketBaseMapRoutesRepository: MapRoutesRepository = {
     }
   },
 
-  async searchPublic(query: string) {
+  async searchPublic(query: string, page = 1, perPage = 15) {
     try {
       const filter = query.trim()
         ? `public_slug != "" && search_text ~ "${escapeFilterValue(query.trim().toLowerCase())}"`
         : 'public_slug != ""'
-      const records = await pb.collection(publicMapRoutesCollection).getFullList({
+      const records = await pb.collection(publicMapRoutesCollection).getList(page, perPage, {
         expand: 'owner',
         filter,
         sort: '-updated',
         requestKey: null,
       })
 
-      return records
-        .map((record) => toSavedMapRoute(record))
-        .filter((route): route is SavedMapRoute => Boolean(route))
+      return {
+        items: records.items
+          .map((record) => toSavedMapRoute(record))
+          .filter((route): route is SavedMapRoute => Boolean(route)),
+        totalItems: records.totalItems,
+        totalPages: records.totalPages,
+      }
     } catch (error) {
       throw new Error(getMapRoutesErrorMessage(error), { cause: error })
     }

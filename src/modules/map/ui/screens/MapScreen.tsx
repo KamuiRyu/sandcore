@@ -5,7 +5,7 @@ interface MapScreenProps {
 }
 
 export const MapScreen = ({ searchQuery }: MapScreenProps) => {
-  return <InteractiveMap />
+  return <InteractiveMap externalSearchQuery={searchQuery} />
 }
 
 export default MapScreen

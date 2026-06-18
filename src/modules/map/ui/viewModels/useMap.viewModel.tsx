@@ -67,12 +67,17 @@ export function useMapViewModel() {
   const user = auth.getCurrentUser()
   
   const [mode, _setMode] = useState<'explore' | 'pin' | 'route' | 'feedback'>('explore')
-  const [sidebarSection, setSidebarSection] = useState<'officialPins' | 'customPins' | 'routes' | 'stats' | 'group'>('officialPins')
+  const [sidebarSection, setSidebarSection] = useState<'officialPins' | 'customPins' | 'routes' | 'search'>('officialPins')
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false)
   const [feedbackTarget, setFeedbackTarget] = useState<{ x: number, y: number, pointId?: string, pointName?: string } | null>(null)
   
   const [searchQuery, setSearchQuery] = useState('')
   const debouncedSearchQuery = useDebounce(searchQuery, 350)
+  
+  const [searchPage, setSearchPage] = useState(1)
+  
+  const [sidebarSearchQuery, setSidebarSearchQuery] = useState('')
+  const debouncedSidebarSearchQuery = useDebounce(sidebarSearchQuery, 350)
   
   const [selectedTypes, setSelectedTypes] = useState<string[]>([])
   const [selectedRegion, setSelectedRegion] = useState<string | 'all'>('all')
@@ -99,8 +104,13 @@ export function useMapViewModel() {
   const [draftCustomPin, setDraftCustomPin] = useState<SavedCustomPin | null>(null)
 
   const [mineRoutesPage, setMineRoutesPage] = useState(1)
+  const [totalSavedRoutesPages, setTotalSavedRoutesPages] = useState(1)
+  
   const [publicRoutesPage, setPublicRoutesPage] = useState(1)
+  const [totalPublicRoutesPages, setTotalPublicRoutesPages] = useState(1)
+  
   const [customPinsPage, setCustomPinsPage] = useState(1)
+  const [totalCustomPinsPages, setTotalCustomPinsPages] = useState(1)
   const [notificationSettings, _setNotificationSettings] = useState<NotificationSettings>(() => mapDependencies.localNotificationSettingsStorage.read())
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
   const [importJsonValue, setImportJsonValue] = useState('')
@@ -210,6 +220,7 @@ export function useMapViewModel() {
   const visibleOfficialPoints = useMemo(() => {
     const query = debouncedSearchQuery.trim().toLowerCase()
     const queryTerms = query.split(/\s+/).filter(Boolean)
+    const hasActiveSearch = queryTerms.length > 0
     
     const matchesTerms = (targetTexts: Array<string | undefined>) => {
       if (queryTerms.length === 0) return true
@@ -227,18 +238,29 @@ export function useMapViewModel() {
         }
         return { ...p, isCompleted: !!state && state.status !== 'ready' }
     }).filter(p => {
-      if (visibleRoutes.length > 0 && mode === 'explore') return referencedOfficialPointIds.has(p.id)
+      const typeLabel = getMarkerTypeLabel(p.type)
+      const matchesSearchQuery = matchesTerms([p.name, p.type, typeLabel, p.regionId, p.subRegionId])
+      const isSearched = hasActiveSearch && matchesSearchQuery
+
+      // Se for o ponto selecionado pelo usuário, ele deve sempre aparecer no mapa
+      if (selectedOfficialPointId === p.id) return true
+
+      // Se estiver exibindo rota em modo exploração, só mostra os pontos da rota.
+      // EXCEÇÃO: Se houver busca ativa e o ponto corresponder à busca, também mostra!
+      if (visibleRoutes.length > 0 && mode === 'explore') {
+          if (referencedOfficialPointIds.has(p.id)) return true
+          if (!isSearched) return false
+      }
       
+      // Esconder spots inativos se a opção estiver ativada
+      // EXCEÇÃO: se o spot corresponder a uma busca ativa, ele NÃO deve ser escondido
       const isDynamicRes = ['ore', 'mushroom', 'stick', 'perpetual', 'hibiscus', 'cotton', 'borago'].includes(p.type)
       if (notificationSettings.hideUnmarkedResources && isDynamicRes) {
-          if (!completedPins[p.id]) return false
+          if (!completedPins[p.id] && !isSearched) return false
       }
       
       const matchesLayer = selectedLayers.includes('officialPins')
       const matchesRegion = selectedRegion === 'all' || p.regionId === selectedRegion
-      
-      const typeLabel = getMarkerTypeLabel(p.type)
-      const matchesSearchQuery = matchesTerms([p.name, p.type, typeLabel, p.regionId, p.subRegionId])
       
       let matchesType = selectedTypes.includes(p.type as string)
       const selectedSubTypes = selectedTypes.filter(t => t.includes('_'))
@@ -249,20 +271,38 @@ export function useMapViewModel() {
           matchesType = !!(isBaseTypeSelected || isCurrentSubTypeSelected)
       }
       
+      // Se houver busca ativa e o ponto corresponder, mostrá-lo mesmo que o tipo/categoria esteja oculto
+      if (isSearched) return matchesLayer && matchesRegion
+      
       return matchesLayer && matchesRegion && matchesSearchQuery && matchesType
     })
-  }, [officialPoints, debouncedSearchQuery, selectedLayers, selectedRegion, selectedTypes, visibleRoutes.length, mode, referencedOfficialPointIds, completedPins, notificationSettings.hideUnmarkedResources])
+  }, [officialPoints, debouncedSearchQuery, selectedLayers, selectedRegion, selectedTypes, visibleRoutes.length, mode, referencedOfficialPointIds, completedPins, notificationSettings.hideUnmarkedResources, selectedOfficialPointId])
 
   const visibleCustomPins = useMemo(() => {
+    const query = debouncedSearchQuery.trim().toLowerCase()
+    const hasActiveSearch = query.length > 0
     return customPins.filter(p => {
+        const matchesSearchQuery = matchesSearch([p.name, ...p.tags], debouncedSearchQuery)
+        const isSearched = hasActiveSearch && matchesSearchQuery
+
+        // Se for o pin customizado selecionado pelo usuário, ele deve sempre aparecer no mapa
+        if (selectedCustomPinId === p.id) return true
+
         if (visibleRoutes.length > 0 && mode === 'explore') {
             const idsInRoutes = new Set<string>()
             savedRoutes.filter(r => visibleRoutes.includes(r.id)).forEach(r => r.route.checkpoints.forEach(cp => { if (cp.customPinId) idsInRoutes.add(cp.customPinId) }))
-            return idsInRoutes.has(p.id)
+            
+            if (idsInRoutes.has(p.id)) return true
+            if (isSearched) {
+                return selectedLayers.includes('customPins')
+            }
+            return false
         }
-        return selectedLayers.includes('customPins') && matchesSearch([p.name, ...p.tags], debouncedSearchQuery)
+        // Se houver busca ativa e o pin corresponder, mostrá-lo mesmo que a camada esteja oculta
+        if (isSearched) return true
+        return selectedLayers.includes('customPins') && matchesSearchQuery
     })
-  }, [customPins, debouncedSearchQuery, selectedLayers, visibleRoutes, mode, savedRoutes])
+  }, [customPins, debouncedSearchQuery, selectedLayers, visibleRoutes, mode, savedRoutes, selectedCustomPinId])
 
   const searchResults = useMemo(() => {
     const query = debouncedSearchQuery.trim().toLowerCase(); 
@@ -277,20 +317,33 @@ export function useMapViewModel() {
       )
     }
 
-    const matchedO = visibleOfficialPoints.filter(p => {
+    const matchedO = officialPoints.map(p => {
+        const state = completedPins[p.id]
+        if (state?.subType) {
+            const resData = getResourceData(state.subType)
+            if (resData) return { ...p, name: resData.name, iconId: resData.iconId }
+        }
+        return p
+    }).filter(p => {
         const typeLabel = getMarkerTypeLabel(p.type)
         return matchesTerms([p.name, p.type, typeLabel, p.regionId, p.subRegionId])
     })
 
-    const matchedC = visibleCustomPins.filter(p => {
+    const matchedC = customPins.filter(p => {
         return matchesTerms([p.name, p.description, ...p.tags])
     })
 
     return [
       ...matchedO.map(p => ({ ...p, isCustom: false, color: undefined })),
-      ...matchedC.map(p => ({ ...p, isCustom: true, type: undefined }))
+      ...matchedC.map(p => ({ ...p, isCustom: true, type: undefined })),
+      ...publicRoutes.map(r => ({ ...r, isRoute: true }))
     ]
-  }, [debouncedSearchQuery, visibleOfficialPoints, visibleCustomPins])
+  }, [debouncedSearchQuery, officialPoints, customPins, completedPins, publicRoutes])
+
+  const totalSearchPages = Math.ceil(searchResults.length / 10)
+  const paginatedSearchResults = useMemo(() => {
+    return searchResults.slice((searchPage - 1) * 10, searchPage * 10)
+  }, [searchResults, searchPage])
 
   const copyText = useCallback((text: string, message: string) => {
     navigator.clipboard.writeText(text).then(() => showToast('Copiado', message, 'success'))
@@ -401,23 +454,25 @@ export function useMapViewModel() {
     const initData = async () => {
       await loadGroupData()
       try {
-        const routes = await mapDependencies.mapRoutesRepository.listMine()
-        setSavedRoutes(routes)
+        const result = await mapDependencies.mapRoutesRepository.listMine(mineRoutesPage, 15)
+        setSavedRoutes(result.items)
+        setTotalSavedRoutesPages(result.totalPages)
       } catch (error: unknown) {
         logger.error(error)
       }
     }
 
     void initData()
-  }, [isAuthenticated, loadGroupData])
+  }, [isAuthenticated, loadGroupData, mineRoutesPage])
 
   // Public Routes Fetch
   useEffect(() => {
     const fetchPublicRoutes = async () => {
       setPublicRoutesLoading(true)
       try {
-        const routes = await mapDependencies.mapRoutesRepository.searchPublic(debouncedPublicRoutesQuery)
-        setPublicRoutes(routes)
+        const result = await mapDependencies.mapRoutesRepository.searchPublic(debouncedPublicRoutesQuery, publicRoutesPage, 15)
+        setPublicRoutes(result.items)
+        setTotalPublicRoutesPages(result.totalPages)
       } catch (error: unknown) {
         logger.error(error)
       } finally {
@@ -425,7 +480,7 @@ export function useMapViewModel() {
       }
     }
     void fetchPublicRoutes()
-  }, [debouncedPublicRoutesQuery])
+  }, [debouncedPublicRoutesQuery, publicRoutesPage])
 
   const userRef = useRef(user)
   const groupRef = useRef(group)
@@ -688,7 +743,7 @@ export function useMapViewModel() {
       const rSave = cleanRouteForPersist(currentRoute, customPins); 
       if (selectedSavedRouteId) await mapDependencies.mapRoutesRepository.update(selectedSavedRouteId, rSave, userId); 
       else await mapDependencies.mapRoutesRepository.create(rSave, userId); 
-      mapDependencies.mapRoutesRepository.listMine().then(setSavedRoutes); showToast('Sucesso', 'Salva.', 'success'); _setMode('explore'); setSelectedSavedRouteId(null); setCurrentRoute({ checkpoints: [], color: '#00d6a3', createdAt: new Date().toISOString(), customPins: [], description: '', id: createId('route'), name: 'Nova rota', updatedAt: new Date().toISOString() });
+      mapDependencies.mapRoutesRepository.listMine().then(res => { setSavedRoutes(res.items); setTotalSavedRoutesPages(res.totalPages); }); showToast('Sucesso', 'Salva.', 'success'); _setMode('explore'); setSelectedSavedRouteId(null); setCurrentRoute({ checkpoints: [], color: '#00d6a3', createdAt: new Date().toISOString(), customPins: [], description: '', id: createId('route'), name: 'Nova rota', updatedAt: new Date().toISOString() });
     } catch (error: unknown) { 
         logger.error(error)
         showToast('Erro', 'Falha.', 'error') 
@@ -801,6 +856,8 @@ export function useMapViewModel() {
         const baseCats: Array<{ count: string, iconId: string, type: string, label?: string, total: number, marked: number }> = []
         const identifiedCats: Array<{ count: string, iconId: string, type: string, label?: string, total: number, marked: number }> = []
         
+        const q = debouncedSidebarSearchQuery.trim().toLowerCase()
+
         markerTypes.forEach(type => {
             const pinsOfType = officialPoints.filter(p => p.type === type)
             if (pinsOfType.length === 0) return
@@ -810,16 +867,21 @@ export function useMapViewModel() {
                 return !!state && state.status !== 'ready'
             }).length
 
+            const typeLabel = type === 'ore' ? 'Pedra' : getMarkerTypeLabel(type)
+            const matchesQ = !q || type.toLowerCase().includes(q) || typeLabel.toLowerCase().includes(q)
+
             // 1. Categoria Base
-            const isStatic = uncompletableTypes.includes(type as any)
-            baseCats.push({ 
-                count: isStatic ? `${pinsOfType.length}` : `${markedCount}/${pinsOfType.length}`, 
-                total: pinsOfType.length,
-                marked: markedCount,
-                iconId: pinsOfType[0].iconId, 
-                type: type, 
-                label: type === 'ore' ? 'Pedra' : getMarkerTypeLabel(type) 
-            })
+            if (matchesQ) {
+                const isStatic = uncompletableTypes.includes(type as any)
+                baseCats.push({ 
+                    count: isStatic ? `${pinsOfType.length}` : `${markedCount}/${pinsOfType.length}`, 
+                    total: pinsOfType.length,
+                    marked: markedCount,
+                    iconId: pinsOfType[0].iconId, 
+                    type: type, 
+                    label: typeLabel
+                })
+            }
 
             // 2. Coletar Sub-tipos identificados para o bloco separado
             const isDyn = ['ore', 'mushroom'].includes(type)
@@ -836,6 +898,9 @@ export function useMapViewModel() {
 
                     const resData = getResourceData(subId)
                     if (resData) {
+                        const matchesSubQ = !q || resData.name.toLowerCase().includes(q)
+                        if (!matchesSubQ) return
+
                         const subMarked = pinsOfType.filter(p => {
                             const s = completedPins[p.id]
                             return s?.subType === subId && s.status !== 'ready'
@@ -853,11 +918,11 @@ export function useMapViewModel() {
             }
         })
         return { base: baseCats, identified: identifiedCats }
-    }, [officialPoints, completedPins]),
+    }, [officialPoints, completedPins, debouncedSidebarSearchQuery]),
     openCustomPinsSection: useCallback(() => { setSidebarSection('customPins'); _setMode('pin'); const id = createId('pin'); setDraftCustomPin({ color: '#00d6a3', description: '', iconId: 'pin', id, name: `Pin ${customPins.length + 1}`, tags: [], x: 0, y: 0, isPlaced: false, source: 'local', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }); setSelectedCustomPinId(id); _setEditingCustomPinIdRef(id) }, [customPins.length, _setEditingCustomPinIdRef]),
     publicRoutes, publicRoutesLoading, publicRoutesQuery,
-    publishSelectedRoute: useCallback(async (id: string) => { const route = savedRoutes.find(r => r.id === id); if (!route || !user) return; try { await mapDependencies.mapRoutesRepository.publish(route, user.id); mapDependencies.mapRoutesRepository.listMine().then(setSavedRoutes); showToast('Sucesso', 'Rota publicada!', 'success') } catch { showToast('Erro', 'Falha ao publicar.', 'error') } }, [savedRoutes, user, showToast]),
-    unpublishSelectedRoute: useCallback(async (id: string) => { try { await mapDependencies.mapRoutesRepository.unpublish(id); mapDependencies.mapRoutesRepository.listMine().then(setSavedRoutes); showToast('Sucesso', 'Rota privada.', 'info') } catch { showToast('Erro', 'Falha.', 'error') } }, [showToast]),
+    publishSelectedRoute: useCallback(async (id: string) => { const route = savedRoutes.find(r => r.id === id); if (!route || !user) return; try { await mapDependencies.mapRoutesRepository.publish(route, user.id); mapDependencies.mapRoutesRepository.listMine().then(res => { setSavedRoutes(res.items); setTotalSavedRoutesPages(res.totalPages); }); showToast('Sucesso', 'Rota publicada!', 'success') } catch { showToast('Erro', 'Falha ao publicar.', 'error') } }, [savedRoutes, user, showToast]),
+    unpublishSelectedRoute: useCallback(async (id: string) => { try { await mapDependencies.mapRoutesRepository.unpublish(id); mapDependencies.mapRoutesRepository.listMine().then(res => { setSavedRoutes(res.items); setTotalSavedRoutesPages(res.totalPages); }); showToast('Sucesso', 'Rota privada.', 'info') } catch { showToast('Erro', 'Falha.', 'error') } }, [showToast]),
     removeCheckpoint: useCallback((id: string) => { setCurrentRoute(prev => ({ ...prev, checkpoints: prev.checkpoints.filter(c => c.id !== id) })) }, []),
     moveCheckpoint: useCallback((id: string, dir: number) => { setCurrentRoute(prev => { const idx = prev.checkpoints.findIndex(c => c.id === id); if (idx === -1) return prev; const nIdx = idx + dir; if (nIdx < 0 || nIdx >= prev.checkpoints.length) return prev; const next = [...prev.checkpoints]; const [m] = next.splice(idx, 1); next.splice(nIdx, 0, m); return { ...prev, checkpoints: next } }) }, []),
     updateCheckpointLabel: useCallback((id: string, label: string) => { setCurrentRoute(prev => ({ ...prev, checkpoints: prev.checkpoints.map(c => c.id === id ? { ...c, label } : c) })) }, []),
@@ -865,7 +930,9 @@ export function useMapViewModel() {
     routesView, setRoutesView: useCallback((v: 'mine' | 'public') => setRoutesView(v), []),
     routePath: useMemo(() => currentRoute.checkpoints.map(c => `${c.x},${c.y}`).join(' '), [currentRoute.checkpoints]),
     saveCurrentRoute,
-    savedRoutes, searchQuery, 
+    savedRoutes, searchQuery,
+    sidebarSearchQuery, 
+    setSidebarSearchQuery: useCallback((q: string) => setSidebarSearchQuery(q), []),
     selectCustomPin,
     startEditingCustomPin: useCallback((id: string) => { const pin = customPins.find(p => p.id === id); if (pin) { setDraftCustomPin({ ...pin }); _setEditingCustomPinIdRef(id) } }, [customPins, _setEditingCustomPinIdRef]), 
     selectOfficialPoint,
@@ -873,9 +940,15 @@ export function useMapViewModel() {
     selectedCustomPinId, selectedLayers, selectedOfficialPoint: officialPoints.find(p => p.id === selectedOfficialPointId) || null,
     selectedOfficialPointId, setSelectedOfficialPointId, selectedRegion, selectedSavedRouteId, selectedTypes,
     setPublicRoutesQuery: useCallback((q: string) => setPublicRoutesQuery(q), []),
-    setSearchQuery: useCallback((q: string) => { setSearchQuery(q); setCustomPinsPage(1); setMineRoutesPage(1) }, []),
+    setSearchQuery: useCallback((q: string) => { 
+        setSearchQuery(q); 
+        setPublicRoutesQuery(q);
+        setSearchPage(1); 
+        setCustomPinsPage(1); 
+        setMineRoutesPage(1) 
+    }, []),
     setSelectedRegion: useCallback((r: string | 'all') => setSelectedRegion(r), []),
-    setSidebarSection: useCallback((s: 'officialPins' | 'customPins' | 'routes' | 'stats' | 'group') => setSidebarSection(s), []),
+    setSidebarSection: useCallback((s: 'officialPins' | 'customPins' | 'routes' | 'search') => setSidebarSection(s), []),
     shareCurrentRoute: useCallback(() => { showToast('Copiado', 'Link copiado.', 'success') }, [showToast]),
     sidebarSection, toggleLayer: useCallback((l: MapLayerId) => setSelectedLayers(prev => prev.includes(l) ? prev.filter(i => i !== l) : [...prev, l]), []),
     toggleSelectedType: useCallback((t: string) => {
@@ -916,11 +989,11 @@ export function useMapViewModel() {
     resetAllActiveRespawns,
     group, groupMembers, isGroupLoading, createGroup, joinGroup, leaveGroup, copyInviteCode,
     pinVisibility, setPinVisibility,
-    totalSavedRoutesPages: Math.ceil(savedRoutes.length / 10),
-    paginatedSavedRoutes: useMemo(() => savedRoutes.slice((mineRoutesPage - 1) * 10, mineRoutesPage * 10), [savedRoutes, mineRoutesPage]),
+    totalSavedRoutesPages,
+    paginatedSavedRoutes: savedRoutes,
     publicRoutesPage, setPublicRoutesPage,
-    totalPublicRoutesPages: Math.ceil(publicRoutes.length / 10),
-    paginatedPublicRoutes: useMemo(() => publicRoutes.slice((publicRoutesPage - 1) * 10, publicRoutesPage * 10), [publicRoutes, publicRoutesPage]),
+    totalPublicRoutesPages,
+    paginatedPublicRoutes: publicRoutes,
     customPinsPage, setCustomPinsPage,
     totalCustomPinsPages: Math.ceil(customPins.length / 10),
     paginatedCustomPins: useMemo(() => customPins.slice((customPinsPage - 1) * 10, customPinsPage * 10), [customPins, customPinsPage]),
@@ -928,7 +1001,12 @@ export function useMapViewModel() {
     addToHistory: useCallback((item: string) => { setSearchHistory(prev => { const next = [item, ...prev.filter(i => i !== item)].slice(0, 10); localStorage.setItem('shinobi-map-search-history', JSON.stringify(next)); return next }) }, []),
     removeFromHistory: useCallback((item: string) => { setSearchHistory(prev => { const next = prev.filter(i => i !== item); localStorage.setItem('shinobi-map-search-history', JSON.stringify(next)); return next }) }, []),
     clearHistory: useCallback(() => { setSearchHistory([]); localStorage.removeItem('shinobi-map-search-history') }, []),
-    searchResults, editingCustomPinId, setEditingCustomPinId: _setEditingCustomPinIdRef, confirmCustomPin, cancelCustomPin,
+    searchResults, 
+    paginatedSearchResults,
+    searchPage,
+    setSearchPage: useCallback((p: number) => setSearchPage(p), []),
+    totalSearchPages,
+    editingCustomPinId, setEditingCustomPinId: _setEditingCustomPinIdRef, confirmCustomPin, cancelCustomPin,
     referencedOfficialPointIds, referencedCustomPinIds,
   }
 }

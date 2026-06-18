@@ -5,6 +5,9 @@ import fs from 'node:fs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion')
+app.commandLine.appendSwitch('disable-background-timer-throttling')
+
 process.env.DIST = path.join(__dirname, '../dist')
 process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(process.env.DIST, '../public')
 
@@ -130,11 +133,36 @@ function createSidebarWindow() {
     hasShadow: false,
     backgroundColor: '#00000000',
     alwaysOnTop: appConfig.alwaysOnTop,
+    skipTaskbar: false, // User might want it in taskbar, but we'll see
+    focusable: true,
     webPreferences: {
       preload: preloadPath,
       nodeIntegration: false,
       contextIsolation: true,
+      backgroundThrottling: false, // Ensure performance remains high
     },
+  })
+
+  sidebarWin.setFullScreenable(false)
+  sidebarWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+  sidebarWin.setMenu(null)
+
+  if (appConfig.alwaysOnTop) {
+    sidebarWin.setAlwaysOnTop(true, 'screen-saver', 1)
+  }
+
+  // Prevent the window from being minimized by the system when losing focus to a fullscreen app
+  sidebarWin.on('blur', () => {
+    if (appConfig.alwaysOnTop && sidebarWin) {
+      sidebarWin.setAlwaysOnTop(true, 'screen-saver', 1)
+    }
+  })
+
+  sidebarWin.on('minimize' as any, (e: { preventDefault: () => void }) => {
+    if (appConfig.alwaysOnTop) {
+      e.preventDefault()
+      sidebarWin?.restore()
+    }
   })
 
   sidebarWin.webContents.on('dom-ready', () => {
@@ -278,7 +306,11 @@ ipcMain.on('set-config', (_event, newConfig) => {
 
   if ('alwaysOnTop' in newConfig) {
     if (sidebarWin && !sidebarWin.isDestroyed()) {
-      sidebarWin.setAlwaysOnTop(newConfig.alwaysOnTop)
+      if (newConfig.alwaysOnTop) {
+        sidebarWin.setAlwaysOnTop(true, 'screen-saver', 1)
+      } else {
+        sidebarWin.setAlwaysOnTop(false)
+      }
     }
   }
 
