@@ -37,7 +37,7 @@ export const ContentPanelScreen = ({ activeTab, lastActiveTab }: ContentPanelScr
       key={lastActiveTab} 
       className={`flex flex-col relative bg-[#080A0C] text-slate-200 font-sans overflow-hidden rounded-xl border border-[#1A222C] transition-[opacity,transform,filter] duration-300 ease-out 
         ${isMounted && !isClosing ? 'opacity-100 scale-100 blur-none' : 'opacity-0 scale-95 blur-sm'} 
-        ${isMapTab ? 'w-[1200px] h-[800px]' : 'w-[400px] h-[360px]'}
+        ${isMapTab ? 'w-[1200px] h-[800px]' : 'w-[450px] h-[550px]'}
       `}
     >
       {/* Dynamic Header */}

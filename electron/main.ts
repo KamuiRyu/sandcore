@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, screen } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, globalShortcut } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fs from 'node:fs'
@@ -18,8 +18,83 @@ let currentLayoutSide: 'left' | 'right' = 'right'
 // Config management
 const configPath = path.join(app.getPath('userData'), 'config.json')
 
+let registeredShortcutMap: string | null = null
+let registeredShortcutSettings: string | null = null
+
+function updateShortcutMap(newShortcut: string): boolean {
+  if (registeredShortcutMap === newShortcut) return true
+
+  if (registeredShortcutMap) {
+    globalShortcut.unregister(registeredShortcutMap)
+    registeredShortcutMap = null
+  }
+
+  if (!newShortcut) return true
+
+  try {
+    const success = globalShortcut.register(newShortcut, () => {
+      if (sidebarWin && !sidebarWin.isDestroyed()) {
+        if (sidebarWin.isMinimized()) {
+          sidebarWin.restore()
+          sidebarWin.focus()
+          resizeSingleWindow('map')
+        } else if (sidebarWin.isFocused() && currentTabId === 'map') {
+          resizeSingleWindow(null)
+        } else {
+          sidebarWin.focus()
+          resizeSingleWindow('map')
+        }
+      }
+    })
+    
+    if (success) {
+      registeredShortcutMap = newShortcut
+    }
+    return success
+  } catch (err) {
+    console.error('Failed to register map shortcut:', err)
+    return false
+  }
+}
+
+function updateShortcutSettings(newShortcut: string): boolean {
+  if (registeredShortcutSettings === newShortcut) return true
+
+  if (registeredShortcutSettings) {
+    globalShortcut.unregister(registeredShortcutSettings)
+    registeredShortcutSettings = null
+  }
+
+  if (!newShortcut) return true
+
+  try {
+    const success = globalShortcut.register(newShortcut, () => {
+      if (sidebarWin && !sidebarWin.isDestroyed()) {
+        if (sidebarWin.isMinimized()) {
+          sidebarWin.restore()
+          sidebarWin.focus()
+          resizeSingleWindow('settings')
+        } else if (sidebarWin.isFocused() && currentTabId === 'settings') {
+          resizeSingleWindow(null)
+        } else {
+          sidebarWin.focus()
+          resizeSingleWindow('settings')
+        }
+      }
+    })
+    
+    if (success) {
+      registeredShortcutSettings = newShortcut
+    }
+    return success
+  } catch (err) {
+    console.error('Failed to register settings shortcut:', err)
+    return false
+  }
+}
+
 function loadConfig() {
-  const defaults = { alwaysOnTop: true, inGameNotifs: true, volume: 80, completedMarkers: [], favoritesList: [], layoutSide: 'right', sidebarOpacity: 95, uiScale: 100 }
+  const defaults = { alwaysOnTop: true, inGameNotifs: true, volume: 80, completedMarkers: [], favoritesList: [], layoutSide: 'right', sidebarOpacity: 95, uiScale: 100, shortcutMap: 'CommandOrControl+Alt+M', shortcutSettings: 'CommandOrControl+Alt+S' }
   try {
     if (fs.existsSync(configPath)) {
       return { ...defaults, ...JSON.parse(fs.readFileSync(configPath, 'utf-8')) }
@@ -207,8 +282,8 @@ function resizeSingleWindow(tabId: string | null) {
     panelW = 1200
     panelH = 800
   } else if (tabId) {
-    panelW = 400
-    panelH = 360
+    panelW = 450
+    panelH = 550
   }
 
   // Calculate total window dimensions (Sidebar 60 + Gap 12 + Panel width)
@@ -296,12 +371,28 @@ function handleWindowMoved(win: BrowserWindow) {
 // IPC Handlers
 ipcMain.handle('get-config', () => appConfig)
 
+ipcMain.handle('register-shortcut', (_event, { type, shortcut }) => {
+  if (type === 'map') {
+    return { success: updateShortcutMap(shortcut) }
+  } else if (type === 'settings') {
+    return { success: updateShortcutSettings(shortcut) }
+  }
+  return { success: false }
+})
+
 ipcMain.on('set-config', (_event, newConfig) => {
   appConfig = { ...appConfig, ...newConfig }
   saveConfig(appConfig)
 
   if (sidebarWin && !sidebarWin.isDestroyed()) {
     sidebarWin.webContents.send('config-updated', appConfig)
+  }
+
+  if ('shortcutMap' in newConfig) {
+    updateShortcutMap(newConfig.shortcutMap)
+  }
+  if ('shortcutSettings' in newConfig) {
+    updateShortcutSettings(newConfig.shortcutSettings)
   }
 
   if ('alwaysOnTop' in newConfig) {
@@ -390,4 +481,16 @@ app.on('activate', () => {
   }
 })
 
-app.whenReady().then(createLoginWindow)
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll()
+})
+
+app.whenReady().then(() => {
+  createLoginWindow()
+  if (appConfig.shortcutMap) {
+    updateShortcutMap(appConfig.shortcutMap)
+  }
+  if (appConfig.shortcutSettings) {
+    updateShortcutSettings(appConfig.shortcutSettings)
+  }
+})
