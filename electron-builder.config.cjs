@@ -36,12 +36,4 @@ module.exports = {
   portable: {
     artifactName: "ShinobiMap_" + versionStr + "_portable.${ext}",
   },
-
-  publish: [
-    {
-      provider: "github",
-      owner: "KamuiRyu",
-      repo: "slp-map",
-    },
-  ],
 };
