@@ -5,6 +5,7 @@
   "author": "Hyoou",
   "main": "dist-electron/main.js",
   "type": "module",
+  "repository": "KamuiRyu/slp-map",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && electron-builder --config electron-builder.config.cjs",

@@ -9,6 +9,13 @@ module.exports = {
   directories: {
     output: "release",
   },
+  publish: [
+    {
+      provider: "github",
+      owner: "KamuiRyu",
+      repo: "slp-map"
+    }
+  ],
   files: ["dist/**/*", "dist-electron/**/*", "package.json"],
 
   win: {
