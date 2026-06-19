@@ -876,15 +876,33 @@ app.on('will-quit', () => {
   globalShortcut.unregisterAll()
 })
 
-app.whenReady().then(() => {
-  createLoginWindow()
-  if (appConfig.shortcutMap) {
-    updateShortcutMap(appConfig.shortcutMap)
-  }
-  if (appConfig.shortcutSettings) {
-    updateShortcutSettings(appConfig.shortcutSettings)
-  }
-})
+const gotTheLock = app.requestSingleInstanceLock()
+
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    // Someone tried to run a second instance, we should focus our window.
+    if (sidebarWin) {
+      if (sidebarWin.isMinimized()) sidebarWin.restore()
+      sidebarWin.focus()
+      if (panelWin) panelWin.focus()
+    } else if (loginWin) {
+      if (loginWin.isMinimized()) loginWin.restore()
+      loginWin.focus()
+    }
+  })
+
+  app.whenReady().then(() => {
+    createLoginWindow()
+    if (appConfig.shortcutMap) {
+      updateShortcutMap(appConfig.shortcutMap)
+    }
+    if (appConfig.shortcutSettings) {
+      updateShortcutSettings(appConfig.shortcutSettings)
+    }
+  })
+}
 
 app.on('browser-window-created', (event, window) => {
   // Identify popup windows (like OAuth login)
