@@ -18,7 +18,7 @@ export const AppDetailsScreen = () => {
   const [alwaysOnTop, setAlwaysOnTop] = useState(true);
 
   // Version & Update States
-  const [appVersion, setAppVersion] = useState("1.0.4-beta");
+  const [appVersion, setAppVersion] = useState("1.0.5-beta");
   const [updateStatus, setUpdateStatus] = useState<
     | "idle"
     | "checking"
