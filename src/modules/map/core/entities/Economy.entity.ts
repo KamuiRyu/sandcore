@@ -37,6 +37,21 @@ export const ECONOMY_PRICES: Record<string, EconomyItem> = {
 
   // Extras
   nails: { id: 'nails', name: 'Pregos', sellPrice: 0, buyPrice: 50 },
+
+  // Plants, Sticks and Moss
+  stick: { id: 'stick', name: 'Graveto', sellPrice: 0, buyPrice: 3 },
+  cotton: { id: 'cotton', name: 'Algodão', sellPrice: 0, buyPrice: 4 },
+  hibiscus: { id: 'hibiscus', name: 'Flor Hibiscus', sellPrice: 0, buyPrice: 3 },
+  perpetual: { id: 'perpetual', name: 'Flor Perpétua', sellPrice: 0, buyPrice: 8 },
+  borago: { id: 'borago', name: 'Flor Borago', sellPrice: 0, buyPrice: 14 },
+  moss: { id: 'moss', name: 'Musgo', sellPrice: 0, buyPrice: 12 },
+  
+  // Mushrooms
+  mushroom_1: { id: 'mushroom_1', name: 'Cogumelo Enoki', sellPrice: 0, buyPrice: 7 },
+  mushroom_2: { id: 'mushroom_2', name: 'Cogumelo Shimeji', sellPrice: 0, buyPrice: 19 },
+  mushroom_3: { id: 'mushroom_3', name: 'Cogumelo Shitake', sellPrice: 0, buyPrice: 17 },
+  mushroom_4: { id: 'mushroom_4', name: 'Cogumelo Eryngii', sellPrice: 0, buyPrice: 23 },
+  mushroom_5: { id: 'mushroom_5', name: 'Cogumelo Kikurage', sellPrice: 0, buyPrice: 645 },
 };
 
 export const CRAFTING_RECIPES: CraftRecipe[] = [

@@ -38,6 +38,7 @@ export const PLANT_DEFINITIONS: Record<string, ResourceDefinition> = {
   hibiscus: { id: 'hibiscus', name: 'Hibisco', timer: 600, iconId: 'hibiscus', type: 'hibiscus', yields: 1 },
   cotton: { id: 'cotton', name: 'Algodão', timer: 600, iconId: 'cotton', type: 'cotton', yields: 1 },
   borago: { id: 'borago', name: 'Borago', timer: 600, iconId: 'borago', type: 'borago', yields: 1 },
+  moss: { id: 'moss', name: 'Musgo', timer: 600, iconId: 'moss', type: 'moss' as any, yields: 1 },
 }
 
 export const RESOURCE_DEFINITIONS: Record<string, ResourceDefinition> = {

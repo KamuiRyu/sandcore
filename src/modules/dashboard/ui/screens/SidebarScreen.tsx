@@ -1,6 +1,6 @@
-import { Map, LogOut, Users, Settings, BarChart2, Info } from 'lucide-react'
+import { Map, LogOut, Users, Settings, BarChart2, Info, Hammer } from 'lucide-react'
 
-type TabType = 'groups' | 'map' | 'stats' | 'details' | 'settings'
+type TabType = 'groups' | 'map' | 'stats' | 'details' | 'settings' | 'crafting'
 
 interface SidebarScreenProps {
   activeTab: string | null
@@ -24,6 +24,7 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
     { id: 'groups', icon: Users, label: 'Grupos' },
     { id: 'map', icon: Map, label: 'Mapa' },
     { id: 'stats', icon: BarChart2, label: 'Estatísticas' },
+    { id: 'crafting', icon: Hammer, label: 'Crafting' },
   ] as const
 
   return (

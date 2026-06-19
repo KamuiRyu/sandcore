@@ -487,6 +487,9 @@ function openPanel(tabId: string, immediate = false) {
   if (tabId === 'map') {
     panelLogicalW = 1200
     panelLogicalH = 800
+  } else if (tabId === 'crafting') {
+    panelLogicalW = 800
+    panelLogicalH = 600
   }
   
   const physicalPanelW = Math.round(panelLogicalW * zoom)

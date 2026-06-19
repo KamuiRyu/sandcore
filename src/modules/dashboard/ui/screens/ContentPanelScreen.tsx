@@ -5,6 +5,7 @@ import { MapScreen } from '../../../map/ui/screens/MapScreen'
 import { SettingsScreen } from '../../../settings/ui/screens/SettingsScreen'
 import { StatsScreen } from './StatsScreen'
 import { AppDetailsScreen } from './AppDetailsScreen'
+import { CraftingScreen } from './CraftingScreen'
 
 interface ContentPanelScreenProps {
   activeTab: string | null
@@ -56,7 +57,8 @@ export const ContentPanelScreen = ({ activeTab, lastActiveTab }: ContentPanelScr
               Shinobi Map • {
                 activeTab === 'groups' ? 'Grupos' : 
                 activeTab === 'stats' ? 'Estatísticas' :
-                activeTab === 'details' ? 'Logo' : 'Configurações'
+                activeTab === 'crafting' ? 'Crafting' :
+                activeTab === 'details' ? 'Detalhes' : 'Configurações'
               }
             </span>
           </div>
@@ -154,11 +156,12 @@ export const ContentPanelScreen = ({ activeTab, lastActiveTab }: ContentPanelScr
       <div className={`flex-1 overflow-hidden h-full flex flex-col ${!isMapTab ? 'pt-8' : ''}`}>
         {lastActiveTab === 'map' && <MapScreen searchQuery={searchQuery} />}
         {!isMapTab && (
-          <div className="flex-1 bg-[#0A0D10] p-5 flex flex-col justify-between overflow-hidden animate-in fade-in duration-300">
-            {lastActiveTab === 'groups' && <GroupsScreen />}
-            {lastActiveTab === 'settings' && <SettingsScreen />}
-            {lastActiveTab === 'stats' && <StatsScreen />}
-            {lastActiveTab === 'details' && <AppDetailsScreen />}
+          <div className="flex-1 bg-[#0A0D10] p-0 flex flex-col justify-between overflow-hidden animate-in fade-in duration-300">
+            {lastActiveTab === 'groups' && <div className="p-5 h-full"><GroupsScreen /></div>}
+            {lastActiveTab === 'settings' && <div className="p-5 h-full"><SettingsScreen /></div>}
+            {lastActiveTab === 'stats' && <div className="p-5 h-full"><StatsScreen /></div>}
+            {lastActiveTab === 'details' && <div className="p-5 h-full"><AppDetailsScreen /></div>}
+            {lastActiveTab === 'crafting' && <div className="p-5 h-full"><CraftingScreen /></div>}
           </div>
         )}
       </div>
