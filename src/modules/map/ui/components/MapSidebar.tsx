@@ -128,6 +128,7 @@ interface MapSidebarProps {
   ) => void;
   clearRoute: () => void;
   saveCurrentRoute: () => void;
+  openAutoRouteModal: () => void;
   shareCurrentRoute: () => void;
   copyRouteJson: () => void;
   removeCheckpoint: (id: string) => void;
@@ -325,6 +326,7 @@ export const MapSidebar = memo(function MapSidebar({
   updateRouteField,
   clearRoute,
   saveCurrentRoute,
+  openAutoRouteModal,
   shareCurrentRoute,
   copyRouteJson,
   removeCheckpoint,
@@ -1393,16 +1395,26 @@ export const MapSidebar = memo(function MapSidebar({
                               />
                             ) : (
                               <>
-                                <button
-                                  onClick={() => {
-                                    clearRoute();
-                                    setMode("route");
-                                  }}
-                                  className="w-full mb-4 flex items-center justify-center gap-2 rounded-xl bg-[var(--cyan)] py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(0,214,163,0.3)] cursor-pointer"
-                                >
-                                  <Plus size={16} strokeWidth={3} />
-                                  Criar Nova Rota
-                                </button>
+                                  <div className="grid grid-cols-2 gap-2 mb-4">
+                                    <button
+                                      onClick={() => {
+                                        clearRoute();
+                                        setMode("route");
+                                      }}
+                                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-[var(--cyan)] py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(0,214,163,0.3)] cursor-pointer"
+                                    >
+                                      <Plus size={16} strokeWidth={3} />
+                                      Nova Rota
+                                    </button>
+                                    <button
+                                      onClick={openAutoRouteModal}
+                                      className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] cursor-pointer"
+                                      title="Abre as opções de filtro para gerar rota automática (excluída no próximo reset)"
+                                    >
+                                      <Route size={16} strokeWidth={3} />
+                                      Auto Rota
+                                    </button>
+                                  </div>
 
                                 <div className="flex items-center justify-between mb-3 px-1">
                                   <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
@@ -1432,9 +1444,16 @@ export const MapSidebar = memo(function MapSidebar({
                                             loadSavedRoute(route.id)
                                           }
                                         >
-                                          <p className="truncate text-sm font-bold text-slate-200 group-hover:text-white transition-colors">
-                                            {route.name}
-                                          </p>
+                                          <div className="flex items-center gap-2">
+                                            <p className="truncate text-sm font-bold text-slate-200 group-hover:text-white transition-colors">
+                                              {route.name}
+                                            </p>
+                                            {route.isDisposable && (
+                                              <span className="shrink-0 rounded bg-amber-500/20 px-1.5 py-0.5 text-[8px] font-bold text-amber-400 uppercase" title="Será excluída no próximo reset global">
+                                                Temp
+                                              </span>
+                                            )}
+                                          </div>
                                           <p className="text-[10px] text-slate-500">
                                             {route.route.checkpoints.length}{" "}
                                             pontos • {route.color}
@@ -1460,26 +1479,28 @@ export const MapSidebar = memo(function MapSidebar({
                                               <EyeOff size={14} />
                                             )}
                                           </button>
-                                          {route.isPublic ? (
-                                            <button
-                                              onClick={() =>
-                                                unpublishSelectedRoute(route.id)
-                                              }
-                                              className="p-1.5 text-[var(--cyan)] hover:text-red-400 transition cursor-pointer"
-                                              title="Tornar Privada"
-                                            >
-                                              <Globe size={14} />
-                                            </button>
-                                          ) : (
-                                            <button
-                                              onClick={() =>
-                                                publishSelectedRoute(route.id)
-                                              }
-                                              className="p-1.5 text-slate-500 hover:text-[var(--cyan)] transition cursor-pointer"
-                                              title="Tornar Pública"
-                                            >
-                                              <Globe size={14} />
-                                            </button>
+                                          {!route.isDisposable && (
+                                            route.isPublic ? (
+                                              <button
+                                                onClick={() =>
+                                                  unpublishSelectedRoute(route.id)
+                                                }
+                                                className="p-1.5 text-[var(--cyan)] hover:text-red-400 transition cursor-pointer"
+                                                title="Tornar Privada"
+                                              >
+                                                <Globe size={14} />
+                                              </button>
+                                            ) : (
+                                              <button
+                                                onClick={() =>
+                                                  publishSelectedRoute(route.id)
+                                                }
+                                                className="p-1.5 text-slate-500 hover:text-[var(--cyan)] transition cursor-pointer"
+                                                title="Tornar Pública"
+                                              >
+                                                <Globe size={14} />
+                                              </button>
+                                            )
                                           )}
                                           <button
                                             onClick={() =>

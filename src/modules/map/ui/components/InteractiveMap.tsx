@@ -39,10 +39,12 @@ import {
   RefreshCw,
   Shield,
   Trash2,
+  Wand2,
   X,
 } from "lucide-react";
 
 import { MapFeedbackModal } from "./MapFeedbackModal";
+import { AutoRouteFilterModal } from "./AutoRouteFilterModal";
 import { AuthModal } from "../../../authentication/ui/components/AuthModal";
 
 function formatRemainingTime(seconds: number): string {
@@ -610,6 +612,9 @@ export function InteractiveMap({
     updateRouteField,
     clearRoute,
     saveCurrentRoute,
+    generateOptimizedRoute,
+    isAutoRouteModalOpen,
+    setIsAutoRouteModalOpen,
     savedRoutes,
     shareCurrentRoute,
     copyRouteJson,
@@ -1686,6 +1691,26 @@ export function InteractiveMap({
             )}
           </button>
 
+          {/* Auto Rota */}
+          <button
+            onClick={() => setIsAutoRouteModalOpen(true)}
+            className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group relative"
+            title="Auto Rota Otimizada"
+            type="button"
+          >
+            <Wand2
+              size={18}
+              className="transition-transform group-hover:scale-110"
+            />
+            <span className="absolute right-1 top-1 flex h-2 w-2">
+              <Plus
+                size={8}
+                strokeWidth={4}
+                className="relative inline-flex text-cyan-400"
+              />
+            </span>
+          </button>
+
           {/* Biblioteca de Rotas */}
           <button
             onClick={() => {
@@ -1821,6 +1846,7 @@ export function InteractiveMap({
           updateRouteField={updateRouteField}
           clearRoute={clearRoute}
           saveCurrentRoute={saveCurrentRoute}
+          openAutoRouteModal={() => setIsAutoRouteModalOpen(true)}
           shareCurrentRoute={shareCurrentRoute}
           copyRouteJson={copyRouteJson}
           removeCheckpoint={removeCheckpoint}
@@ -2385,6 +2411,18 @@ export function InteractiveMap({
         }}
         target={feedbackTarget}
         onSubmit={submitFeedback}
+      />
+      
+      <AutoRouteFilterModal
+        isOpen={isAutoRouteModalOpen}
+        onClose={() => setIsAutoRouteModalOpen(false)}
+        onGenerate={generateOptimizedRoute}
+        availableCategories={[...officialPinCategories.base, ...officialPinCategories.identified].map(c => ({
+          type: c.type,
+          label: c.label,
+          iconId: c.iconId
+        }))}
+        initialCategories={selectedTypes}
       />
 
       {hoveredPin && hoveredPinCoords && (

@@ -1,9 +1,10 @@
 export interface MapCollectionStats {
+  id?: string
   ore_count: Record<string, number>
   mushroom_count: Record<string, number>
   plant_count: Record<string, number>
   stick_count: number
-  date: string // Formato YYYY-MM-DD
+  date: string // Formato YYYY-MM-DD ou "total"
 }
 
 export interface AggregatedStats {

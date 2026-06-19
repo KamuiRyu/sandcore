@@ -193,6 +193,13 @@ function createLoginWindow() {
     loginWin.loadFile(path.join(process.env.DIST!, 'index.html'), { query: { windowType: 'login' } })
   }
 
+  loginWin.on('closed', () => {
+    loginWin = null
+    if (!sidebarWin || sidebarWin.isDestroyed()) {
+      app.quit()
+    }
+  })
+
   setupMoveListeners(loginWin)
 }
 
@@ -319,6 +326,16 @@ function createSidebarWindow() {
     sidebarWin.loadFile(path.join(process.env.DIST!, 'index.html'), { query: { windowType: 'sidebar' } })
   }
 
+  sidebarWin.on('closed', () => {
+    sidebarWin = null
+    if (panelWin && !panelWin.isDestroyed()) {
+      panelWin.close()
+    }
+    if (!loginWin || loginWin.isDestroyed()) {
+      app.quit()
+    }
+  })
+
   setupMoveListeners(sidebarWin)
 }
 
@@ -377,6 +394,11 @@ function createPanelWindow() {
   } else {
     panelWin.loadFile(path.join(process.env.DIST!, 'index.html'), { query: { windowType: 'panel' } })
   }
+
+  panelWin.on('closed', () => {
+    panelWin = null
+    currentTabId = null
+  })
 
   return panelWin
 }
@@ -740,6 +762,16 @@ ipcMain.on('minimize-panel-window', () => {
   }
 })
 
+// Clear all stats
+ipcMain.on('clear-all-stats', () => {
+  if (sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.webContents.send('clear-all-stats')
+  }
+  if (panelWin && !panelWin.isDestroyed()) {
+    panelWin.webContents.send('clear-all-stats')
+  }
+})
+
 ipcMain.on('window-control', (event, action) => {
   const window = BrowserWindow.fromWebContents(event.sender)
   if (!window) return
@@ -747,6 +779,11 @@ ipcMain.on('window-control', (event, action) => {
     window.minimize()
   } else if (action === 'close') {
     window.close()
+    if (window === sidebarWin) {
+      if (panelWin && !panelWin.isDestroyed()) {
+        panelWin.close()
+      }
+    }
   } else if (action === 'login-success') {
     createSidebarWindow()
     if (loginWin && !loginWin.isDestroyed()) {

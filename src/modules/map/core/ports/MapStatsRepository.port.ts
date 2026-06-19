@@ -11,4 +11,9 @@ export interface MapStatsRepository {
    * Geralmente chamado para "Lazy Sync".
    */
   saveDailyStats(userId: string, stats: MapCollectionStats): Promise<void>
+
+  /**
+   * Agrupa registros antigos no registro total e os deleta.
+   */
+  pruneOldStats(userId: string, oldRecordIds: string[], aggregatedTotal: MapCollectionStats): Promise<void>
 }

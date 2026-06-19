@@ -13,7 +13,9 @@ import { SoundSynthesizer } from '../../infrastructure/services/SoundSynthesizer
 import { logger } from '../../../../lib/utils'
 import { useDebounce } from '../hooks/useDebounce'
 import { SubmitMapFeedbackUseCase } from '../../core/usecases/SubmitMapFeedback.usecase'
+import { OptimizeRoute } from '../../core/usecases/OptimizeRoute.usecase'
 import type { MapFeedback } from '../../core/entities/MapFeedback.entity'
+import type { AutoRouteFilters } from '../components/AutoRouteFilterModal'
 import type { MapGroup, MapGroupMember } from '../../../groups/core/entities/MapGroup.entity'
 import { getResourceData } from '../../core/entities/ResourceDefinitions.entity'
 import { type MapCollectionStats, sumStats, createEmptyStats } from '../../core/entities/MapStats.entity'
@@ -114,6 +116,7 @@ export function useMapViewModel() {
   const [notificationSettings, _setNotificationSettings] = useState<NotificationSettings>(() => mapDependencies.localNotificationSettingsStorage.read())
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
   const [importJsonValue, setImportJsonValue] = useState('')
+  const [isAutoRouteModalOpen, setIsAutoRouteModalOpen] = useState(false)
 
   const [completedPins, setCompletedPins] = useState<Record<string, CompletedPinState>>(() => {
     try { const stored = localStorage.getItem('shinobi-map-completed-pins'); return stored ? JSON.parse(stored) : {} } catch { return {} }
@@ -161,6 +164,54 @@ export function useMapViewModel() {
     })
   }, [])
 
+  const decrementResourceStat = useCallback((type: string, subType?: string) => {
+    setDailyStats(prev => {
+      const todayStr = new Date().toISOString().split('T')[0]
+      const next = [...prev]
+      let todayIdx = next.findIndex(s => s.date === todayStr)
+      if (todayIdx === -1) return next
+      const today = { ...next[todayIdx] }
+      
+      let decremented = false
+      if (type === 'ore') { 
+        const key = subType || 'unidentified'
+        if (today.ore_count && today.ore_count[key] > 0) {
+            today.ore_count = { ...today.ore_count, [key]: today.ore_count[key] - 1 }
+            decremented = true
+        }
+      }
+      else if (type === 'mushroom') {
+        const key = subType || 'unidentified'
+        if (today.mushroom_count && today.mushroom_count[key] > 0) {
+            today.mushroom_count = { ...today.mushroom_count, [key]: today.mushroom_count[key] - 1 }
+            decremented = true
+        }
+      }
+      else if (type === 'stick') { 
+          if (today.stick_count > 0) {
+              today.stick_count -= 1 
+              decremented = true
+          }
+      }
+      else if (['perpetual', 'hibiscus', 'cotton', 'borago'].includes(type)) { 
+        if (today.plant_count && today.plant_count[type] > 0) {
+            today.plant_count = { ...today.plant_count, [type]: today.plant_count[type] - 1 } 
+            decremented = true
+        }
+      }
+      
+      if (decremented) {
+          next[todayIdx] = today; 
+          localStorage.setItem('shinobi-map-stats-history', JSON.stringify(next)); 
+          return next
+      }
+      return prev
+    })
+  }, [])
+
+  const dailyStatsRef = useRef(dailyStats)
+  useEffect(() => { dailyStatsRef.current = dailyStats }, [dailyStats])
+
   const syncTimerRef = useRef<number | null>(null)
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return
@@ -174,18 +225,124 @@ export function useMapViewModel() {
   }, [dailyStats, isAuthenticated, user?.id])
 
   useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (!isAuthenticated || !user?.id) return
+      const todayStr = new Date().toISOString().split('T')[0]
+      const todayStats = dailyStatsRef.current.find(s => s.date === todayStr)
+      if (todayStats) {
+        mapDependencies.mapStatsRepository.saveDailyStats(user.id, todayStats).catch(() => {})
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener('blur', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      window.removeEventListener('blur', handleBeforeUnload)
+    }
+  }, [isAuthenticated, user?.id])
+
+  useEffect(() => {
     if (isAuthenticated && user?.id) {
-        mapDependencies.mapStatsRepository.getStats(user.id).then(serverStats => {
+        mapDependencies.mapStatsRepository.getStats(user.id).then(async serverStats => {
             if (serverStats.length > 0) {
+                // Pruning logic: 30 days retention
+                const nowRef = new Date()
+                const thirtyDaysAgo = new Date(nowRef.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                
+                const oldStats = serverStats.filter(s => s.date !== "total" && s.date < thirtyDaysAgo)
+                const recentStats = serverStats.filter(s => s.date === "total" || s.date >= thirtyDaysAgo)
+
+                if (oldStats.length > 0) {
+                    const oldIds = oldStats.map(s => s.id!).filter(Boolean)
+                    const currentTotal = serverStats.find(s => s.date === "total") || createEmptyStats("total")
+                    
+                    // Sum old stats into total
+                    const newTotal = sumStats([currentTotal, ...oldStats])
+                    newTotal.date = "total"
+
+                    // Save to backend
+                    await mapDependencies.mapStatsRepository.pruneOldStats(user.id, oldIds, newTotal)
+
+                    // Update recentStats with the new total
+                    const totalIdx = recentStats.findIndex(s => s.date === "total")
+                    if (totalIdx >= 0) recentStats[totalIdx] = newTotal
+                    else recentStats.push(newTotal)
+                }
+
                 setDailyStats(prev => {
-                    const merged = [...serverStats]
-                    prev.forEach(p => { if (!merged.find(m => m.date === p.date)) merged.push(p) })
-                    return merged.sort((a, b) => a.date.localeCompare(b.date))
+                    const merged = [...recentStats]
+                    prev.forEach(p => { 
+                        if (p.date !== "total" && p.date >= thirtyDaysAgo) {
+                            const serverEquivalent = merged.find(m => m.date === p.date)
+                            if (!serverEquivalent) {
+                                merged.push(p) 
+                            } else {
+                                const getSum = (s: MapCollectionStats) => {
+                                    let sum = s.stick_count || 0
+                                    Object.values(s.ore_count || {}).forEach(v => sum += v)
+                                    Object.values(s.mushroom_count || {}).forEach(v => sum += v)
+                                    Object.values(s.plant_count || {}).forEach(v => sum += v)
+                                    return sum
+                                }
+                                if (getSum(p) > getSum(serverEquivalent)) {
+                                    const idx = merged.findIndex(m => m.date === p.date)
+                                    merged[idx] = { ...p, id: serverEquivalent.id }
+                                    setTimeout(() => {
+                                        if (user?.id) mapDependencies.mapStatsRepository.saveDailyStats(user.id, merged[idx]).catch(() => {})
+                                    }, 1000)
+                                }
+                            }
+                        }
+                    })
+                    const final = merged.sort((a, b) => a.date.localeCompare(b.date))
+                    localStorage.setItem('shinobi-map-stats-history', JSON.stringify(final))
+                    return final
                 })
             }
         })
     }
   }, [isAuthenticated, user?.id])
+
+  useEffect(() => {
+    const handleStatsUpdated = (e: CustomEvent<MapCollectionStats[]>) => {
+      setDailyStats(e.detail);
+    };
+    window.addEventListener('map-stats-updated', handleStatsUpdated as EventListener);
+    return () => window.removeEventListener('map-stats-updated', handleStatsUpdated as EventListener);
+  }, []);
+
+  useEffect(() => {
+    if (window.ipcRenderer) {
+      const handleClearAllStats = async () => {
+        setDailyStats([]);
+        localStorage.removeItem('shinobi-map-stats-history');
+        if (isAuthenticated && user?.id) {
+          try {
+            const records = await pb.collection('user_map_stats').getFullList({ filter: `owner = "${user.id}"` });
+            for (const r of records) {
+              try {
+                await pb.collection('user_map_stats').delete(r.id);
+              } catch (delErr) {
+                await pb.collection('user_map_stats').update(r.id, {
+                  ore_count: {},
+                  mushroom_count: {},
+                  plant_count: {},
+                  stick_count: 0
+                });
+              }
+            }
+          } catch (e) {
+            console.error("Failed to clear PocketBase stats from IPC listener", e);
+          }
+        }
+      };
+
+      window.ipcRenderer.on('clear-all-stats', handleClearAllStats);
+      return () => {
+        window.ipcRenderer?.off('clear-all-stats', handleClearAllStats);
+      };
+    }
+  }, [isAuthenticated, user?.id]);
   // --- FIM ESTATISTICAS ---
 
   const [group, setGroup] = useState<MapGroup | null>(null)
@@ -230,6 +387,8 @@ export function useMapViewModel() {
       )
     }
 
+    const hasActiveRoutes = visibleRoutes.some(vId => savedRoutes.some(r => r.id === vId) || publicRoutes.some(r => r.id === vId))
+
     return officialPoints.map(p => {
         const state = completedPins[p.id]
         if (state?.subType) {
@@ -247,7 +406,7 @@ export function useMapViewModel() {
 
       // Se estiver exibindo rota em modo exploração, só mostra os pontos da rota.
       // EXCEÇÃO: Se houver busca ativa e o ponto corresponder à busca, também mostra!
-      if (visibleRoutes.length > 0 && mode === 'explore') {
+      if (hasActiveRoutes && mode === 'explore') {
           if (referencedOfficialPointIds.has(p.id)) return true
           if (!isSearched) return false
       }
@@ -281,6 +440,8 @@ export function useMapViewModel() {
   const visibleCustomPins = useMemo(() => {
     const query = debouncedSearchQuery.trim().toLowerCase()
     const hasActiveSearch = query.length > 0
+    const hasActiveRoutes = visibleRoutes.some(vId => savedRoutes.some(r => r.id === vId) || publicRoutes.some(r => r.id === vId))
+
     return customPins.filter(p => {
         const matchesSearchQuery = matchesSearch([p.name, ...p.tags], debouncedSearchQuery)
         const isSearched = hasActiveSearch && matchesSearchQuery
@@ -288,7 +449,7 @@ export function useMapViewModel() {
         // Se for o pin customizado selecionado pelo usuário, ele deve sempre aparecer no mapa
         if (selectedCustomPinId === p.id) return true
 
-        if (visibleRoutes.length > 0 && mode === 'explore') {
+        if (hasActiveRoutes && mode === 'explore') {
             const idsInRoutes = new Set<string>()
             savedRoutes.filter(r => visibleRoutes.includes(r.id)).forEach(r => r.route.checkpoints.forEach(cp => { if (cp.customPinId) idsInRoutes.add(cp.customPinId) }))
             
@@ -422,6 +583,28 @@ export function useMapViewModel() {
     }, 1000)
     return () => clearInterval(interval)
   }, [officialPoints, triggerAlert, notificationSettings, getLastGlobalResetTime])
+
+  // Cleanup de Rotas Descartáveis
+  useEffect(() => {
+    const cleanupDisposableRoutes = async () => {
+      const lastReset = getLastGlobalResetTime()
+      const toDelete = savedRoutes.filter(r => r.isDisposable && new Date(r.createdAt).getTime() < lastReset)
+      if (toDelete.length > 0) {
+        for (const r of toDelete) {
+          try {
+            await mapDependencies.mapRoutesRepository.delete(r.id)
+          } catch (e) {
+            logger.error('Falha ao deletar rota descartavel', e)
+          }
+        }
+        setSavedRoutes(prev => prev.filter(r => !toDelete.includes(r)))
+        setVisibleRoutes(prev => prev.filter(vId => !toDelete.some(del => del.id === vId)))
+      }
+    }
+    if (savedRoutes.length > 0) {
+      cleanupDisposableRoutes()
+    }
+  }, [globalTick, savedRoutes, getLastGlobalResetTime])
 
   const loadGroupData = useCallback(async () => {
     const userId = user?.id
@@ -652,6 +835,11 @@ export function useMapViewModel() {
             if (p && (p.type === 'ore' || p.type === 'mushroom')) { incrementResourceStat(p.type, subType) }
             else if (p && ['stick', 'perpetual', 'hibiscus', 'cotton', 'borago'].includes(p.type)) { incrementResourceStat(p.type) }
         }
+    } else {
+        if (currentState && currentState.status === 'cooldown') {
+            if (p && (p.type === 'ore' || p.type === 'mushroom')) { decrementResourceStat(p.type, currentState.subType) }
+            else if (p && ['stick', 'perpetual', 'hibiscus', 'cotton', 'borago'].includes(p.type)) { decrementResourceStat(p.type) }
+        }
     }
     setCompletedPins((prev) => {
       const next = { ...prev }
@@ -817,13 +1005,106 @@ export function useMapViewModel() {
     setDraftCustomPin(null); _setEditingCustomPinIdRef(null); _setMode('explore') 
   }, [editingCustomPinId, _setEditingCustomPinIdRef])
 
+  const generateOptimizedRoute = useCallback(async (filters: AutoRouteFilters) => {
+    // Filtrar pontos oficiais
+    let filteredOfficial = officialPoints.filter(p => {
+      let matchesType = filters.categories.includes(p.type)
+      const selectedSubTypes = filters.categories.filter(t => t.includes('_'))
+      
+      if (selectedSubTypes.length > 0) {
+        const state = completedPins[p.id]
+        const isBaseTypeSelected = filters.categories.includes(p.type)
+        const isCurrentSubTypeSelected = state?.subType && selectedSubTypes.includes(state.subType)
+        matchesType = !!(isBaseTypeSelected || isCurrentSubTypeSelected)
+      }
+      
+      return matchesType
+    })
+    
+    if (filters.regionId !== 'all') {
+      filteredOfficial = filteredOfficial.filter(p => p.regionId === filters.regionId)
+    }
+    if (filters.subRegionId !== 'all') {
+      filteredOfficial = filteredOfficial.filter(p => p.subRegionId === filters.subRegionId)
+    }
+
+    const pointsToRoute: any[] = [
+      ...filteredOfficial.map(p => ({ ...p, pointId: p.id })),
+    ]
+
+    if (filters.includeCustomPins) {
+      pointsToRoute.push(...visibleCustomPins.map(p => ({ ...p, customPinId: p.id })))
+    }
+    
+    if (pointsToRoute.length < 2) {
+      showToast('Aviso', 'A combinação dos filtros não resultou em pontos suficientes (mín. 2).', 'info')
+      return
+    }
+
+    const { optimizeRoute } = await import('../../core/usecases/OptimizeRoute.usecase')
+    const checkpoints: RouteCheckpoint[] = pointsToRoute.map((p, i) => ({
+      id: createId('checkpoint'),
+      pointId: p.pointId,
+      customPinId: p.customPinId,
+      x: p.x,
+      y: p.y,
+    }))
+
+    const optimized = optimizeRoute(checkpoints)
+
+    const newRoute: CustomRoute = {
+      id: createId('route-opt'),
+      name: 'Rota Otimizada (Temporária)',
+      description: 'Rota gerada dinamicamente, será excluída no próximo reset global (00:00 ou 12:00).',
+      color: '#ffaa00',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      checkpoints: optimized,
+      customPins: visibleCustomPins.map(p => ({...p})),
+      isDisposable: true
+    }
+
+    try {
+      const saved = mapDependencies.localMapRoutesStorage.create(newRoute)
+      saved.isDisposable = true
+      saved.owner = user?.id || 'local'
+      
+      const currentLocal = mapDependencies.localMapRoutesStorage.read()
+      mapDependencies.localMapRoutesStorage.write([saved, ...currentLocal])
+
+      setSavedRoutes(prev => [saved, ...prev])
+      setVisibleRoutes(prev => [...prev, saved.id])
+      showToast('Sucesso', 'Rota otimizada gerada!', 'success')
+      setSidebarSection('routes')
+    } catch (error) {
+      logger.error(error)
+      showToast('Erro', 'Falha ao criar rota otimizada.', 'error')
+    }
+  }, [visibleOfficialPoints, visibleCustomPins, showToast, user?.id])
+
   return {
     activeDetails: mode !== 'explore' ? null : (customPins.find(p => p.id === selectedCustomPinId) || visibleOfficialPoints.find(p => p.id === selectedOfficialPointId) || null),
     clearRoute: useCallback(() => { setCurrentRoute({ checkpoints: [], color: '#00d6a3', createdAt: new Date().toISOString(), customPins: [], description: '', id: createId('route'), name: 'Nova rota', updatedAt: new Date().toISOString() }); setSelectedSavedRouteId(null); _setMode('route') }, []),
     copyRouteJson: useCallback(() => copyText(JSON.stringify(cleanRouteForPersist(currentRoute, customPins)), 'JSON copiado.'), [copyText, currentRoute, customPins]),
     copyPublicRouteUrl: useCallback((slug: string) => copyText(`${window.location.origin}/m/${slug}`, 'Link copiado.'), [copyText]),
     currentRoute, customPins, defaultMapRegion, 
-    deleteSavedRoute: useCallback(async (id: string) => { try { await mapDependencies.mapRoutesRepository.delete(id); setSavedRoutes(prev => prev.filter(r => r.id !== id)); setVisibleRoutes(prev => prev.filter(vId => vId !== id)); showToast('Sucesso', 'Rota excluída.', 'success') } catch { showToast('Erro', 'Falha ao excluir.', 'error') } }, [showToast]), 
+    deleteSavedRoute: useCallback(async (id: string) => { 
+      try { 
+        const locals = mapDependencies.localMapRoutesStorage.read()
+        const isLocal = locals.some(r => r.id === id)
+        if (isLocal) {
+          mapDependencies.localMapRoutesStorage.write(locals.filter(r => r.id !== id))
+        } else {
+          await mapDependencies.mapRoutesRepository.delete(id); 
+        }
+        setSavedRoutes(prev => prev.filter(r => r.id !== id)); 
+        setVisibleRoutes(prev => prev.filter(vId => vId !== id)); 
+        showToast('Sucesso', 'Rota excluída.', 'success') 
+      } catch (e) { 
+        logger.error(e)
+        showToast('Erro', 'Falha ao excluir.', 'error') 
+      } 
+    }, [showToast]), 
     duplicateSavedRoute: useCallback((id: string) => { const route = savedRoutes.find(r => r.id === id) || publicRoutes.find(r => r.id === id); if (route) { setCurrentRoute({ ...route.route, id: createId('route'), name: `${route.route.name} (Copia)` }); setSelectedSavedRouteId(null); _setMode('route'); showToast('Sucesso', 'Rota importada!', 'success') } }, [savedRoutes, publicRoutes, showToast]), 
     toast, importJsonValue, setImportJsonValue,
     importRouteFromJson: useCallback(() => { try { setCurrentRoute(normalizeMapRoute(JSON.parse(importJsonValue))); showToast('Importado', 'JSON importado.', 'success') } catch { showToast('Erro', 'JSON inválido.', 'error') } }, [importJsonValue, showToast]),
@@ -1008,5 +1289,7 @@ export function useMapViewModel() {
     totalSearchPages,
     editingCustomPinId, setEditingCustomPinId: _setEditingCustomPinIdRef, confirmCustomPin, cancelCustomPin,
     referencedOfficialPointIds, referencedCustomPinIds,
+    generateOptimizedRoute,
+    isAutoRouteModalOpen, setIsAutoRouteModalOpen,
   }
 }

@@ -67,6 +67,7 @@ export type CustomRoute = {
   id: string
   name: string
   updatedAt: string
+  isDisposable?: boolean
 }
 
 export type SharedMapRoutePayload = {
@@ -97,4 +98,5 @@ export type SavedMapRoute = {
   route: CustomRoute
   source?: SavedMapRouteSource
   updatedAt: string
+  isDisposable?: boolean
 }

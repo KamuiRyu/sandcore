@@ -33,6 +33,7 @@ export const mapRouteSchema = z.object({
   id: z.string().min(1).max(120),
   name: z.string().max(80),
   updatedAt: z.string().min(1),
+  isDisposable: z.boolean().optional(),
 })
 
 export function validateMapRoute(route: CustomRoute): CustomRoute {
