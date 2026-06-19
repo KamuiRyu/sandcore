@@ -353,6 +353,55 @@ export function useMapViewModel() {
     [],
   );
 
+  const addRouteResourcesToDailyStats = useCallback((counts: Record<string, number>) => {
+    setDailyStats((prev) => {
+      const todayStr = new Date().toISOString().split("T")[0];
+      const next = [...prev];
+      let todayIdx = next.findIndex((s) => s.date === todayStr);
+      if (todayIdx === -1) {
+        next.push(createEmptyStats(todayStr));
+        todayIdx = next.length - 1;
+      }
+      const today = { ...next[todayIdx] };
+
+      let updated = false;
+
+      Object.entries(counts).forEach(([type, count]) => {
+        if (count <= 0) return;
+
+        if (type.startsWith('ore_')) {
+          today.ore_count = {
+            ...today.ore_count,
+            [type]: (today.ore_count[type] || 0) + count,
+          };
+          updated = true;
+        } else if (type.startsWith('mushroom_')) {
+          today.mushroom_count = {
+            ...today.mushroom_count,
+            [type]: (today.mushroom_count[type] || 0) + count,
+          };
+          updated = true;
+        } else if (type === 'stick') {
+          today.stick_count += count;
+          updated = true;
+        } else if (['perpetual', 'hibiscus', 'cotton', 'borago'].includes(type)) {
+          today.plant_count = {
+            ...today.plant_count,
+            [type]: (today.plant_count[type] || 0) + count,
+          };
+          updated = true;
+        }
+      });
+
+      if (updated) {
+        next[todayIdx] = today;
+        localStorage.setItem("shinobi-map-stats-history", JSON.stringify(next));
+        return next;
+      }
+      return prev;
+    });
+  }, []);
+
   const dailyStatsRef = useRef(dailyStats);
   useEffect(() => {
     dailyStatsRef.current = dailyStats;
@@ -2067,6 +2116,63 @@ export function useMapViewModel() {
       },
       [showToast],
     ),
+    updateRouteCollectedStats: useCallback(
+      (id: string, collectedData: Record<string, number>) => {
+        setSavedRoutes((prev) => {
+          const next = [...prev];
+          const routeIdx = next.findIndex((r) => r.id === id);
+          if (routeIdx === -1) return next;
+
+          const route = { ...next[routeIdx] };
+          if (!route.route.routeStats) return next;
+
+          // Merge old and new stats (sum them)
+          const currentCollected = route.route.routeStats.collectedCounts || {};
+          const expectedCounts = route.route.routeStats.resourceCounts || {};
+          
+          Object.entries(collectedData).forEach(([type, count]) => {
+            const current = currentCollected[type] || 0;
+            const expected = expectedCounts[type] || 0;
+            // Add new count to current (no upper bound to allow multiple runs of the same route)
+            currentCollected[type] = Math.max(0, current + count);
+          });
+          
+          route.route.routeStats.collectedCounts = currentCollected;
+          next[routeIdx] = route;
+          
+          // Persist to local storage
+          const locals = mapDependencies.localMapRoutesStorage.read();
+          const localIdx = locals.findIndex(r => r.id === id);
+          if (localIdx !== -1) {
+            locals[localIdx] = route;
+            mapDependencies.localMapRoutesStorage.write(locals);
+          }
+          
+          return next;
+        });
+        showToast("Sucesso", "Coleta finalizada e registrada!", "success");
+      },
+      [showToast]
+    ),
+    markRoutePinsCompleted: useCallback(
+      (id: string) => {
+        const route = savedRoutes.find((r) => r.id === id);
+        if (!route) return;
+        route.route.checkpoints.forEach((cp) => {
+          if (!cp.pointId) return; // Only process official points, not custom pins for now
+          
+          const currentState = completedPins[cp.pointId];
+          const isNewCollection =
+            !currentState ||
+            currentState.status === "ready";
+            
+          if (isNewCollection) {
+            togglePinCompleted(cp.pointId, undefined, false);
+          }
+        });
+      },
+      [savedRoutes, completedPins, togglePinCompleted]
+    ),
     duplicateSavedRoute: useCallback(
       (id: string) => {
         const route =
@@ -2522,6 +2628,7 @@ export function useMapViewModel() {
     setPinVisibility,
     totalSavedRoutesPages,
     paginatedSavedRoutes: savedRoutes,
+    addRouteResourcesToDailyStats,
     publicRoutesPage,
     setPublicRoutesPage,
     totalPublicRoutesPages,

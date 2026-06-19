@@ -551,6 +551,9 @@ export function InteractiveMap({
     customPins,
     deleteSavedRoute,
     duplicateSavedRoute,
+    updateRouteCollectedStats,
+    markRoutePinsCompleted,
+    addRouteResourcesToDailyStats,
     toast,
     interactiveMap,
     loadSavedRoute,
@@ -1845,6 +1848,9 @@ export function InteractiveMap({
           loadSavedRoute={loadSavedRoute}
           deleteSavedRoute={deleteSavedRoute}
           duplicateSavedRoute={duplicateSavedRoute}
+          updateRouteCollectedStats={updateRouteCollectedStats}
+          markRoutePinsCompleted={markRoutePinsCompleted}
+          addRouteResourcesToDailyStats={addRouteResourcesToDailyStats}
           publishSelectedRoute={publishSelectedRoute}
           unpublishSelectedRoute={unpublishSelectedRoute}
           toggleRouteVisibility={toggleRouteVisibility}

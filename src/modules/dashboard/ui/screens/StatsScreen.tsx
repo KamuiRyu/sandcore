@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3,
@@ -12,6 +12,7 @@ import {
   Route,
   ChevronDown,
   ChevronUp,
+  CircleDollarSign,
 } from "lucide-react";
 import {
   type MapCollectionStats,
@@ -23,15 +24,30 @@ import {
   MUSHROOM_DEFINITIONS,
   PLANT_DEFINITIONS,
 } from "../../../map/core/entities/ResourceDefinitions.entity";
+import {
+  calculateRawProfit,
+  calculateCraftingProfit,
+  ECONOMY_PRICES,
+} from "../../../map/core/entities/Economy.entity";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../../components/ui/Select";
 
 import { readSavedMapRoutes, writeSavedMapRoutes } from "../../../map/shared/utils/localMapRoutes";
 import type { SavedMapRoute } from "../../../map/core/entities/MapRoute.entity";
 
 export const StatsScreen = () => {
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
   const [dailyStats, setDailyStats] = useState<MapCollectionStats[]>([]);
   const [period, setPeriod] = useState<"today" | "monthly" | "total" | "routes">("today");
   const [savedRoutes, setSavedRoutes] = useState<SavedMapRoute[]>([]);
   const [expandedRoutes, setExpandedRoutes] = useState<string[]>([]);
+  const [profitMode, setProfitMode] = useState<"raw" | "craft">("raw");
+  const [selectedRouteId, setSelectedRouteId] = useState<string>("");
 
   useEffect(() => {
     try {
@@ -103,51 +119,27 @@ export const StatsScreen = () => {
     })
   }
 
-  const handleUpdateRouteStat = (routeId: string, type: string, delta: number) => {
-    setSavedRoutes(prev => {
-      const next = [...prev];
-      const routeIdx = next.findIndex(r => r.id === routeId);
-      if (routeIdx === -1) return prev;
-      
-      const route = JSON.parse(JSON.stringify(next[routeIdx])); // deep copy
-      if (!route.route.routeStats) return prev;
-      if (!route.route.routeStats.collectedCounts) {
-        route.route.routeStats.collectedCounts = {};
-      }
-      
-      const currentVal = route.route.routeStats.collectedCounts[type] || 0;
-      const expectedVal = route.route.routeStats.resourceCounts[type] || 0;
-      const newVal = Math.max(0, Math.min(expectedVal, currentVal + delta)); // limit to 0-expectedVal
-      
-      route.route.routeStats.collectedCounts[type] = newVal;
-      next[routeIdx] = route;
-      
-      writeSavedMapRoutes(next);
-      return next;
-    });
-  };
+  const getDailyProfitData = () => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayResources: Record<string, number> = {
+      ...stats.today.ore_count,
+      ...stats.today.mushroom_count,
+      ...stats.today.plant_count,
+      stick: stats.today.stick_count || 0,
+    };
 
-  const handleSetRouteStat = (routeId: string, type: string, value: number) => {
-    setSavedRoutes(prev => {
-      const next = [...prev];
-      const routeIdx = next.findIndex(r => r.id === routeId);
-      if (routeIdx === -1) return prev;
-      
-      const route = JSON.parse(JSON.stringify(next[routeIdx])); // deep copy
-      if (!route.route.routeStats) return prev;
-      if (!route.route.routeStats.collectedCounts) {
-        route.route.routeStats.collectedCounts = {};
-      }
-      
-      const expectedVal = route.route.routeStats.resourceCounts[type] || 0;
-      const newVal = Math.max(0, Math.min(expectedVal, value)); // limit to 0-expectedVal
-      
-      route.route.routeStats.collectedCounts[type] = newVal;
-      next[routeIdx] = route;
-      
-      writeSavedMapRoutes(next);
-      return next;
+    const dailyRoutesWithStats = savedRoutes.filter(
+      (r) => r.route.routeStats && r.createdAt.split('T')[0] === todayStr
+    );
+    
+    dailyRoutesWithStats.forEach(route => {
+      const collected = route.route.routeStats!.collectedCounts || {};
+      Object.entries(collected).forEach(([type, count]) => {
+        todayResources[type] = (todayResources[type] || 0) + count;
+      });
     });
+
+    return profitMode === "raw" ? calculateRawProfit(todayResources) : calculateCraftingProfit(todayResources);
   };
 
   const stats = useMemo(() => {
@@ -218,163 +210,180 @@ export const StatsScreen = () => {
       <div className="h-[1px] bg-slate-800/60 w-full mb-3"></div>
 
       {/* Period Selector Tabs */}
-      <div className="flex bg-[#0F1319] border border-slate-800/80 p-0.5 rounded-xl mb-4 self-start">
-        <button
-          onClick={() => setPeriod("today")}
-          className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5
-            ${
-              period === "today"
-                ? "bg-[#1C2430] text-teal-400 border border-slate-700/50 shadow-sm"
-                : "text-slate-400 hover:text-slate-200 border border-transparent"
-            }
-          `}
+      <div 
+        ref={tabsContainerRef} 
+        className="overflow-hidden bg-[#0F1319] border border-slate-800/80 p-0.5 rounded-xl mb-4 w-full"
+      >
+        <motion.div 
+          drag="x"
+          dragConstraints={tabsContainerRef}
+          className="flex flex-nowrap cursor-grab active:cursor-grabbing w-max"
         >
-          <Calendar className="w-3.5 h-3.5" />
-          Hoje
-        </button>
-        <button
-          onClick={() => setPeriod("routes")}
-          className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5
-            ${
-              period === "routes"
-                ? "bg-[#1C2430] text-teal-400 border border-slate-700/50 shadow-sm"
-                : "text-slate-400 hover:text-slate-200 border border-transparent"
-            }
-          `}
-        >
-          <Route className="w-3.5 h-3.5" />
-          Por Rota
-        </button>
-        <button
-          onClick={() => setPeriod("monthly")}
-          className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5
-            ${
-              period === "monthly"
-                ? "bg-[#1C2430] text-teal-400 border border-slate-700/50 shadow-sm"
-                : "text-slate-400 hover:text-slate-200 border border-transparent"
-            }
-          `}
-        >
-          <CalendarRange className="w-3.5 h-3.5" />
-          Mensal
-        </button>
-        <button
-          onClick={() => setPeriod("total")}
-          className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5
-            ${
-              period === "total"
-                ? "bg-[#1C2430] text-teal-400 border border-slate-700/50 shadow-sm"
-                : "text-slate-400 hover:text-slate-200 border border-transparent"
-            }
-          `}
-        >
-          <Trophy className="w-3.5 h-3.5" />
-          Geral
-        </button>
+          <button
+            onClick={() => setPeriod("today")}
+            className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5
+              ${
+                period === "today"
+                  ? "bg-[#1C2430] text-teal-400 border border-slate-700/50 shadow-sm"
+                  : "text-slate-400 hover:text-slate-200 border border-transparent"
+              }
+            `}
+          >
+            <Calendar className="w-3.5 h-3.5 shrink-0" />
+            Hoje
+          </button>
+          <button
+            onClick={() => setPeriod("routes")}
+            className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5
+              ${
+                period === "routes"
+                  ? "bg-[#1C2430] text-teal-400 border border-slate-700/50 shadow-sm"
+                  : "text-slate-400 hover:text-slate-200 border border-transparent"
+              }
+            `}
+          >
+            <Route className="w-3.5 h-3.5 shrink-0" />
+            Por Rota
+          </button>
+
+          <button
+            onClick={() => setPeriod("monthly")}
+            className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5
+              ${
+                period === "monthly"
+                  ? "bg-[#1C2430] text-teal-400 border border-slate-700/50 shadow-sm"
+                  : "text-slate-400 hover:text-slate-200 border border-transparent"
+              }
+            `}
+          >
+            <CalendarRange className="w-3.5 h-3.5 shrink-0" />
+            Mensal
+          </button>
+          <button
+            onClick={() => setPeriod("total")}
+            className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5
+              ${
+                period === "total"
+                  ? "bg-[#1C2430] text-teal-400 border border-slate-700/50 shadow-sm"
+                  : "text-slate-400 hover:text-slate-200 border border-transparent"
+              }
+            `}
+          >
+            <Trophy className="w-3.5 h-3.5 shrink-0" />
+            Geral
+          </button>
+        </motion.div>
       </div>
 
       {period === "routes" ? (
         <div className="flex-1 flex flex-col overflow-y-auto pr-1 custom-scrollbar space-y-3">
           {(() => {
-            const todayStr = new Date().toISOString().split('T')[0];
-            const dailyRoutesWithStats = savedRoutes.filter(
-              (r) => r.route.routeStats && r.createdAt.split('T')[0] === todayStr
-            );
-
-            if (dailyRoutesWithStats.length === 0) {
+            const routesWithStats = savedRoutes.filter(r => r.route.routeStats);
+            if (routesWithStats.length === 0) {
               return (
                 <div className="flex-1 flex flex-col justify-center items-center text-center p-6 border border-dashed border-slate-800 rounded-2xl bg-[#11161D]/20">
                   <Route className="w-10 h-10 text-slate-600 mb-2 opacity-35" />
-                  <p className="text-xs font-semibold text-slate-400">Nenhuma rota gerada hoje</p>
-                  <p className="text-[10px] text-slate-500 mt-1 leading-normal max-w-xs">Gere rotas otimizadas hoje para ver as estatísticas esperadas por rota aqui.</p>
+                  <p className="text-xs font-semibold text-slate-400">Nenhuma rota com recursos</p>
+                  <p className="text-[10px] text-slate-500 mt-1 leading-normal max-w-xs">Gere rotas otimizadas para ver as estatísticas esperadas por rota aqui.</p>
                 </div>
               );
             }
 
-            return dailyRoutesWithStats.map((route) => {
-              const isExpanded = expandedRoutes.includes(route.id);
+            const activeRouteId = routesWithStats.some(r => r.id === selectedRouteId) 
+              ? selectedRouteId 
+              : routesWithStats[0].id;
               
-              return (
-                <div key={route.id} className="bg-[#11161D] border border-slate-800/80 p-3 rounded-xl flex flex-col relative overflow-hidden">
-                  <div 
-                    className="flex justify-between items-start cursor-pointer group"
-                    onClick={() => {
-                      setExpandedRoutes(prev => 
-                        prev.includes(route.id) ? prev.filter(id => id !== route.id) : [...prev, route.id]
-                      );
-                    }}
-                  >
-                    <div>
-                      <h3 className="text-sm font-bold text-teal-400 mb-1 group-hover:text-teal-300 transition-colors">{route.name}</h3>
-                      <p className="text-[10px] text-slate-400 mb-2">{route.description || "Sem descrição"}</p>
-                    </div>
-                    <button className="text-slate-500 group-hover:text-slate-300 transition-colors p-1">
-                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                    </button>
+            const activeRoute = routesWithStats.find(r => r.id === activeRouteId)!;
+
+            return (
+              <>
+                <div className="sticky top-0 z-50 bg-[linear-gradient(180deg,#030a0d_60%,transparent)] pb-2 pt-1">
+                  <Select value={activeRouteId} onValueChange={setSelectedRouteId}>
+                    <SelectTrigger className="w-full bg-slate-800/80 border-slate-700 font-bold text-teal-400 hover:bg-slate-800 transition-colors">
+                      <SelectValue placeholder="Selecione uma rota" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {routesWithStats.map(r => (
+                        <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="bg-[#11161D] border border-slate-800/80 p-4 rounded-xl flex flex-col gap-4 mt-2">
+                  <div>
+                    <h3 className="text-sm font-bold text-teal-400 mb-1">{activeRoute.name}</h3>
+                    <p className="text-[10px] text-slate-400">{activeRoute.route.routeStats!.totalPoints} pts de rota</p>
                   </div>
                   
-                  <AnimatePresence initial={false}>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2, ease: "easeInOut" }}
-                        className="overflow-hidden"
-                      >
-                        <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-slate-800/50">
-                          <span className="bg-slate-800/80 text-slate-300 px-2 py-1 rounded text-[10px] font-bold self-start mb-1">Total: {route.route.routeStats!.totalPoints} pts</span>
-                          <div className="flex flex-col gap-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
-                            {Object.entries(route.route.routeStats!.resourceCounts).map(([type, expectedCount]) => {
-                               const def = ORE_DEFINITIONS[type] || MUSHROOM_DEFINITIONS[type] || PLANT_DEFINITIONS[type];
-                               const collectedCount = route.route.routeStats!.collectedCounts?.[type] || 0;
-                               return (
-                                 <div key={type} className="flex justify-between items-center bg-[#11161D]/75 border border-slate-700/50 p-2 rounded-lg text-xs group">
-                                   <span className="text-slate-300 font-medium">
-                                     {def ? def.name : type} <span className="text-slate-500 ml-1">(de {expectedCount}x)</span>
-                                   </span>
-                                   
-                                   <div className="flex items-center gap-2">
-                                      <button 
-                                        onClick={(e) => { e.stopPropagation(); handleUpdateRouteStat(route.id, type, -1); }}
-                                        disabled={collectedCount === 0}
-                                        className="w-5 h-5 flex items-center justify-center rounded bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                      >
-                                        -
-                                      </button>
-                                      <div className="relative">
-                                        <input
-                                          type="number"
-                                          min="0"
-                                          max={expectedCount}
-                                          value={collectedCount}
-                                          onClick={(e) => e.stopPropagation()}
-                                          onChange={(e) => {
-                                            const val = parseInt(e.target.value) || 0;
-                                            handleSetRouteStat(route.id, type, val);
-                                          }}
-                                          className="bg-teal-500/10 text-teal-400 border border-teal-500/20 px-1 py-0.5 rounded font-bold text-[10px] w-12 text-center outline-none focus:border-teal-400/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                        />
-                                      </div>
-                                      <button 
-                                        onClick={(e) => { e.stopPropagation(); handleUpdateRouteStat(route.id, type, 1); }}
-                                        disabled={collectedCount >= expectedCount}
-                                        className="w-5 h-5 flex items-center justify-center rounded bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                      >
-                                        +
-                                      </button>
-                                   </div>
-                                 </div>
-                               )
+                  {(() => {
+                    const expectedCounts = activeRoute.route.routeStats!.resourceCounts;
+                    const collectedCounts = activeRoute.route.routeStats!.collectedCounts || {};
+                    const hasCollected = Object.keys(collectedCounts).length > 0;
+                    
+                    const activeCounts = hasCollected ? collectedCounts : expectedCounts;
+                    const rawProfit = calculateRawProfit(activeCounts);
+                    const craftProfit = calculateCraftingProfit(activeCounts);
+
+                    return (
+                      <>
+                        {/* Comparativo de Lucro */}
+                        <div className="flex flex-col gap-2">
+                          <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                            <CircleDollarSign size={12} className="text-slate-400" /> 
+                            {hasCollected ? "Lucro Total Acumulado (Todas as Idas)" : "Comparativo de Lucro Estimado (1 Ida)"}
+                          </h4>
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-slate-800/30 p-2.5 rounded flex flex-col border border-slate-700/50 relative overflow-hidden group">
+                              <div className="absolute right-[-10px] bottom-[-10px] opacity-[0.03] group-hover:opacity-10 transition-opacity">
+                                <CircleDollarSign size={40} />
+                              </div>
+                              <span className="text-[10px] text-slate-400 font-bold mb-1 relative z-10">Vender Bruto</span>
+                              <span className="text-lg font-black text-teal-400 relative z-10">¥ {rawProfit.netProfit}</span>
+                            </div>
+                            <div className="bg-amber-950/20 p-2.5 rounded flex flex-col border border-amber-500/20 relative overflow-hidden group">
+                              <div className="absolute right-[-10px] bottom-[-10px] opacity-[0.03] group-hover:opacity-10 transition-opacity">
+                                <Flame size={40} />
+                              </div>
+                              <span className="text-[10px] text-amber-500/80 font-bold mb-1 relative z-10">Fazer Lingote</span>
+                              <span className="text-lg font-black text-amber-400 relative z-10">¥ {craftProfit.netProfit}</span>
+                              {craftProfit.totalCost > 0 && <span className="text-[9px] text-red-400 mt-0.5 relative z-10">Custos: ¥ {craftProfit.totalCost}</span>}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Materiais Obtidos */}
+                        <div className="flex flex-col gap-2 mt-2">
+                          <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                            <Target size={12} className="text-slate-400" /> 
+                            {hasCollected ? "Materiais Coletados (Total Acumulado)" : "Materiais Esperados (1 Ida)"}
+                          </h4>
+                          <div className="flex flex-col gap-1.5 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+                            {Object.entries(activeCounts).map(([type, count]) => {
+                              const def = ORE_DEFINITIONS[type] || MUSHROOM_DEFINITIONS[type] || PLANT_DEFINITIONS[type];
+                              const exp = expectedCounts[type] || 0;
+                              return (
+                                <div key={type} className="flex justify-between items-center bg-slate-800/20 border border-slate-800/50 p-2 rounded-lg text-xs">
+                                  <span className="text-slate-300 font-medium flex flex-col">
+                                    {def ? def.name : type}
+                                    {hasCollected && exp > 0 && <span className="text-slate-500 text-[9px] mt-0.5">Base esperada: {exp}x por ida</span>}
+                                  </span>
+                                  <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${hasCollected ? "bg-emerald-500/10 text-emerald-400" : "bg-slate-800 text-slate-300"}`}>
+                                    {count}x {hasCollected ? "Total" : ""}
+                                  </span>
+                                </div>
+                              )
                             })}
                           </div>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                      </>
+                    )
+                  })()}
+
                 </div>
-              );
-            });
+              </>
+            );
           })()}
         </div>
       ) : !hasStats ? (
@@ -390,8 +399,54 @@ export const StatsScreen = () => {
         </div>
       ) : (
         <div className="flex-1 flex flex-col justify-between overflow-y-auto pr-1 custom-scrollbar space-y-4">
+          {period === "today" && (
+            <>
+              <div className="flex bg-[#11161D] rounded-xl p-1 border border-slate-800/80 shrink-0">
+                <button
+                  onClick={() => setProfitMode("raw")}
+                  className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-colors ${
+                    profitMode === "raw" ? "bg-teal-500/20 text-teal-400" : "text-slate-400 hover:bg-slate-800/50"
+                  }`}
+                >
+                  Vender Bruto
+                </button>
+                <button
+                  onClick={() => setProfitMode("craft")}
+                  className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-colors ${
+                    profitMode === "craft" ? "bg-amber-500/20 text-amber-400" : "text-slate-400 hover:bg-slate-800/50"
+                  }`}
+                >
+                  Fazer Lingotes
+                </button>
+              </div>
+
+              {(() => {
+                const profitData = getDailyProfitData();
+                return (
+                  <div className="bg-[#11161D] border border-slate-800/80 p-3 rounded-xl flex flex-col gap-2 shrink-0">
+                    <h3 className="text-xs font-bold text-slate-300">Resumo Financeiro (Hoje)</h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-slate-800/50 p-2 rounded flex flex-col">
+                        <span className="text-[9px] text-slate-400 uppercase tracking-widest">Receita Bruta</span>
+                        <span className="text-base font-black text-teal-400">¥ {profitData.grossRevenue}</span>
+                      </div>
+                      <div className="bg-slate-800/50 p-2 rounded flex flex-col">
+                        <span className="text-[9px] text-slate-400 uppercase tracking-widest">Custos</span>
+                        <span className="text-base font-black text-red-400">¥ {profitData.totalCost}</span>
+                      </div>
+                      <div className="bg-slate-800/80 p-2 rounded flex flex-col col-span-2 border border-teal-500/20">
+                        <span className="text-[9px] text-teal-500 uppercase tracking-widest font-bold">Lucro Líquido</span>
+                        <span className="text-xl font-black text-teal-400">¥ {profitData.netProfit}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </>
+          )}
+
           {/* Overview Stats Cards Grid */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 shrink-0">
             <div className="bg-[#11161D] border border-slate-800/80 p-2.5 rounded-xl flex flex-col justify-between relative overflow-hidden">
               <span className="text-[8px] uppercase font-mono tracking-widest text-slate-500">
                 Total

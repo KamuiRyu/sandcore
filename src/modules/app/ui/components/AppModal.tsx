@@ -23,7 +23,7 @@ type AppModalProps = {
 }
 
 const overlayPlacementClassNames = {
-  center: 'grid place-items-center px-[18px] py-8 max-[640px]:block max-[640px]:p-0',
+  center: 'grid place-items-center px-[18px] py-8 max-[640px]:grid max-[640px]:place-items-center max-[640px]:p-4',
   top: 'grid place-items-start justify-items-center px-[18px] pb-8 pt-24 max-[640px]:block max-[640px]:p-0',
 }
 
@@ -64,7 +64,7 @@ export function AppModal({
         <section
           aria-label={ariaLabel}
           className={cn(
-            'relative flex max-h-[calc(100vh_-_128px)] flex-col overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(3,10,13,0.92),rgba(1,5,7,0.88))] text-[var(--text)] shadow-[0_32px_96px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-2xl animate-[modal-in_180ms_ease-out_both] max-[640px]:h-screen max-[640px]:max-h-screen max-[640px]:w-screen max-[640px]:max-w-screen max-[640px]:rounded-none',
+            'relative flex max-h-[calc(100vh_-_128px)] flex-col overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(3,10,13,0.92),rgba(1,5,7,0.88))] text-[var(--text)] shadow-[0_32px_96px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-2xl animate-[modal-in_180ms_ease-out_both] max-[640px]:w-full',
             widthClassName,
             className,
           )}

@@ -44,6 +44,7 @@ import type {
 } from "../../core/entities/MapRoute.entity";
 import type { MapCollectionStats } from "../../core/entities/MapStats.entity";
 import type { StatsPeriod } from "../viewModels/useMap.viewModel";
+import { RouteCompletionModal } from "./RouteCompletionModal";
 
 type SidebarSection = "officialPins" | "customPins" | "routes" | "search";
 type RoutesView = "mine" | "public";
@@ -115,6 +116,9 @@ interface MapSidebarProps {
   loadSavedRoute: (id: string) => void;
   deleteSavedRoute: (id: string) => void;
   duplicateSavedRoute: (id: string) => void;
+  updateRouteCollectedStats: (id: string, data: Record<string, number>) => void;
+  markRoutePinsCompleted: (id: string) => void;
+  addRouteResourcesToDailyStats: (data: Record<string, number>) => void;
   publishSelectedRoute: (id: string) => void;
   unpublishSelectedRoute: (id: string) => void;
   toggleRouteVisibility: (id: string) => void;
@@ -316,6 +320,9 @@ export const MapSidebar = memo(function MapSidebar({
   loadSavedRoute,
   deleteSavedRoute,
   duplicateSavedRoute,
+  updateRouteCollectedStats,
+  markRoutePinsCompleted,
+  addRouteResourcesToDailyStats,
   publishSelectedRoute,
   unpublishSelectedRoute,
   toggleRouteVisibility,
@@ -352,6 +359,7 @@ export const MapSidebar = memo(function MapSidebar({
 }: MapSidebarProps) {
   const [newGroupName, setNewGroupName] = useState("");
   const [joinCode, setJoinCode] = useState("");
+  const [routeToComplete, setRouteToComplete] = useState<SavedMapRoute | null>(null);
 
   const safeMapStats = {
     ore_count: mapStats?.ore_count || {},
@@ -1503,6 +1511,13 @@ export const MapSidebar = memo(function MapSidebar({
                                             )
                                           )}
                                           <button
+                                            onClick={() => setRouteToComplete(route)}
+                                            className="p-1.5 text-slate-500 hover:text-teal-400 transition cursor-pointer"
+                                            title="Finalizar Rota"
+                                          >
+                                            <CircleCheck size={14} />
+                                          </button>
+                                          <button
                                             onClick={() =>
                                               deleteSavedRoute(route.id)
                                             }
@@ -1765,6 +1780,23 @@ export const MapSidebar = memo(function MapSidebar({
           </div>
         </div>
       </aside>
+
+      {routeToComplete && (
+        <RouteCompletionModal
+          isOpen={true}
+          onClose={() => setRouteToComplete(null)}
+          routeTitle={routeToComplete.name}
+          expectedCounts={routeToComplete.route.routeStats?.resourceCounts || {}}
+          onComplete={(data, markPins) => {
+            updateRouteCollectedStats(routeToComplete.id, data);
+            addRouteResourcesToDailyStats(data);
+            if (markPins) {
+              markRoutePinsCompleted(routeToComplete.id);
+            }
+            setRouteToComplete(null);
+          }}
+        />
+      )}
     </div>
   );
 });
