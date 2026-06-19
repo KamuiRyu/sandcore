@@ -340,15 +340,19 @@ function createSidebarWindow() {
     }
   })
 
-  sidebarWin.on('minimize' as any, (e: { preventDefault: () => void }) => {
-    if (appConfig.alwaysOnTop) {
-      e.preventDefault()
-      sidebarWin?.restore()
-    }
+  sidebarWin.on('minimize' as any, () => {
+    // Let the window minimize naturally
   })
 
   sidebarWin.on('restore', () => {
-    sidebarWin?.show()
+    // Workaround for Electron Windows transparent window restore bug
+    if (process.platform === 'win32') {
+      sidebarWin?.hide()
+      sidebarWin?.show()
+    } else {
+      sidebarWin?.show()
+    }
+    
     if (panelWin && !panelWin.isDestroyed() && currentTabId) {
       if (panelWin.isMinimized()) panelWin.restore()
       panelWin.showInactive()
@@ -428,7 +432,12 @@ function createPanelWindow() {
   })
 
   panelWin.on('restore', () => {
-    panelWin?.showInactive()
+    if (process.platform === 'win32') {
+      panelWin?.hide()
+      panelWin?.showInactive()
+    } else {
+      panelWin?.showInactive()
+    }
   })
 
   panelWin.webContents.on('dom-ready', () => {
