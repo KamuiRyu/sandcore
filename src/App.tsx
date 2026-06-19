@@ -104,8 +104,7 @@ function App() {
   if (windowType === 'sidebar' || !windowType) {
     return (
       <div
-        className="h-screen w-screen bg-transparent p-0 overflow-hidden"
-        style={{ opacity: sidebarOpacity / 100 }}
+        className="h-screen w-screen bg-transparent p-0 overflow-visible"
       >
         <SidebarScreen activeTab={activeTab} onLogout={() => viewModel.logout()} />
       </div>

@@ -264,8 +264,8 @@ function createSidebarWindow() {
   currentTabId = null
   const zoom = (appConfig.uiScale || 100) / 100
 
-  const width = Math.round(60 * zoom)
-  const height = Math.round(360 * zoom)
+  const width = Math.round(56 * zoom)
+  const height = Math.round(420 * zoom)
 
   let x: number | undefined
   let y: number | undefined
@@ -318,6 +318,7 @@ function createSidebarWindow() {
   sidebarWin.setFullScreenable(false)
   sidebarWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
   sidebarWin.setMenu(null)
+  sidebarWin.setOpacity(appConfig.sidebarOpacity / 100)
 
   if (appConfig.alwaysOnTop) {
     sidebarWin.setAlwaysOnTop(true, 'screen-saver', 1)
@@ -353,7 +354,7 @@ function createSidebarWindow() {
     } else {
       sidebarWin?.show()
     }
-    
+
     if (panelWin && !panelWin.isDestroyed() && currentTabId) {
       if (panelWin.isMinimized()) panelWin.restore()
       panelWin.showInactive()
@@ -365,7 +366,7 @@ function createSidebarWindow() {
   })
 
   // Open DevTools automatically to see errors - can be commented out later
-  //sidebarWin.webContents.openDevTools()
+  sidebarWin.webContents.openDevTools()
 
   if (process.env.VITE_DEV_SERVER_URL) {
     sidebarWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}?windowType=sidebar`)
@@ -793,6 +794,10 @@ ipcMain.on('set-config', (_event, newConfig) => {
     updateShortcutSettings(newConfig.shortcutSettings)
   }
 
+  if ('sidebarOpacity' in newConfig && sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.setOpacity(newConfig.sidebarOpacity / 100)
+  }
+
   if ('alwaysOnTop' in newConfig) {
     if (sidebarWin && !sidebarWin.isDestroyed()) {
       if (newConfig.alwaysOnTop) {
@@ -832,6 +837,25 @@ ipcMain.on('panel-ready', (event) => {
       layoutSide: currentLayoutSide,
       alignSide: currentAlignSide
     })
+  }
+})
+
+ipcMain.on('set-ignore-mouse-events', (_event, ignore: boolean) => {
+  if (sidebarWin && !sidebarWin.isDestroyed())
+    sidebarWin.setIgnoreMouseEvents(ignore, { forward: true })
+})
+
+ipcMain.on('sidebar-set-open', (_event, open: boolean) => {
+  if (!sidebarWin || sidebarWin.isDestroyed()) return
+  const zoom = (appConfig.uiScale || 100) / 100
+  const [, h] = sidebarWin.getSize()
+  const [x, y] = sidebarWin.getPosition()
+  if (open) {
+    const newW = Math.round(76 * zoom)
+    sidebarWin.setBounds({ x, y, width: newW, height: h })
+  } else {
+    const newW = Math.round(20 * zoom)
+    sidebarWin.setBounds({ x: x + Math.round(56 * zoom), y, width: newW, height: h })
   }
 })
 
