@@ -1809,12 +1809,9 @@ export const MapSidebar = memo(function MapSidebar({
           onClose={() => setRouteToComplete(null)}
           routeTitle={routeToComplete.name}
           expectedCounts={routeToComplete.route.routeStats?.resourceCounts || {}}
-          onComplete={(data, markPins) => {
+          onComplete={(data) => {
             updateRouteCollectedStats(routeToComplete.id, data);
             addRouteResourcesToDailyStats(data);
-            if (markPins) {
-              markRoutePinsCompleted(routeToComplete.id);
-            }
             setRouteToComplete(null);
           }}
         />

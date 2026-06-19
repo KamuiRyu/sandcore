@@ -8,7 +8,7 @@ export type RouteCompletionData = Record<string, number>;
 type RouteCompletionModalProps = {
   isOpen: boolean
   onClose: () => void
-  onComplete: (data: RouteCompletionData, markPins: boolean) => void
+  onComplete: (data: RouteCompletionData) => void
   routeTitle: string
   expectedCounts: Record<string, number>
 }
@@ -21,7 +21,6 @@ export function RouteCompletionModal({
   expectedCounts
 }: RouteCompletionModalProps) {
   const [collected, setCollected] = useState<RouteCompletionData>({})
-  const [markPins, setMarkPins] = useState(true)
 
   useEffect(() => {
     if (isOpen) {
@@ -59,7 +58,7 @@ export function RouteCompletionModal({
   }
 
   const handleComplete = () => {
-    onComplete(collected, markPins);
+    onComplete(collected);
   }
 
   return (
@@ -133,18 +132,6 @@ export function RouteCompletionModal({
             })}
           </div>
         </div>
-        
-        <label className="flex items-center gap-2 cursor-pointer mt-2 group">
-          <input 
-            type="checkbox" 
-            checked={markPins} 
-            onChange={(e) => setMarkPins(e.target.checked)}
-            className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-[var(--cyan)] focus:ring-[var(--cyan)] focus:ring-offset-slate-900 cursor-pointer accent-[var(--cyan)]"
-          />
-          <span className="text-xs font-medium text-slate-400 group-hover:text-slate-300 transition-colors">
-            Marcar ida no mapa (Aplica o tempo de recarga aos pontos)
-          </span>
-        </label>
       </div>
     </AppModal>
   )

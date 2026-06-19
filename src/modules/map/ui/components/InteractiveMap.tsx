@@ -698,7 +698,7 @@ export function InteractiveMap({
        
        const allCompleted = route.route.checkpoints.every((cp: RouteCheckpoint) => {
          const cpId = cp.pointId || cp.customPinId;
-         if (!cpId) return false;
+         if (!cpId) return true; // Ignore checkpoints without IDs
          if (cpId === pinId) return true; // It's being marked now
          const state = completedPins[cpId];
          return !!state && state.status !== "ready";
@@ -1025,7 +1025,7 @@ export function InteractiveMap({
       
       const activeCheckpointIndex = route.route.checkpoints.findIndex((cp: RouteCheckpoint) => {
          const pinId = cp.pointId || cp.customPinId;
-         if (!pinId) return true;
+         if (!pinId) return false;
          const state = completedPins[pinId];
          const isCompleted = !!state && state.status !== "ready";
          return !isCompleted;
@@ -1605,7 +1605,7 @@ export function InteractiveMap({
               // Achar o primeiro checkpoint que não está concluído
               const activeCheckpointIndex = route.route.checkpoints.findIndex((cp: RouteCheckpoint) => {
                  const pinId = cp.pointId || cp.customPinId;
-                 if (!pinId) return true; // Se não tem ID, consideramos não concluído
+                 if (!pinId) return false; // Ignore checkpoints without IDs
                  const state = completedPins[pinId];
                  const isCompleted = !!state && state.status !== "ready";
                  return !isCompleted;
