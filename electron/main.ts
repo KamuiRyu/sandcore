@@ -306,6 +306,17 @@ function createSidebarWindow() {
     }
   })
 
+  // Bring panel to front when sidebar is focused/restored
+  sidebarWin.on('focus', () => {
+    if (panelWin && !panelWin.isDestroyed() && currentTabId) {
+      if (appConfig.alwaysOnTop) {
+        panelWin.setAlwaysOnTop(false)
+        panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
+      }
+      panelWin.showInactive()
+    }
+  })
+
   sidebarWin.on('minimize' as any, (e: { preventDefault: () => void }) => {
     if (appConfig.alwaysOnTop) {
       e.preventDefault()
@@ -348,6 +359,7 @@ function createPanelWindow() {
   const zoom = (appConfig.uiScale || 100) / 100
 
   panelWin = new BrowserWindow({
+    parent: sidebarWin && !sidebarWin.isDestroyed() ? sidebarWin : undefined,
     icon: path.join(process.env.VITE_PUBLIC!, 'favicon.ico'),
     width: 0,
     height: 0,
@@ -525,9 +537,18 @@ function openPanel(tabId: string, immediate = false) {
 
   panel.setBounds({ x: panelX, y: panelY, width: physicalPanelW, height: physicalPanelH })
 
-  if (!panel.isVisible()) {
-    panel.showInactive()
+  if (panel.isMinimized()) {
+    panel.restore()
   }
+
+  // Force Z-order elevation before showing
+  if (appConfig.alwaysOnTop) {
+    panel.setAlwaysOnTop(false)
+    panel.setAlwaysOnTop(true, 'screen-saver', 1)
+  }
+
+  // Force show unconditionally
+  panel.showInactive()
 
   const payload = { tabId, layoutSide: nextLayoutSide, alignSide: nextAlignSide }
   sidebarWin.webContents.send('layout-updated', payload)
@@ -544,7 +565,8 @@ function togglePanel(tabId: string | null) {
 
 
 function handleWindowMoved(win: BrowserWindow) {
-  if (!win || win.isDestroyed()) return
+  if (win === panelWin) return
+  if (win.isMinimized()) return
 
   const [curX, curY] = win.getPosition()
   const [curW, curH] = win.getSize()

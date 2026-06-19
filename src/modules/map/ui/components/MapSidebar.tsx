@@ -390,9 +390,9 @@ export const MapSidebar = memo(function MapSidebar({
       )}
       <aside
         className={cn(
-          "pointer-events-auto flex h-full flex-col overflow-hidden rounded-[32px] border border-white/8 bg-[#030a0d]/96 backdrop-blur-2xl transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] relative",
+          "pointer-events-auto flex h-full flex-col overflow-hidden rounded-[32px] border border-white/8 backdrop-blur-2xl transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] relative group/sidebar bg-[#030a0d]/60 hover:bg-[#030a0d]/96",
           isSidebarOpen
-            ? "w-[400px] sm:w-[460px] opacity-100 translate-x-0"
+            ? "w-[340px] sm:w-[380px] opacity-100 translate-x-0"
             : "w-0 opacity-0 -translate-x-12",
         )}
       >
@@ -575,8 +575,8 @@ export const MapSidebar = memo(function MapSidebar({
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 custom-scrollbar relative z-10">
-              <div className="grid gap-5">
+            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-5 custom-scrollbar relative z-10">
+              <div className="flex flex-col gap-5 w-full min-w-0">
                 {sidebarSection === "officialPins" ? (
                   <section className="rounded-[26px] border border-white/5 bg-black/25 p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_12px_36px_rgba(0,0,0,0.2)]">
                     <div className="mb-4 flex items-center justify-between gap-3">
@@ -1386,7 +1386,7 @@ export const MapSidebar = memo(function MapSidebar({
                         </div>
 
                         {routesView === "mine" ? (
-                          <section className="rounded-[26px] border border-white/5 bg-black/25 p-4">
+                          <section className="rounded-[26px] border border-white/5 bg-black/25 p-4 min-w-0">
                             {!isAuthenticated ? (
                               <LockedFeature
                                 title="Minhas Rotas"
@@ -1427,12 +1427,12 @@ export const MapSidebar = memo(function MapSidebar({
                                     Nenhuma rota salva.
                                   </div>
                                 ) : (
-                                  <div className="grid gap-2.5">
+                                  <div className="flex flex-col gap-2.5 min-w-0">
                                     {paginatedSavedRoutes.map((route) => (
                                       <div
                                         key={route.id}
                                         className={cn(
-                                          "flex items-center justify-between rounded-xl border p-3 transition-all group",
+                                          "flex items-center justify-between rounded-xl border p-3 transition-all group min-w-0",
                                           selectedSavedRouteId === route.id
                                             ? "border-cyan-500/40 bg-cyan-500/5 shadow-[0_0_15px_rgba(0,214,163,0.1)]"
                                             : "border-white/5 bg-white/[0.01] hover:border-white/15",
@@ -1525,7 +1525,7 @@ export const MapSidebar = memo(function MapSidebar({
                             )}
                           </section>
                         ) : (
-                          <section className="rounded-[26px] border border-white/5 bg-black/25 p-4">
+                          <section className="rounded-[26px] border border-white/5 bg-black/25 p-4 min-w-0">
                             <div className="relative block group mb-4">
                               <Search
                                 className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[var(--cyan)] transition-colors"
@@ -1556,12 +1556,12 @@ export const MapSidebar = memo(function MapSidebar({
                                 Nenhuma rota pública encontrada.
                               </div>
                             ) : (
-                              <div className="grid gap-2.5">
+                              <div className="flex flex-col gap-2.5 min-w-0">
                                 {paginatedPublicRoutes.map((route) => (
                                   <div
                                     key={route.id}
                                     className={cn(
-                                      "flex items-center justify-between rounded-2xl border border-white/5 bg-white/[0.01] p-3.5 hover:border-white/15 hover:bg-white/[0.03] transition-all group",
+                                      "flex items-center justify-between rounded-2xl border border-white/5 bg-white/[0.01] p-3.5 hover:border-white/15 hover:bg-white/[0.03] transition-all group min-w-0",
                                       selectedSavedRouteId === route.id
                                         ? "border-cyan-500/40 bg-cyan-500/5 shadow-[0_0_15px_rgba(0,214,163,0.1)]"
                                         : "border-white/5 bg-white/[0.01] hover:border-white/15",
@@ -1571,7 +1571,7 @@ export const MapSidebar = memo(function MapSidebar({
                                       className="flex-1 min-w-0 cursor-pointer"
                                       onClick={() => loadSavedRoute(route.id)}
                                     >
-                                      <div className="flex items-center gap-2.5 mb-1.5">
+                                      <div className="flex items-center gap-2.5 mb-1.5 min-w-0">
                                         <div className="h-6 w-6 rounded-full border border-white/10 bg-black/40 overflow-hidden shrink-0">
                                           {route.creator?.avatarUrl ? (
                                             <img
@@ -1593,17 +1593,17 @@ export const MapSidebar = memo(function MapSidebar({
                                         </p>
                                       </div>
 
-                                      <div className="flex items-center gap-2 pl-8">
-                                        <p className="text-[10px] font-medium text-slate-500 uppercase tracking-tight">
+                                      <div className="flex items-center gap-2 pl-8 min-w-0">
+                                        <p className="truncate text-[10px] font-medium text-slate-500 uppercase tracking-tight flex-1">
                                           por{" "}
                                           <span className="text-slate-400">
                                             {route.creator?.name || "Anônimo"}
                                           </span>
                                         </p>
-                                        <span className="text-slate-700 text-[10px]">
+                                        <span className="text-slate-700 text-[10px] shrink-0">
                                           •
                                         </span>
-                                        <p className="text-[10px] font-mono text-slate-500">
+                                        <p className="text-[10px] font-mono text-slate-500 shrink-0">
                                           {route.route.checkpoints.length} pts
                                         </p>
                                       </div>
@@ -1613,7 +1613,7 @@ export const MapSidebar = memo(function MapSidebar({
                                         </p>
                                       )}
                                     </div>
-                                    <div className="flex items-center gap-1 ml-2">
+                                    <div className="flex items-center gap-1 ml-2 shrink-0">
                                       <button
                                         onClick={() =>
                                           toggleRouteVisibility(route.id)
