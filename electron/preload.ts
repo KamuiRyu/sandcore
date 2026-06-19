@@ -19,4 +19,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
 
   getConfig: () => ipcRenderer.invoke('get-config'),
   setConfig: (config: any) => ipcRenderer.send('set-config', config),
+  
+  getAuthSync: () => ipcRenderer.sendSync('get-auth-sync'),
+  setAuth: (authData: any) => ipcRenderer.send('set-auth', authData),
 })

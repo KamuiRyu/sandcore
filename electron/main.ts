@@ -130,6 +130,29 @@ function saveConfig(config: any) {
 
 let appConfig = loadConfig()
 
+const authPath = path.join(app.getPath('userData'), 'auth.json')
+
+function loadAuth() {
+  try {
+    if (fs.existsSync(authPath)) {
+      return JSON.parse(fs.readFileSync(authPath, 'utf-8'))
+    }
+  } catch (e) {
+    console.error('Failed to load auth', e)
+  }
+  return null
+}
+
+function saveAuth(authData: any) {
+  try {
+    fs.writeFileSync(authPath, JSON.stringify(authData, null, 2))
+  } catch (e) {
+    console.error('Failed to save auth', e)
+  }
+}
+
+let appAuth = loadAuth()
+
 function isPositionOnSomeScreen(x: number, y: number, width: number, height: number): boolean {
   const displays = screen.getAllDisplays()
   return displays.some(display => {
@@ -329,7 +352,7 @@ function createSidebarWindow() {
   })
 
   // Open DevTools automatically to see errors - can be commented out later
-  sidebarWin.webContents.openDevTools()
+  //sidebarWin.webContents.openDevTools()
 
   if (process.env.VITE_DEV_SERVER_URL) {
     sidebarWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}?windowType=sidebar`)
@@ -354,7 +377,7 @@ let panelWin: BrowserWindow | null = null
 
 function createPanelWindow() {
   if (panelWin && !panelWin.isDestroyed()) return panelWin
-  
+
   const preloadPath = path.join(process.env.DIST!, '../dist-electron/preload.js')
   const zoom = (appConfig.uiScale || 100) / 100
 
@@ -422,9 +445,9 @@ function closePanel(immediate = false) {
     clearTimeout(closePanelTimeout)
     closePanelTimeout = null
   }
-  
+
   currentTabId = null
-  
+
   const payload = { tabId: null, layoutSide: currentLayoutSide, alignSide: currentAlignSide }
   if (sidebarWin && !sidebarWin.isDestroyed()) {
     sidebarWin.webContents.send('layout-updated', payload)
@@ -450,7 +473,7 @@ function closePanel(immediate = false) {
 
 function openPanel(tabId: string, immediate = false) {
   if (!sidebarWin || sidebarWin.isDestroyed()) return
-  
+
   if (!immediate && currentTabId !== null && currentTabId !== tabId) {
     if (closePanelTimeout) {
       clearTimeout(closePanelTimeout)
@@ -475,13 +498,13 @@ function openPanel(tabId: string, immediate = false) {
 
   currentTabId = tabId
   const panel = panelWin || createPanelWindow()
-  
+
   const zoom = (appConfig.uiScale || 100) / 100
   const [curX, curY] = sidebarWin.getPosition()
-  
+
   const physicalSidebarW = Math.round(60 * zoom)
   const physicalSidebarH = Math.round(360 * zoom)
-  
+
   let panelLogicalW = 450
   let panelLogicalH = 550
   if (tabId === 'map') {
@@ -491,14 +514,14 @@ function openPanel(tabId: string, immediate = false) {
     panelLogicalW = 800
     panelLogicalH = 600
   }
-  
+
   const physicalPanelW = Math.round(panelLogicalW * zoom)
   const physicalPanelH = Math.round(panelLogicalH * zoom)
   const physicalGap = Math.round(12 * zoom)
-  
+
   const display = screen.getDisplayMatching(sidebarWin.getBounds())
   const workArea = display.workArea
-  
+
   const sidebarCenterX = curX + physicalSidebarW / 2
   const workAreaCenterX = workArea.x + workArea.width / 2
   const nextLayoutSide: 'left' | 'right' = sidebarCenterX < workAreaCenterX ? 'right' : 'left'
@@ -522,7 +545,7 @@ function openPanel(tabId: string, immediate = false) {
   // Calculate panel position relative to sidebar
   let panelX = nextLayoutSide === 'left' ? curX - physicalGap - physicalPanelW : curX + physicalSidebarW + physicalGap
   let panelY = nextAlignSide === 'bottom' ? (curY + physicalSidebarH) - physicalPanelH : curY
-  
+
   // Screen clamping for the panel
   if (panelX + physicalPanelW > workArea.x + workArea.width) {
     panelX = workArea.x + workArea.width - physicalPanelW
@@ -530,7 +553,7 @@ function openPanel(tabId: string, immediate = false) {
   if (panelX < workArea.x) {
     panelX = workArea.x
   }
-  
+
   if (panelY + physicalPanelH > workArea.y + workArea.height) {
     panelY = workArea.y + workArea.height - physicalPanelH
   }
@@ -603,7 +626,7 @@ function handleWindowMoved(win: BrowserWindow) {
   } else if (win === sidebarWin) {
     appConfig.sidebarPosition = { x: adjustedX, y: adjustedY }
     saveConfig(appConfig)
-    
+
     if (adjustedX !== curX || adjustedY !== curY) {
       safeSetBounds(win, { x: adjustedX, y: adjustedY, width: curW, height: curH })
     }
@@ -617,6 +640,15 @@ function handleWindowMoved(win: BrowserWindow) {
 // IPC Handlers
 ipcMain.handle('get-config', () => appConfig)
 ipcMain.handle('get-app-version', () => app.getVersion())
+
+ipcMain.on('get-auth-sync', (event) => {
+  event.returnValue = appAuth
+})
+
+ipcMain.on('set-auth', (event, authData) => {
+  appAuth = authData
+  saveAuth(appAuth)
+})
 
 // Auto Updater IPC / Logic
 ipcMain.on('check-for-updates', (event) => {
@@ -757,7 +789,7 @@ ipcMain.on('set-config', (_event, newConfig) => {
 })
 
 // Deprecated: No longer used, but kept for safety
-ipcMain.on('layout-ready', () => {})
+ipcMain.on('layout-ready', () => { })
 
 ipcMain.on('panel-ready', (event) => {
   const window = BrowserWindow.fromWebContents(event.sender)
@@ -859,8 +891,12 @@ app.on('browser-window-created', (event, window) => {
   if (window !== loginWin && window !== sidebarWin && window !== panelWin) {
     window.on('closed', () => {
       BrowserWindow.getAllWindows().forEach(w => {
-        if (!w.isDestroyed()) {
-          w.webContents.send('oauth-popup-closed')
+        if (!w.isDestroyed() && w.webContents && !w.webContents.isDestroyed()) {
+          try {
+            w.webContents.send('oauth-popup-closed')
+          } catch (e) {
+            console.error('Failed to send oauth-popup-closed:', e)
+          }
         }
       })
     })
