@@ -285,6 +285,7 @@ function createSidebarWindow() {
     transparent: true,
     hasShadow: false,
     backgroundColor: '#00000000',
+    minimizable: false,
     alwaysOnTop: appConfig.alwaysOnTop,
     skipTaskbar: false, // User might want it in taskbar, but we'll see
     focusable: true,
