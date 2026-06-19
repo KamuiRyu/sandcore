@@ -18,7 +18,7 @@ export const AppDetailsScreen = () => {
   const [alwaysOnTop, setAlwaysOnTop] = useState(true);
 
   // Version & Update States
-  const [appVersion, setAppVersion] = useState("1.0.3-beta");
+  const [appVersion, setAppVersion] = useState("1.0.4-beta");
   const [updateStatus, setUpdateStatus] = useState<
     | "idle"
     | "checking"
@@ -157,31 +157,34 @@ export const AppDetailsScreen = () => {
         setClearingStats(true);
         try {
           localStorage.removeItem("shinobi-map-stats-history");
-          
+
           let userId = pb.authStore.model?.id;
           if (!userId) {
-            const pbAuth = localStorage.getItem('pocketbase_auth');
+            const pbAuth = localStorage.getItem("pocketbase_auth");
             if (pbAuth) {
               try {
                 const authData = JSON.parse(pbAuth);
                 userId = authData.model?.id;
-                if (authData.token) pb.authStore.save(authData.token, authData.model);
+                if (authData.token)
+                  pb.authStore.save(authData.token, authData.model);
               } catch (e) {}
             }
           }
 
           if (userId) {
             try {
-              const records = await pb.collection('user_map_stats').getFullList({ filter: `owner = "${userId}"` });
+              const records = await pb
+                .collection("user_map_stats")
+                .getFullList({ filter: `owner = "${userId}"` });
               for (const r of records) {
                 try {
-                  await pb.collection('user_map_stats').delete(r.id);
+                  await pb.collection("user_map_stats").delete(r.id);
                 } catch (delErr) {
-                  await pb.collection('user_map_stats').update(r.id, {
+                  await pb.collection("user_map_stats").update(r.id, {
                     ore_count: {},
                     mushroom_count: {},
                     plant_count: {},
-                    stick_count: 0
+                    stick_count: 0,
                   });
                 }
               }
