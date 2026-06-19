@@ -714,43 +714,55 @@ ipcMain.on('quit-and-install-update', () => {
 
 // Real Auto Updater Events
 autoUpdater.on('checking-for-update', () => {
-  if (sidebarWin && !sidebarWin.isDestroyed()) {
-    sidebarWin.webContents.send('update-status', { status: 'checking' })
-  }
+  BrowserWindow.getAllWindows().forEach((win) => {
+    if (!win.isDestroyed() && win.webContents) {
+      win.webContents.send('update-status', { status: 'checking' })
+    }
+  })
 })
 
 autoUpdater.on('update-available', (info) => {
-  if (sidebarWin && !sidebarWin.isDestroyed()) {
-    sidebarWin.webContents.send('update-status', {
-      status: 'available',
-      version: info.version,
-      releaseNotes: info.releaseNotes
-    })
-  }
+  BrowserWindow.getAllWindows().forEach((win) => {
+    if (!win.isDestroyed() && win.webContents) {
+      win.webContents.send('update-status', {
+        status: 'available',
+        version: info.version,
+        releaseNotes: info.releaseNotes
+      })
+    }
+  })
 })
 
 autoUpdater.on('update-not-available', () => {
-  if (sidebarWin && !sidebarWin.isDestroyed()) {
-    sidebarWin.webContents.send('update-status', { status: 'not-available' })
-  }
+  BrowserWindow.getAllWindows().forEach((win) => {
+    if (!win.isDestroyed() && win.webContents) {
+      win.webContents.send('update-status', { status: 'not-available' })
+    }
+  })
 })
 
 autoUpdater.on('error', (err) => {
-  if (sidebarWin && !sidebarWin.isDestroyed()) {
-    sidebarWin.webContents.send('update-status', { status: 'error', message: err?.message || 'Erro de conexão' })
-  }
+  BrowserWindow.getAllWindows().forEach((win) => {
+    if (!win.isDestroyed() && win.webContents) {
+      win.webContents.send('update-status', { status: 'error', message: err?.message || 'Erro de conexão' })
+    }
+  })
 })
 
 autoUpdater.on('download-progress', (progressObj) => {
-  if (sidebarWin && !sidebarWin.isDestroyed()) {
-    sidebarWin.webContents.send('update-progress', { percent: Math.round(progressObj.percent) })
-  }
+  BrowserWindow.getAllWindows().forEach((win) => {
+    if (!win.isDestroyed() && win.webContents) {
+      win.webContents.send('update-progress', { percent: Math.round(progressObj.percent) })
+    }
+  })
 })
 
 autoUpdater.on('update-downloaded', (info) => {
-  if (sidebarWin && !sidebarWin.isDestroyed()) {
-    sidebarWin.webContents.send('update-status', { status: 'downloaded', version: info.version })
-  }
+  BrowserWindow.getAllWindows().forEach((win) => {
+    if (!win.isDestroyed() && win.webContents) {
+      win.webContents.send('update-status', { status: 'downloaded', version: info.version })
+    }
+  })
 })
 
 ipcMain.handle('register-shortcut', (_event, { type, shortcut }) => {
