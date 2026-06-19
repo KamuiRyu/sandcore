@@ -853,3 +853,16 @@ app.whenReady().then(() => {
     updateShortcutSettings(appConfig.shortcutSettings)
   }
 })
+
+app.on('browser-window-created', (event, window) => {
+  // Identify popup windows (like OAuth login)
+  if (window !== loginWin && window !== sidebarWin && window !== panelWin) {
+    window.on('closed', () => {
+      BrowserWindow.getAllWindows().forEach(w => {
+        if (!w.isDestroyed()) {
+          w.webContents.send('oauth-popup-closed')
+        }
+      })
+    })
+  }
+})

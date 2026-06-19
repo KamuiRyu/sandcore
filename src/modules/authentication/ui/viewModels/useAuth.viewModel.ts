@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { pbAuthRepository } from '../../infrastructure/adapters/PocketBaseAuth.adapter'
 import { LoginUseCase } from '../../core/usecases/Login.usecase'
 import { RegisterUseCase } from '../../core/usecases/Register.usecase'
@@ -11,6 +11,24 @@ export const useAuthViewModel = () => {
   const [authLoading, setAuthLoading] = useState(false)
   const [generalError, setGeneralError] = useState('')
   const [resetSuccess, setResetSuccess] = useState('')
+
+  useEffect(() => {
+    const handlePopupClosed = () => {
+      setTimeout(() => {
+        setAuthLoading((prev) => {
+          if (prev) {
+            return false
+          }
+          return prev
+        })
+      }, 500)
+    }
+
+    window.ipcRenderer?.on('oauth-popup-closed', handlePopupClosed)
+    return () => {
+      window.ipcRenderer?.off('oauth-popup-closed', handlePopupClosed)
+    }
+  }, [])
 
   const loginUseCase = new LoginUseCase(pbAuthRepository)
   const registerUseCase = new RegisterUseCase(pbAuthRepository)
@@ -27,7 +45,7 @@ export const useAuthViewModel = () => {
       window.ipcRenderer?.send('window-control', 'login-success')
       return { success: true }
     } else {
-      return { success: false, error: result.error.message }
+      return { success: false, error: (result as any).error.message }
     }
   }
 
@@ -41,7 +59,7 @@ export const useAuthViewModel = () => {
       window.ipcRenderer?.send('window-control', 'login-success')
       return { success: true }
     } else {
-      return { success: false, error: result.error.message }
+      return { success: false, error: (result as any).error.message }
     }
   }
 
@@ -58,7 +76,7 @@ export const useAuthViewModel = () => {
       setResetSuccess('E-mail de recuperação enviado para: ' + email)
       return { success: true }
     } else {
-      return { success: false, error: result.error.message }
+      return { success: false, error: (result as any).error.message }
     }
   }
 
@@ -72,8 +90,8 @@ export const useAuthViewModel = () => {
       window.ipcRenderer?.send('window-control', 'login-success')
       return { success: true }
     } else {
-      setGeneralError(result.error.message)
-      return { success: false, error: result.error.message }
+      setGeneralError((result as any).error.message)
+      return { success: false, error: (result as any).error.message }
     }
   }
 
