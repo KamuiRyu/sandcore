@@ -58,6 +58,13 @@ export type RouteCheckpoint = {
   y: number
 }
 
+export type RouteStats = {
+  totalPoints: number
+  estimatedTimeSeconds?: number
+  resourceCounts: Record<string, number>
+  collectedCounts?: Record<string, number>
+}
+
 export type CustomRoute = {
   checkpoints: RouteCheckpoint[]
   color: string
@@ -68,6 +75,7 @@ export type CustomRoute = {
   name: string
   updatedAt: string
   isDisposable?: boolean
+  routeStats?: RouteStats
 }
 
 export type SharedMapRoutePayload = {

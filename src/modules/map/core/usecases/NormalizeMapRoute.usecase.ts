@@ -60,5 +60,6 @@ export function normalizeMapRoute(route: Partial<CustomRoute>): CustomRoute {
     id: route.id !== undefined ? String(route.id).trim() : crypto.randomUUID?.() || `route-${Date.now()}`,
     name: route.name !== undefined ? route.name : 'Nova rota',
     updatedAt: route.updatedAt || new Date().toISOString(),
+    routeStats: route.routeStats,
   })
 }

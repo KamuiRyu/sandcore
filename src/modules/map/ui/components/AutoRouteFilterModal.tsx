@@ -194,7 +194,7 @@ export function AutoRouteFilterModal({
               .filter(cat => {
                 if (!searchQuery.trim()) return true
                 const query = searchQuery.toLowerCase()
-                const label = (cat.label || getMarkerTypeLabel(cat.type)).toLowerCase()
+                const label = (cat.label || getMarkerTypeLabel(cat.type as any)).toLowerCase()
                 return label.includes(query)
               })
               .map(cat => {
@@ -228,7 +228,7 @@ export function AutoRouteFilterModal({
                       "text-[10px] font-bold truncate transition-colors",
                       isSelected ? "text-white" : "text-slate-400"
                     )}>
-                      {cat.label || getMarkerTypeLabel(cat.type)}
+                      {cat.label || getMarkerTypeLabel(cat.type as any)}
                     </p>
                   </div>
                 </button>

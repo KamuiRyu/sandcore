@@ -1520,20 +1520,29 @@ export function InteractiveMap({
                 savedRoutes.find((r) => r.id === routeId) ||
                 publicRoutes.find((r) => r.id === routeId);
               if (!route) return null;
-              return route.route.checkpoints.map(
-                (checkpoint: RouteCheckpoint, index: number) => {
-                  const coords = getScreenCoords(checkpoint.x, checkpoint.y);
-                  return (
-                    <RouteCheckpointBadge
-                      checkpoint={checkpoint}
-                      index={index}
-                      key={`${route.id}-${checkpoint.id}`}
-                      screenX={coords.x}
-                      screenY={coords.y}
-                      displayedCamera={displayedCamera}
-                    />
-                  );
-                },
+              
+              // Achar o primeiro checkpoint que não está concluído
+              const activeCheckpointIndex = route.route.checkpoints.findIndex((cp: RouteCheckpoint) => {
+                 const pinId = cp.pointId || cp.customPinId;
+                 if (!pinId) return true; // Se não tem ID, consideramos não concluído
+                 const state = completedPins[pinId];
+                 const isCompleted = !!state && state.status !== "ready";
+                 return !isCompleted;
+              });
+
+              if (activeCheckpointIndex === -1) return null; // Todos concluídos
+              const checkpoint = route.route.checkpoints[activeCheckpointIndex];
+              const coords = getScreenCoords(checkpoint.x, checkpoint.y);
+              
+              return (
+                <RouteCheckpointBadge
+                  checkpoint={checkpoint}
+                  index={activeCheckpointIndex}
+                  key={`${route.id}-${checkpoint.id}`}
+                  screenX={coords.x}
+                  screenY={coords.y}
+                  displayedCamera={displayedCamera}
+                />
               );
             })}
 
