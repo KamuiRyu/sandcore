@@ -8,5 +8,7 @@ interface Window {
     invoke: (channel: string, ...args: any[]) => Promise<any>
     getConfig: () => Promise<any>
     setConfig: (config: any) => void
+    getAuthSync: () => any
+    setAuth: (authData: any) => void
   }
 }
