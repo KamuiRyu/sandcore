@@ -347,6 +347,14 @@ function createSidebarWindow() {
     }
   })
 
+  sidebarWin.on('restore', () => {
+    sidebarWin?.show()
+    if (panelWin && !panelWin.isDestroyed() && currentTabId) {
+      if (panelWin.isMinimized()) panelWin.restore()
+      panelWin.showInactive()
+    }
+  })
+
   sidebarWin.webContents.on('dom-ready', () => {
     sidebarWin?.webContents.setZoomFactor(zoom)
   })
@@ -415,9 +423,12 @@ function createPanelWindow() {
     }
   })
 
-  panelWin.on('minimize' as any, (e: any) => {
-    e.preventDefault()
-    panelWin?.restore()
+  panelWin.on('minimize' as any, () => {
+    // Let it minimize naturally with its parent
+  })
+
+  panelWin.on('restore', () => {
+    panelWin?.showInactive()
   })
 
   panelWin.webContents.on('dom-ready', () => {
