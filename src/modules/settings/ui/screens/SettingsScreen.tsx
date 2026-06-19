@@ -18,7 +18,7 @@ export const SettingsScreen = () => {
 
   useEffect(() => {
     if (window.ipcRenderer) {
-      window.ipcRenderer.getConfig().then((config) => {
+      const handleConfig = (_event: any, config: any) => {
         if (config) {
           if ('alwaysOnTop' in config) setAlwaysOnTop(config.alwaysOnTop)
           if ('inGameNotifs' in config) setInGameNotifs(config.inGameNotifs)
@@ -29,7 +29,16 @@ export const SettingsScreen = () => {
           if ('shortcutMap' in config) setShortcutMap(config.shortcutMap || '')
           if ('shortcutSettings' in config) setShortcutSettings(config.shortcutSettings || '')
         }
+      }
+
+      window.ipcRenderer.getConfig().then((config) => {
+        handleConfig(null, config)
       })
+
+      window.ipcRenderer.on('config-updated', handleConfig)
+      return () => {
+        window.ipcRenderer?.off('config-updated', handleConfig)
+      }
     }
   }, [])
 
@@ -221,35 +230,17 @@ export const SettingsScreen = () => {
               </button>
             </div>
 
-            {/* Panel Side segmented control setting */}
+            {/* Panel Side automatic layout indicator */}
             <div className="flex items-center justify-between bg-[#11161D] border border-slate-800/60 p-3 rounded-xl">
               <div className="flex flex-col">
                 <span className="text-xs font-semibold text-slate-200">Lado do Painel</span>
-                <span className="text-[9px] text-slate-500 mt-0.5">Define de qual lado o painel se abre</span>
+                <span className="text-[9px] text-slate-500 mt-0.5">Calculado automaticamente com base na posição</span>
               </div>
-              <div className="flex bg-[#18212C] border border-slate-800 rounded-lg p-0.5 relative z-10" style={{ WebkitAppRegion: 'no-drag' } as any}>
-                <button
-                  onClick={() => {
-                    if (layoutSide !== 'left') {
-                      setLayoutSide('left')
-                      window.ipcRenderer?.send('set-config', { layoutSide: 'left' })
-                    }
-                  }}
-                  className={`px-3 py-1 rounded-md text-[10px] font-bold cursor-pointer transition-all ${layoutSide === 'left' ? 'bg-teal-500/15 text-teal-400 border border-teal-500/20 shadow-[0_0_8px_rgba(20,184,166,0.15)]' : 'text-slate-500 hover:text-slate-300'}`}
-                >
-                  Esquerda
-                </button>
-                <button
-                  onClick={() => {
-                    if (layoutSide !== 'right') {
-                      setLayoutSide('right')
-                      window.ipcRenderer?.send('set-config', { layoutSide: 'right' })
-                    }
-                  }}
-                  className={`px-3 py-1 rounded-md text-[10px] font-bold cursor-pointer transition-all ${layoutSide === 'right' ? 'bg-teal-500/15 text-teal-400 border border-teal-500/20 shadow-[0_0_8px_rgba(20,184,166,0.15)]' : 'text-slate-500 hover:text-slate-300'}`}
-                >
-                  Direita
-                </button>
+              <div 
+                className="px-3 py-1.5 rounded-lg text-[10px] font-bold bg-teal-500/15 text-teal-400 border border-teal-500/20 shadow-[0_0_8px_rgba(20,184,166,0.15)] select-none"
+                style={{ WebkitAppRegion: 'no-drag' } as any}
+              >
+                {layoutSide === 'left' ? 'Automático (Esquerda)' : 'Automático (Direita)'}
               </div>
             </div>
 

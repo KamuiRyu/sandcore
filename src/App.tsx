@@ -11,6 +11,7 @@ function App() {
   const [windowType, setWindowType] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<string | null>(null)
   const [layoutSide, setLayoutSide] = useState<'left' | 'right'>('right')
+  const [alignSide, setAlignSide] = useState<'top' | 'bottom'>('top')
   const [sidebarOpacity, setSidebarOpacity] = useState(95)
   const [lastActiveTab, setLastActiveTab] = useState<string | null>(null)
 
@@ -36,9 +37,12 @@ function App() {
         }
       })
 
-      const handleLayoutUpdated = (_event: any, data: { tabId: string | null; layoutSide: 'left' | 'right' }) => {
+      const handleLayoutUpdated = (_event: any, data: { tabId: string | null; layoutSide: 'left' | 'right'; alignSide?: 'top' | 'bottom' }) => {
         setActiveTab(data.tabId)
         setLayoutSide(data.layoutSide)
+        if (data.alignSide) {
+          setAlignSide(data.alignSide)
+        }
       }
       window.ipcRenderer.on('layout-updated', handleLayoutUpdated)
 
@@ -48,6 +52,8 @@ function App() {
         }
       }
       window.ipcRenderer.on('config-updated', handleConfigUpdated)
+
+      window.ipcRenderer.send('panel-ready')
 
       return () => {
         window.ipcRenderer?.off('layout-updated', handleLayoutUpdated)
@@ -59,7 +65,7 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (window.ipcRenderer && activeTab !== null) {
+    if (window.ipcRenderer) {
       let frame2Id: number | null = null
       const frame1Id = requestAnimationFrame(() => {
         frame2Id = requestAnimationFrame(() => {
@@ -73,7 +79,7 @@ function App() {
         }
       }
     }
-  }, [activeTab, layoutSide])
+  }, [activeTab, layoutSide, alignSide])
 
   if (loading) {
     return (
@@ -94,34 +100,42 @@ function App() {
     return <LoginScreen />
   }
 
-  // Unified side-by-side layout using flex-row-reverse mirror to prevent unmounting and flashing
-  return (
-    <div 
-      className={`h-screen w-screen bg-transparent flex items-start select-none font-sans overflow-hidden p-0 ${layoutSide === 'left' ? 'flex-row-reverse' : 'flex-row'}`}
-      style={{ opacity: sidebarOpacity / 100 }}
-    >
-      <div className="w-[60px] flex-none h-[360px]">
+  // Render only the Sidebar window
+  if (windowType === 'sidebar' || !windowType) {
+    return (
+      <div
+        className="h-screen w-screen bg-transparent p-0 overflow-hidden"
+        style={{ opacity: sidebarOpacity / 100 }}
+      >
         <SidebarScreen activeTab={activeTab} onLogout={() => viewModel.logout()} />
       </div>
-      {lastActiveTab && (
-        <div 
-          className="h-full overflow-hidden flex-1"
-          style={{ 
-            visibility: activeTab ? 'visible' : 'hidden', 
-            pointerEvents: activeTab ? 'auto' : 'none',
-            transition: 'visibility 300ms'
-          }}
-        >
-          <div className="flex h-full">
-            <div className="w-3 flex-none bg-transparent" />
-            <div className="flex-1 h-full overflow-hidden">
-              <ContentPanelScreen activeTab={activeTab} lastActiveTab={lastActiveTab} />
-            </div>
+    )
+  }
+
+  // Render only the Panel window
+  if (windowType === 'panel') {
+    return (
+      <div
+        className="h-screen w-screen bg-transparent flex p-0 overflow-hidden"
+        style={{ opacity: sidebarOpacity / 100 }}
+      >
+        {lastActiveTab && (
+          <div
+            className="h-full w-full overflow-hidden"
+            style={{
+              visibility: activeTab ? 'visible' : 'hidden',
+              pointerEvents: activeTab ? 'auto' : 'none',
+              transition: 'visibility 300ms'
+            }}
+          >
+            <ContentPanelScreen activeTab={activeTab} lastActiveTab={lastActiveTab} />
           </div>
-        </div>
-      )}
-    </div>
-  )
+        )}
+      </div>
+    )
+  }
+
+  return null
 }
 
 export default App

@@ -15,6 +15,7 @@ process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(process.
 let loginWin: BrowserWindow | null = null
 let sidebarWin: BrowserWindow | null = null
 let currentLayoutSide: 'left' | 'right' = 'right'
+let currentAlignSide: 'top' | 'bottom' = 'top'
 
 // Config management
 const configPath = path.join(app.getPath('userData'), 'config.json')
@@ -38,12 +39,12 @@ function updateShortcutMap(newShortcut: string): boolean {
         if (sidebarWin.isMinimized()) {
           sidebarWin.restore()
           sidebarWin.focus()
-          resizeSingleWindow('map')
+          togglePanel('map')
         } else if (sidebarWin.isFocused() && currentTabId === 'map') {
-          resizeSingleWindow(null)
+          togglePanel(null)
         } else {
           sidebarWin.focus()
-          resizeSingleWindow('map')
+          togglePanel('map')
         }
       }
     })
@@ -74,12 +75,12 @@ function updateShortcutSettings(newShortcut: string): boolean {
         if (sidebarWin.isMinimized()) {
           sidebarWin.restore()
           sidebarWin.focus()
-          resizeSingleWindow('settings')
+          togglePanel('settings')
         } else if (sidebarWin.isFocused() && currentTabId === 'settings') {
-          resizeSingleWindow(null)
+          togglePanel(null)
         } else {
           sidebarWin.focus()
-          resizeSingleWindow('settings')
+          togglePanel('settings')
         }
       }
     })
@@ -95,7 +96,20 @@ function updateShortcutSettings(newShortcut: string): boolean {
 }
 
 function loadConfig() {
-  const defaults = { alwaysOnTop: true, inGameNotifs: true, volume: 80, completedMarkers: [], favoritesList: [], layoutSide: 'right', sidebarOpacity: 95, uiScale: 100, shortcutMap: 'CommandOrControl+Alt+M', shortcutSettings: 'CommandOrControl+Alt+S' }
+  const defaults = {
+    alwaysOnTop: true,
+    inGameNotifs: true,
+    volume: 80,
+    completedMarkers: [],
+    favoritesList: [],
+    layoutSide: 'right',
+    sidebarOpacity: 95,
+    uiScale: 100,
+    shortcutMap: 'CommandOrControl+Alt+M',
+    shortcutSettings: 'CommandOrControl+Alt+S',
+    loginPosition: null,
+    sidebarPosition: null
+  }
   try {
     if (fs.existsSync(configPath)) {
       return { ...defaults, ...JSON.parse(fs.readFileSync(configPath, 'utf-8')) }
@@ -116,6 +130,19 @@ function saveConfig(config: any) {
 
 let appConfig = loadConfig()
 
+function isPositionOnSomeScreen(x: number, y: number, width: number, height: number): boolean {
+  const displays = screen.getAllDisplays()
+  return displays.some(display => {
+    const b = display.bounds
+    return (
+      x + width > b.x &&
+      x < b.x + b.width &&
+      y + height > b.y &&
+      y < b.y + b.height
+    )
+  })
+}
+
 function createLoginWindow() {
   if (loginWin && !loginWin.isDestroyed()) {
     loginWin.focus()
@@ -124,10 +151,22 @@ function createLoginWindow() {
   const preloadPath = path.join(process.env.DIST!, '../dist-electron/preload.js')
   const zoom = (appConfig.uiScale || 100) / 100
 
+  const width = Math.round(800 * zoom)
+  const height = Math.round(600 * zoom)
+
+  let x: number | undefined
+  let y: number | undefined
+  if (appConfig.loginPosition && isPositionOnSomeScreen(appConfig.loginPosition.x, appConfig.loginPosition.y, width, height)) {
+    x = appConfig.loginPosition.x
+    y = appConfig.loginPosition.y
+  }
+
   loginWin = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC!, 'favicon.ico'),
-    width: Math.round(800 * zoom),
-    height: Math.round(600 * zoom),
+    width,
+    height,
+    x,
+    y,
     resizable: false,
     frame: false,
     transparent: true,
@@ -164,28 +203,24 @@ let isProgrammaticMove = false
 function safeSetBounds(win: BrowserWindow, bounds: { x: number; y: number; width: number; height: number }) {
   if (!win || win.isDestroyed()) return
   isProgrammaticMove = true
-  const wasResizable = win.isResizable()
-  win.setResizable(true)
+  // On Windows, programmatic setBounds works regardless of the resizable flag.
+  // Avoid setResizable(true/false) toggling which causes extra WM_NCCALCSIZE messages
+  // and triggers extra repaints that cause visible flickering.
   win.setBounds(bounds)
-  win.setResizable(wasResizable)
   setTimeout(() => {
     isProgrammaticMove = false
   }, 100)
 }
 
 function setupMoveListeners(win: BrowserWindow) {
+  win.on('move', () => {
+    if (isProgrammaticMove) return
+    handleWindowMoved(win)
+  })
   win.on('moved', () => {
     if (isProgrammaticMove) return
     if (moveTimeout) clearTimeout(moveTimeout)
     handleWindowMoved(win)
-  })
-
-  win.on('move', () => {
-    if (isProgrammaticMove) return
-    if (moveTimeout) clearTimeout(moveTimeout)
-    moveTimeout = setTimeout(() => {
-      handleWindowMoved(win)
-    }, 300)
   })
 }
 
@@ -199,10 +234,22 @@ function createSidebarWindow() {
   currentTabId = null
   const zoom = (appConfig.uiScale || 100) / 100
 
+  const width = Math.round(60 * zoom)
+  const height = Math.round(360 * zoom)
+
+  let x: number | undefined
+  let y: number | undefined
+  if (appConfig.sidebarPosition && isPositionOnSomeScreen(appConfig.sidebarPosition.x, appConfig.sidebarPosition.y, width, height)) {
+    x = appConfig.sidebarPosition.x
+    y = appConfig.sidebarPosition.y
+  }
+
   sidebarWin = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC!, 'favicon.ico'),
-    width: Math.round(60 * zoom),
-    height: Math.round(360 * zoom),
+    width,
+    height,
+    x,
+    y,
     resizable: false,
     frame: false,
     transparent: true,
@@ -218,6 +265,24 @@ function createSidebarWindow() {
       backgroundThrottling: false, // Ensure performance remains high
     },
   })
+
+  // Enforce correct initial layout side based on the created bounds
+  const bounds = sidebarWin.getBounds()
+  const display = screen.getDisplayMatching(bounds)
+  const workArea = display.workArea
+  const workAreaCenterX = workArea.x + workArea.width / 2
+  const sidebarCenterX = bounds.x + bounds.width / 2
+
+  const initialLayoutSide = sidebarCenterX < workAreaCenterX ? 'right' : 'left'
+  appConfig.layoutSide = initialLayoutSide
+  currentLayoutSide = initialLayoutSide
+
+  const workAreaCenterY = workArea.y + workArea.height / 2
+  const sidebarCenterY = bounds.y + bounds.height / 2
+  const initialAlignSide = sidebarCenterY < workAreaCenterY ? 'top' : 'bottom'
+  currentAlignSide = initialAlignSide
+
+  saveConfig(appConfig)
 
   sidebarWin.setFullScreenable(false)
   sidebarWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
@@ -246,7 +311,7 @@ function createSidebarWindow() {
   })
 
   // Open DevTools automatically to see errors - can be commented out later
-  //sidebarWin.webContents.openDevTools()
+  sidebarWin.webContents.openDevTools()
 
   if (process.env.VITE_DEV_SERVER_URL) {
     sidebarWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}?windowType=sidebar`)
@@ -257,105 +322,204 @@ function createSidebarWindow() {
   setupMoveListeners(sidebarWin)
 }
 
-let pendingBounds: { x: number; y: number; width: number; height: number } | null = null
-let resizeTimeout: NodeJS.Timeout | null = null
+let panelWin: BrowserWindow | null = null
 
-function resizeSingleWindow(tabId: string | null, immediate = false) {
-  if (!sidebarWin || sidebarWin.isDestroyed()) return
+function createPanelWindow() {
+  if (panelWin && !panelWin.isDestroyed()) return panelWin
+  
+  const preloadPath = path.join(process.env.DIST!, '../dist-electron/preload.js')
+  const zoom = (appConfig.uiScale || 100) / 100
 
-  if (resizeTimeout) {
-    clearTimeout(resizeTimeout)
-    resizeTimeout = null
+  panelWin = new BrowserWindow({
+    icon: path.join(process.env.VITE_PUBLIC!, 'favicon.ico'),
+    width: 0,
+    height: 0,
+    show: false,
+    resizable: false,
+    frame: false,
+    transparent: true,
+    hasShadow: false,
+    backgroundColor: '#00000000',
+    alwaysOnTop: appConfig.alwaysOnTop,
+    skipTaskbar: true, // Hide from taskbar, sidebar is the main anchor
+    focusable: true,
+    webPreferences: {
+      preload: preloadPath,
+      nodeIntegration: false,
+      contextIsolation: true,
+      backgroundThrottling: false,
+    },
+  })
+
+  panelWin.setMenu(null)
+
+  if (appConfig.alwaysOnTop) {
+    panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
   }
 
-  // If not immediate, and we are switching/closing from an open tab, do a transition
-  if (!immediate && currentTabId !== null && currentTabId !== tabId) {
-    // Start transition: fade out the active panel
-    sidebarWin.webContents.send('layout-updated', { tabId: null, layoutSide: appConfig.layoutSide || 'right' })
+  panelWin.on('blur', () => {
+    if (appConfig.alwaysOnTop && panelWin) {
+      panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
+    }
+  })
 
-    // Wait for fade out to complete, then perform resize
-    resizeTimeout = setTimeout(() => {
-      resizeTimeout = null
-      resizeSingleWindow(tabId, true)
+  panelWin.on('minimize' as any, (e: any) => {
+    e.preventDefault()
+    panelWin?.restore()
+  })
+
+  panelWin.webContents.on('dom-ready', () => {
+    panelWin?.webContents.setZoomFactor(zoom)
+  })
+
+  if (process.env.VITE_DEV_SERVER_URL) {
+    panelWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}?windowType=panel`)
+  } else {
+    panelWin.loadFile(path.join(process.env.DIST!, 'index.html'), { query: { windowType: 'panel' } })
+  }
+
+  return panelWin
+}
+
+let closePanelTimeout: NodeJS.Timeout | null = null
+
+function closePanel(immediate = false) {
+  if (closePanelTimeout) {
+    clearTimeout(closePanelTimeout)
+    closePanelTimeout = null
+  }
+  
+  currentTabId = null
+  
+  const payload = { tabId: null, layoutSide: currentLayoutSide, alignSide: currentAlignSide }
+  if (sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.webContents.send('layout-updated', payload)
+  }
+  if (panelWin && !panelWin.isDestroyed()) {
+    panelWin.webContents.send('layout-updated', payload)
+  }
+
+  if (!panelWin || panelWin.isDestroyed()) return
+
+  if (immediate) {
+    panelWin.hide()
+  } else {
+    // Wait for the React CSS transition (300ms) to finish fading out before hiding OS window
+    closePanelTimeout = setTimeout(() => {
+      closePanelTimeout = null
+      if (panelWin && !panelWin.isDestroyed() && currentTabId === null) {
+        panelWin.hide()
+      }
+    }, 300)
+  }
+}
+
+function openPanel(tabId: string, immediate = false) {
+  if (!sidebarWin || sidebarWin.isDestroyed()) return
+  
+  if (!immediate && currentTabId !== null && currentTabId !== tabId) {
+    if (closePanelTimeout) {
+      clearTimeout(closePanelTimeout)
+    }
+    const payload = { tabId: null, layoutSide: currentLayoutSide, alignSide: currentAlignSide }
+    sidebarWin.webContents.send('layout-updated', payload)
+    if (panelWin && !panelWin.isDestroyed()) {
+      panelWin.webContents.send('layout-updated', payload)
+    }
+
+    closePanelTimeout = setTimeout(() => {
+      closePanelTimeout = null
+      openPanel(tabId, true)
     }, 300)
     return
   }
 
+  if (closePanelTimeout) {
+    clearTimeout(closePanelTimeout)
+    closePanelTimeout = null
+  }
+
   currentTabId = tabId
-
+  const panel = panelWin || createPanelWindow()
+  
   const zoom = (appConfig.uiScale || 100) / 100
-
   const [curX, curY] = sidebarWin.getPosition()
-  const [curW, curH] = sidebarWin.getSize()
-
+  
   const physicalSidebarW = Math.round(60 * zoom)
-
-  // Calculate sidebar's current absolute position
-  let sidebarX = curX
-  if (currentLayoutSide === 'left' && curW > physicalSidebarW) {
-    sidebarX = curX + curW - physicalSidebarW
-  }
-
-  // Calculate panel dimensions
-  let panelW = 0
-  let panelH = 0
+  const physicalSidebarH = Math.round(360 * zoom)
+  
+  let panelLogicalW = 450
+  let panelLogicalH = 550
   if (tabId === 'map') {
-    panelW = 1200
-    panelH = 800
-  } else if (tabId) {
-    panelW = 450
-    panelH = 550
+    panelLogicalW = 1200
+    panelLogicalH = 800
   }
-
-  // Calculate total window dimensions (Sidebar 60 + Gap 12 + Panel width)
-  const newW = panelW > 0 ? 60 + 12 + panelW : 60
-  const newH = panelW > 0 ? Math.max(360, panelH) : 360
-
-  const physicalNewW = Math.round(newW * zoom)
-  const physicalNewH = Math.round(newH * zoom)
-
-  // Calculate display work area and gap
+  
+  const physicalPanelW = Math.round(panelLogicalW * zoom)
+  const physicalPanelH = Math.round(panelLogicalH * zoom)
+  const physicalGap = Math.round(12 * zoom)
+  
   const display = screen.getDisplayMatching(sidebarWin.getBounds())
   const workArea = display.workArea
-  const gap = 12
+  
+  const sidebarCenterX = curX + physicalSidebarW / 2
+  const workAreaCenterX = workArea.x + workArea.width / 2
+  const nextLayoutSide: 'left' | 'right' = sidebarCenterX < workAreaCenterX ? 'right' : 'left'
 
-  const nextLayoutSide: 'left' | 'right' = appConfig.layoutSide || 'right'
-
-  let nextX = sidebarX
-  if (nextLayoutSide === 'left' && panelW > 0) {
-    nextX = sidebarX - Math.round((panelW + gap) * zoom)
+  if (nextLayoutSide !== appConfig.layoutSide) {
+    appConfig.layoutSide = nextLayoutSide
+    saveConfig(appConfig)
+    sidebarWin.webContents.send('config-updated', appConfig)
+    if (panelWin && !panelWin.isDestroyed()) {
+      panelWin.webContents.send('config-updated', appConfig)
+    }
   }
 
-  // Enforce screen bounds check for the entire window horizontally
-  if (nextX + physicalNewW > workArea.x + workArea.width) {
-    nextX = workArea.x + workArea.width - physicalNewW
-  }
-  if (nextX < workArea.x) {
-    nextX = workArea.x
-  }
-
-  let nextY = curY
-  if (nextY + physicalNewH > workArea.y + workArea.height) {
-    nextY = workArea.y + workArea.height - physicalNewH
-  }
-  if (nextY < workArea.y) {
-    nextY = workArea.y
-  }
-
-  // Determine if we need to update React before bounds (i.e. if transitioning to layout 'left' and expanding or shifting side)
-  const needsReactFirst = (nextLayoutSide === 'left' && (physicalNewW > curW || currentLayoutSide === 'right'))
+  const sidebarCenterY = curY + physicalSidebarH / 2
+  const workAreaCenterY = workArea.y + workArea.height / 2
+  const nextAlignSide: 'top' | 'bottom' = sidebarCenterY < workAreaCenterY ? 'top' : 'bottom'
 
   currentLayoutSide = nextLayoutSide
+  currentAlignSide = nextAlignSide
 
-  if (needsReactFirst) {
-    pendingBounds = { x: nextX, y: nextY, width: physicalNewW, height: physicalNewH }
-    sidebarWin.webContents.send('layout-updated', { tabId, layoutSide: nextLayoutSide })
+  // Calculate panel position relative to sidebar
+  let panelX = nextLayoutSide === 'left' ? curX - physicalGap - physicalPanelW : curX + physicalSidebarW + physicalGap
+  let panelY = nextAlignSide === 'bottom' ? (curY + physicalSidebarH) - physicalPanelH : curY
+  
+  // Screen clamping for the panel
+  if (panelX + physicalPanelW > workArea.x + workArea.width) {
+    panelX = workArea.x + workArea.width - physicalPanelW
+  }
+  if (panelX < workArea.x) {
+    panelX = workArea.x
+  }
+  
+  if (panelY + physicalPanelH > workArea.y + workArea.height) {
+    panelY = workArea.y + workArea.height - physicalPanelH
+  }
+  if (panelY < workArea.y) {
+    panelY = workArea.y
+  }
+
+  panel.setBounds({ x: panelX, y: panelY, width: physicalPanelW, height: physicalPanelH })
+
+  if (!panel.isVisible()) {
+    panel.showInactive()
+  }
+
+  const payload = { tabId, layoutSide: nextLayoutSide, alignSide: nextAlignSide }
+  sidebarWin.webContents.send('layout-updated', payload)
+  panel.webContents.send('layout-updated', payload)
+}
+
+function togglePanel(tabId: string | null) {
+  if (!tabId) {
+    closePanel()
   } else {
-    pendingBounds = null
-    safeSetBounds(sidebarWin, { x: nextX, y: nextY, width: physicalNewW, height: physicalNewH })
-    sidebarWin.webContents.send('layout-updated', { tabId, layoutSide: nextLayoutSide })
+    openPanel(tabId)
   }
 }
+
 
 function handleWindowMoved(win: BrowserWindow) {
   if (!win || win.isDestroyed()) return
@@ -366,7 +530,7 @@ function handleWindowMoved(win: BrowserWindow) {
   const display = screen.getDisplayMatching(win.getBounds())
   const workArea = display.workArea
 
-  // Enforce screen bounds check for the entire window horizontally and vertically
+  // Enforce screen bounds check for the window
   let adjustedX = curX
   if (adjustedX + curW > workArea.x + workArea.width) {
     adjustedX = workArea.x + workArea.width - curW
@@ -383,9 +547,23 @@ function handleWindowMoved(win: BrowserWindow) {
     adjustedY = workArea.y
   }
 
-  // If we shifted/adjusted bounds to keep it on-screen, apply programmatically
-  if (adjustedX !== curX || adjustedY !== curY) {
-    safeSetBounds(win, { x: adjustedX, y: adjustedY, width: curW, height: curH })
+  if (win === loginWin) {
+    appConfig.loginPosition = { x: adjustedX, y: adjustedY }
+    saveConfig(appConfig)
+    if (adjustedX !== curX || adjustedY !== curY) {
+      safeSetBounds(win, { x: adjustedX, y: adjustedY, width: curW, height: curH })
+    }
+  } else if (win === sidebarWin) {
+    appConfig.sidebarPosition = { x: adjustedX, y: adjustedY }
+    saveConfig(appConfig)
+    
+    if (adjustedX !== curX || adjustedY !== curY) {
+      safeSetBounds(win, { x: adjustedX, y: adjustedY, width: curW, height: curH })
+    }
+
+    if (currentTabId) {
+      openPanel(currentTabId)
+    }
   }
 }
 
@@ -492,6 +670,9 @@ ipcMain.on('set-config', (_event, newConfig) => {
   if (sidebarWin && !sidebarWin.isDestroyed()) {
     sidebarWin.webContents.send('config-updated', appConfig)
   }
+  if (panelWin && !panelWin.isDestroyed()) {
+    panelWin.webContents.send('config-updated', appConfig)
+  }
 
   if ('shortcutMap' in newConfig) {
     updateShortcutMap(newConfig.shortcutMap)
@@ -512,7 +693,7 @@ ipcMain.on('set-config', (_event, newConfig) => {
 
   if ('layoutSide' in newConfig) {
     if (sidebarWin && !sidebarWin.isDestroyed() && currentTabId) {
-      resizeSingleWindow(currentTabId)
+      openPanel(currentTabId)
     }
   }
 
@@ -520,7 +701,7 @@ ipcMain.on('set-config', (_event, newConfig) => {
     const zoom = newConfig.uiScale / 100
     if (sidebarWin && !sidebarWin.isDestroyed()) {
       sidebarWin.webContents.setZoomFactor(zoom)
-      resizeSingleWindow(currentTabId)
+      if (currentTabId) openPanel(currentTabId)
     }
     if (loginWin && !loginWin.isDestroyed()) {
       loginWin.webContents.setZoomFactor(zoom)
@@ -528,21 +709,28 @@ ipcMain.on('set-config', (_event, newConfig) => {
   }
 })
 
-ipcMain.on('layout-ready', () => {
-  if (sidebarWin && !sidebarWin.isDestroyed() && pendingBounds) {
-    safeSetBounds(sidebarWin, pendingBounds)
-    pendingBounds = null
+// Deprecated: No longer used, but kept for safety
+ipcMain.on('layout-ready', () => {})
+
+ipcMain.on('panel-ready', (event) => {
+  const window = BrowserWindow.fromWebContents(event.sender)
+  if (panelWin && window === panelWin && currentTabId) {
+    panelWin.webContents.send('layout-updated', {
+      tabId: currentTabId,
+      layoutSide: currentLayoutSide,
+      alignSide: currentAlignSide
+    })
   }
 })
 
 // Toggle panel layout inside the main window
 ipcMain.on('toggle-panel-window', (_event, tabId) => {
-  resizeSingleWindow(tabId)
+  togglePanel(tabId)
 })
 
-// Close panel and resize window back to sidebar only
+// Close panel
 ipcMain.on('close-panel-window', () => {
-  resizeSingleWindow(null, true)
+  closePanel()
 })
 
 // Minimize window
@@ -570,6 +758,10 @@ ipcMain.on('window-control', (event, action) => {
     if (sidebarWin && !sidebarWin.isDestroyed()) {
       sidebarWin.close()
       sidebarWin = null
+    }
+    if (panelWin && !panelWin.isDestroyed()) {
+      panelWin.close()
+      panelWin = null
     }
   }
 })
