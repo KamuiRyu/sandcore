@@ -44,7 +44,7 @@ export const ContentPanelScreen = ({ activeTab, lastActiveTab }: ContentPanelScr
     >
       {/* Dynamic Header */}
       {!isMapTab ? (
-        <div className="absolute top-0 left-0 right-0 h-8 flex items-center justify-between pl-4 pr-0 select-none z-50 bg-[#0B0E12]" style={{ WebkitAppRegion: 'drag' } as any}>
+        <div className="absolute top-0 left-0 right-0 h-8 flex items-center justify-between pl-4 pr-0 select-none z-50 bg-[#0B0E12]">
           <div className="flex items-center gap-2">
             <img 
               src="./images/logo_mini.webp" 
@@ -64,7 +64,6 @@ export const ContentPanelScreen = ({ activeTab, lastActiveTab }: ContentPanelScr
             <button 
               onClick={handleClose} 
               className="h-full w-11 hover:bg-white/5 transition flex items-center justify-center cursor-pointer text-slate-400 hover:text-white"
-              style={{ WebkitAppRegion: 'no-drag' } as any}
               title="Minimizar"
             >
               <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2">
@@ -74,7 +73,6 @@ export const ContentPanelScreen = ({ activeTab, lastActiveTab }: ContentPanelScr
             <button 
               onClick={handleClose} 
               className="h-full w-11 hover:bg-red-600 hover:text-white transition flex items-center justify-center text-slate-400 cursor-pointer"
-              style={{ WebkitAppRegion: 'no-drag' } as any}
               title="Fechar"
             >
               <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2">
@@ -84,7 +82,7 @@ export const ContentPanelScreen = ({ activeTab, lastActiveTab }: ContentPanelScr
           </div>
         </div>
       ) : (
-        <div className="h-14 bg-[#080c10] border-b border-[#131b24] px-4 flex items-center justify-between gap-4 select-none z-50 flex-none" style={{ WebkitAppRegion: 'drag' } as any}>
+        <div className="h-14 bg-[#080c10] border-b border-[#131b24] px-4 flex items-center justify-between gap-4 select-none z-50 flex-none">
           {/* Logo */}
           <div className="flex items-center gap-2 flex-none">
             <img 
@@ -97,7 +95,7 @@ export const ContentPanelScreen = ({ activeTab, lastActiveTab }: ContentPanelScr
           </div>
 
           {/* Search, Help */}
-          <div className="flex-1 max-w-sm flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
+          <div className="flex-1 max-w-sm flex items-center gap-2">
             <div className="flex-1 relative flex items-center">
               <span className="absolute left-3 flex items-center pointer-events-none text-slate-500">
                 <Search size={14} />
@@ -119,7 +117,7 @@ export const ContentPanelScreen = ({ activeTab, lastActiveTab }: ContentPanelScr
           </div>
 
           {/* Window controls */}
-          <div className="flex items-center h-full gap-1" style={{ WebkitAppRegion: 'no-drag' } as any}>
+          <div className="flex items-center h-full gap-2">
             <button 
               onClick={() => window.dispatchEvent(new CustomEvent('open-map-settings'))}
               className="w-8 h-8 rounded-lg hover:bg-white/5 transition flex items-center justify-center cursor-pointer text-slate-400 hover:text-white"
