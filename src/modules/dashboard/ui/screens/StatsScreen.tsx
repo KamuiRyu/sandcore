@@ -23,6 +23,7 @@ import {
   ORE_DEFINITIONS,
   MUSHROOM_DEFINITIONS,
   PLANT_DEFINITIONS,
+  STICK_DEFINITIONS,
 } from "../../../map/core/entities/ResourceDefinitions.entity";
 import {
   calculateRawProfit,
@@ -64,7 +65,7 @@ export const StatsScreen = () => {
     setSavedRoutes(routes);
   }, []);
 
-  const handleUpdateOre = (oreId: string, delta: number) => {
+  const handleUpdateResource = (itemId: string, delta: number) => {
     if (period !== 'today') return;
 
     setDailyStats(prev => {
@@ -78,13 +79,23 @@ export const StatsScreen = () => {
       }
       
       const today = { ...next[todayIdx] }
-      if (!today.ore_count) today.ore_count = {}
-      const current = today.ore_count[oreId] || 0
-      const newVal = Math.max(0, current + delta)
+      let targetObj: Record<string, number> | undefined;
+      let targetKey: 'ore_count' | 'mushroom_count' | 'plant_count' | 'stick_count' | null = null;
       
-      today.ore_count = { ...today.ore_count, [oreId]: newVal }
+      if (itemId.startsWith('ore_')) { targetKey = 'ore_count'; targetObj = today.ore_count; }
+      else if (itemId.startsWith('mushroom_')) { targetKey = 'mushroom_count'; targetObj = today.mushroom_count; }
+      else if (['perpetual', 'hibiscus', 'cotton', 'borago'].includes(itemId)) { targetKey = 'plant_count'; targetObj = today.plant_count; }
+      else if (itemId === 'stick') { targetKey = 'stick_count'; }
+
+      if (targetKey === 'stick_count') {
+        today.stick_count = Math.max(0, today.stick_count + delta);
+      } else if (targetKey && targetObj) {
+        const current = targetObj[itemId] || 0;
+        const newVal = Math.max(0, current + delta);
+        today[targetKey] = { ...targetObj, [itemId]: newVal };
+      }
+      
       next[todayIdx] = today
-      
       localStorage.setItem('shinobi-map-stats-history', JSON.stringify(next))
       window.dispatchEvent(new CustomEvent('map-stats-updated', { detail: next }))
       
@@ -92,7 +103,7 @@ export const StatsScreen = () => {
     })
   }
 
-  const handleSetOre = (oreId: string, value: number) => {
+  const handleSetResource = (itemId: string, value: number) => {
     if (period !== 'today') return;
 
     setDailyStats(prev => {
@@ -106,12 +117,22 @@ export const StatsScreen = () => {
       }
       
       const today = { ...next[todayIdx] }
-      if (!today.ore_count) today.ore_count = {}
-      const newVal = Math.max(0, value)
+      let targetObj: Record<string, number> | undefined;
+      let targetKey: 'ore_count' | 'mushroom_count' | 'plant_count' | 'stick_count' | null = null;
       
-      today.ore_count = { ...today.ore_count, [oreId]: newVal }
+      if (itemId.startsWith('ore_')) { targetKey = 'ore_count'; targetObj = today.ore_count; }
+      else if (itemId.startsWith('mushroom_')) { targetKey = 'mushroom_count'; targetObj = today.mushroom_count; }
+      else if (['perpetual', 'hibiscus', 'cotton', 'borago'].includes(itemId)) { targetKey = 'plant_count'; targetObj = today.plant_count; }
+      else if (itemId === 'stick') { targetKey = 'stick_count'; }
+
+      if (targetKey === 'stick_count') {
+        today.stick_count = Math.max(0, value);
+      } else if (targetKey && targetObj) {
+        const newVal = Math.max(0, value);
+        today[targetKey] = { ...targetObj, [itemId]: newVal };
+      }
+      
       next[todayIdx] = today
-      
       localStorage.setItem('shinobi-map-stats-history', JSON.stringify(next))
       window.dispatchEvent(new CustomEvent('map-stats-updated', { detail: next }))
       
@@ -398,222 +419,105 @@ export const StatsScreen = () => {
           </p>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col justify-between overflow-y-auto pr-1 custom-scrollbar space-y-4">
-          {period === "today" && (
-            <>
-              <div className="flex bg-[#11161D] rounded-xl p-1 border border-slate-800/80 shrink-0">
-                <button
-                  onClick={() => setProfitMode("raw")}
-                  className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-colors ${
-                    profitMode === "raw" ? "bg-teal-500/20 text-teal-400" : "text-slate-400 hover:bg-slate-800/50"
-                  }`}
-                >
-                  Vender Bruto
-                </button>
-                <button
-                  onClick={() => setProfitMode("craft")}
-                  className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-colors ${
-                    profitMode === "craft" ? "bg-amber-500/20 text-amber-400" : "text-slate-400 hover:bg-slate-800/50"
-                  }`}
-                >
-                  Fazer Lingotes
-                </button>
-              </div>
+        <div className="flex-1 flex flex-col overflow-y-auto pr-1 custom-scrollbar">
+          <div className="bg-[#11161D] border border-slate-800/80 p-4 rounded-xl flex flex-col gap-4 mt-2">
+            {(() => {
+              const flatCounts: Record<string, number> = {
+                ...currentStats.ore_count,
+                ...currentStats.mushroom_count,
+                ...currentStats.plant_count,
+              };
+              if (currentStats.stick_count > 0) flatCounts.stick = currentStats.stick_count;
 
-              {(() => {
-                const profitData = getDailyProfitData();
-                return (
-                  <div className="bg-[#11161D] border border-slate-800/80 p-3 rounded-xl flex flex-col gap-2 shrink-0">
-                    <h3 className="text-xs font-bold text-slate-300">Resumo Financeiro (Hoje)</h3>
+              const rawProfit = calculateRawProfit(flatCounts);
+              const craftProfit = calculateCraftingProfit(flatCounts);
+              const periodLabel = period === "today" ? "Hoje" : period === "monthly" ? "Mensal" : "Geral";
+
+              return (
+                <>
+                  {/* Comparativo de Lucro */}
+                  <div className="flex flex-col gap-2">
+                    <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                      <CircleDollarSign size={12} className="text-slate-400" /> 
+                      Lucro Total Acumulado ({periodLabel})
+                    </h4>
+                    
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-slate-800/50 p-2 rounded flex flex-col">
-                        <span className="text-[9px] text-slate-400 uppercase tracking-widest">Receita Bruta</span>
-                        <span className="text-base font-black text-teal-400">¥ {profitData.grossRevenue}</span>
+                      <div className="bg-slate-800/30 p-2.5 rounded flex flex-col border border-slate-700/50 relative overflow-hidden group">
+                        <div className="absolute right-[-10px] bottom-[-10px] opacity-[0.03] group-hover:opacity-10 transition-opacity">
+                          <CircleDollarSign size={40} />
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-bold mb-1 relative z-10">Vender Bruto</span>
+                        <span className="text-lg font-black text-teal-400 relative z-10">¥ {rawProfit.netProfit}</span>
                       </div>
-                      <div className="bg-slate-800/50 p-2 rounded flex flex-col">
-                        <span className="text-[9px] text-slate-400 uppercase tracking-widest">Custos</span>
-                        <span className="text-base font-black text-red-400">¥ {profitData.totalCost}</span>
-                      </div>
-                      <div className="bg-slate-800/80 p-2 rounded flex flex-col col-span-2 border border-teal-500/20">
-                        <span className="text-[9px] text-teal-500 uppercase tracking-widest font-bold">Lucro Líquido</span>
-                        <span className="text-xl font-black text-teal-400">¥ {profitData.netProfit}</span>
+                      <div className="bg-amber-950/20 p-2.5 rounded flex flex-col border border-amber-500/20 relative overflow-hidden group">
+                        <div className="absolute right-[-10px] bottom-[-10px] opacity-[0.03] group-hover:opacity-10 transition-opacity">
+                          <Flame size={40} />
+                        </div>
+                        <span className="text-[10px] text-amber-500/80 font-bold mb-1 relative z-10">Fazer Lingote</span>
+                        <span className="text-lg font-black text-amber-400 relative z-10">¥ {craftProfit.netProfit}</span>
+                        {craftProfit.totalCost > 0 && <span className="text-[9px] text-red-400 mt-0.5 relative z-10">Custos: ¥ {craftProfit.totalCost}</span>}
                       </div>
                     </div>
                   </div>
-                );
-              })()}
-            </>
-          )}
 
-          {/* Overview Stats Cards Grid */}
-          <div className="grid grid-cols-3 gap-2 shrink-0">
-            <div className="bg-[#11161D] border border-slate-800/80 p-2.5 rounded-xl flex flex-col justify-between relative overflow-hidden">
-              <span className="text-[8px] uppercase font-mono tracking-widest text-slate-500">
-                Total
-              </span>
-              <span className="text-xl font-black text-teal-400 mt-1">
-                {grandTotal}
-              </span>
-              <div className="absolute right-[-8px] bottom-[-8px] opacity-5 text-teal-400">
-                <Target size={36} />
-              </div>
-            </div>
-            <div className="bg-[#11161D] border border-slate-800/80 p-2.5 rounded-xl flex flex-col justify-between relative overflow-hidden">
-              <span className="text-[8px] uppercase font-mono tracking-widest text-slate-500">
-                Minérios
-              </span>
-              <span className="text-xl font-black text-amber-500 mt-1">
-                {totalOres}
-              </span>
-              <div className="absolute right-[-8px] bottom-[-8px] opacity-5 text-amber-500">
-                <Flame size={36} />
-              </div>
-            </div>
-            <div className="bg-[#11161D] border border-slate-800/80 p-2.5 rounded-xl flex flex-col justify-between relative overflow-hidden">
-              <span className="text-[8px] uppercase font-mono tracking-widest text-slate-500">
-                Cogumelos
-              </span>
-              <span className="text-xl font-black text-emerald-400 mt-1">
-                {totalMushrooms}
-              </span>
-              <div className="absolute right-[-8px] bottom-[-8px] opacity-5 text-emerald-400">
-                <Trees size={36} />
-              </div>
-            </div>
-          </div>
-
-          {/* Detailed Resource Sections */}
-          <div className="space-y-3">
-            {/* Ores (Minérios) */}
-            {totalOres > 0 && (
-              <div className="space-y-1.5">
-                <h3 className="text-[9px] uppercase font-mono tracking-wider text-slate-400 font-bold ml-1 flex items-center gap-1.5">
-                  <span className="w-1 h-2 rounded bg-amber-500"></span>
-                  Minérios
-                </h3>
-                <div className="space-y-1">
-                  {Object.entries(ORE_DEFINITIONS).map(([id, def]) => {
-                    const count = currentStats.ore_count[id] || 0;
-                    if (count === 0) return null;
-                    return (
-                      <div key={id} className="flex justify-between items-center bg-[#11161D]/75 border border-slate-800/50 p-2 rounded-lg text-xs group">
-                        <span className="text-slate-300 font-medium">{def.name}</span>
-                        
-                        <div className="flex items-center gap-2">
-                          {period === 'today' ? (
-                            <>
-                              <button 
-                                onClick={() => handleUpdateOre(id, -1)}
-                                disabled={count === 0}
-                                className="w-5 h-5 flex items-center justify-center rounded bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                              >
-                                -
-                              </button>
-                              <div className="relative">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={count}
-                                  onChange={(e) => {
-                                    const val = parseInt(e.target.value) || 0;
-                                    handleSetOre(id, val);
-                                  }}
-                                  className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1 py-0.5 rounded font-bold text-[10px] w-12 text-center outline-none focus:border-amber-400/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                />
-                              </div>
-                              <button 
-                                onClick={() => handleUpdateOre(id, 1)}
-                                className="w-5 h-5 flex items-center justify-center rounded bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-colors"
-                              >
-                                +
-                              </button>
-                            </>
-                          ) : (
-                            <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-bold text-[10px] min-w-[32px] text-center">
-                              {count}x
+                  {/* Materiais Obtidos */}
+                  <div className="flex flex-col gap-2 mt-2">
+                    <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                      <Target size={12} className="text-slate-400" /> 
+                      Materiais Coletados ({periodLabel})
+                    </h4>
+                    <div className="flex flex-col gap-1.5 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+                      {Object.entries(flatCounts).filter(([_, count]) => count > 0).sort((a, b) => b[1] - a[1]).map(([type, count]) => {
+                        const def = ORE_DEFINITIONS[type] || MUSHROOM_DEFINITIONS[type] || PLANT_DEFINITIONS[type] || STICK_DEFINITIONS[type];
+                        return (
+                          <div key={type} className="flex justify-between items-center bg-slate-800/20 border border-slate-800/50 p-2 rounded-lg text-xs">
+                            <span className="text-slate-300 font-medium">
+                              {def ? def.name : type}
                             </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Mushrooms (Cogumelos) */}
-            {totalMushrooms > 0 && (
-              <div className="space-y-1.5">
-                <h3 className="text-[9px] uppercase font-mono tracking-wider text-slate-400 font-bold ml-1 flex items-center gap-1.5">
-                  <span className="w-1 h-2 rounded bg-emerald-500"></span>
-                  Cogumelos
-                </h3>
-                <div className="space-y-1">
-                  {Object.entries(MUSHROOM_DEFINITIONS).map(([id, def]) => {
-                    const count = currentStats.mushroom_count[id] || 0;
-                    if (count === 0) return null;
-                    return (
-                      <div
-                        key={id}
-                        className="flex justify-between items-center bg-[#11161D]/75 border border-slate-800/50 p-2 rounded-lg text-xs"
-                      >
-                        <span className="text-slate-300 font-medium">
-                          {def.name}
-                        </span>
-                        <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-bold text-[10px]">
-                          {count}x
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Plants (Plantas) */}
-            {totalPlants > 0 && (
-              <div className="space-y-1.5">
-                <h3 className="text-[9px] uppercase font-mono tracking-wider text-slate-400 font-bold ml-1 flex items-center gap-1.5">
-                  <span className="w-1 h-2 rounded bg-teal-500"></span>
-                  Plantas
-                </h3>
-                <div className="space-y-1">
-                  {Object.entries(PLANT_DEFINITIONS).map(([id, def]) => {
-                    const count = currentStats.plant_count[id] || 0;
-                    if (count === 0) return null;
-                    return (
-                      <div
-                        key={id}
-                        className="flex justify-between items-center bg-[#11161D]/75 border border-slate-800/50 p-2 rounded-lg text-xs"
-                      >
-                        <span className="text-slate-300 font-medium">
-                          {def.name}
-                        </span>
-                        <span className="bg-teal-500/10 text-teal-400 border border-teal-500/20 px-2 py-0.5 rounded font-bold text-[10px]">
-                          {count}x
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Sticks (Galhos) */}
-            {totalSticks > 0 && (
-              <div className="space-y-1.5">
-                <h3 className="text-[9px] uppercase font-mono tracking-wider text-slate-400 font-bold ml-1 flex items-center gap-1.5">
-                  <span className="w-1 h-2 rounded bg-slate-500"></span>
-                  Outros
-                </h3>
-                <div className="flex justify-between items-center bg-[#11161D]/75 border border-slate-800/50 p-2 rounded-lg text-xs">
-                  <span className="text-slate-300 font-medium">Gravetos</span>
-                  <span className="bg-slate-500/10 text-slate-400 border border-slate-500/20 px-2 py-0.5 rounded font-bold text-[10px]">
-                    {totalSticks}x
-                  </span>
-                </div>
-              </div>
-            )}
+                            <div className="flex items-center gap-2">
+                              {period === 'today' && (type.startsWith('ore_') || type.startsWith('mushroom_') || ['perpetual', 'hibiscus', 'cotton', 'borago', 'stick'].includes(type)) ? (
+                                <>
+                                  <button 
+                                    onClick={() => handleUpdateResource(type, -1)}
+                                    disabled={count === 0}
+                                    className="w-5 h-5 flex items-center justify-center rounded bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold"
+                                  >
+                                    -
+                                  </button>
+                                  <div className="relative">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={count}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value) || 0;
+                                        handleSetResource(type, val);
+                                      }}
+                                      className="bg-slate-800/50 text-slate-300 border border-slate-700/50 px-1 py-0.5 rounded font-bold text-[10px] w-12 text-center outline-none focus:border-slate-500/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    />
+                                  </div>
+                                  <button 
+                                    onClick={() => handleUpdateResource(type, 1)}
+                                    className="w-5 h-5 flex items-center justify-center rounded bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-colors font-bold"
+                                  >
+                                    +
+                                  </button>
+                                </>
+                              ) : (
+                                <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-bold text-[10px]">
+                                  {count}x Total
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </>
+              )
+            })()}
           </div>
         </div>
       )}

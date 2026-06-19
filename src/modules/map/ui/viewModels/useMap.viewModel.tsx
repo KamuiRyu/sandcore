@@ -2570,6 +2570,7 @@ export function useMapViewModel() {
     user,
     visibleCustomPins,
     visibleOfficialPoints,
+    setSelectedCustomPinId,
     completedPins,
     togglePinCompleted,
     getPinTimerRemaining,

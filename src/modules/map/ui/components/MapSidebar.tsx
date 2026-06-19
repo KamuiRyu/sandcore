@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useState, useEffect } from "react";
 import {
   ChevronLeft,
   Compass,
@@ -138,6 +138,8 @@ interface MapSidebarProps {
   removeCheckpoint: (id: string) => void;
   moveCheckpoint: (id: string, direction: number) => void;
   updateCheckpointLabel: (id: string, label: string) => void;
+  savedRoutes: SavedMapRoute[];
+  publicRoutes: SavedMapRoute[];
   mode: "explore" | "pin" | "route" | "feedback";
   setMode: (mode: "explore" | "pin" | "route" | "feedback") => void;
   mapStats: MapCollectionStats;
@@ -356,10 +358,30 @@ export const MapSidebar = memo(function MapSidebar({
   isAuthenticated,
   openLoginModal,
   setIsSettingsModalOpen,
+  savedRoutes,
+  publicRoutes,
 }: MapSidebarProps) {
   const [newGroupName, setNewGroupName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [routeToComplete, setRouteToComplete] = useState<SavedMapRoute | null>(null);
+
+  useEffect(() => {
+    const handleOpenRouteCompletion = (e: CustomEvent<string>) => {
+      const routeId = e.detail;
+      const route = savedRoutes.find(r => r.id === routeId) || publicRoutes.find(r => r.id === routeId);
+      if (route) {
+        setRouteToComplete(route);
+        // Force sidebar to routes section if it's not open?
+        // Optional, but good for UX if they are looking at the map
+        setIsSidebarOpen(true);
+        setSidebarSection("routes");
+      }
+    };
+    window.addEventListener('open-route-completion', handleOpenRouteCompletion as EventListener);
+    return () => window.removeEventListener('open-route-completion', handleOpenRouteCompletion as EventListener);
+  }, [savedRoutes, publicRoutes]);
+
+  const [deleteConfirmationId, setDeleteConfirmationId] = useState<string | null>(null);
 
   const safeMapStats = {
     ore_count: mapStats?.ore_count || {},
