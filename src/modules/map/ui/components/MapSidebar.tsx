@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useState, useEffect } from "react";
 import {
   ChevronLeft,
   Compass,
@@ -44,6 +44,7 @@ import type {
 } from "../../core/entities/MapRoute.entity";
 import type { MapCollectionStats } from "../../core/entities/MapStats.entity";
 import type { StatsPeriod } from "../viewModels/useMap.viewModel";
+import { RouteCompletionModal } from "./RouteCompletionModal";
 
 type SidebarSection = "officialPins" | "customPins" | "routes" | "search";
 type RoutesView = "mine" | "public";
@@ -115,6 +116,9 @@ interface MapSidebarProps {
   loadSavedRoute: (id: string) => void;
   deleteSavedRoute: (id: string) => void;
   duplicateSavedRoute: (id: string) => void;
+  updateRouteCollectedStats: (id: string, data: Record<string, number>) => void;
+  markRoutePinsCompleted: (id: string) => void;
+  addRouteResourcesToDailyStats: (data: Record<string, number>) => void;
   publishSelectedRoute: (id: string) => void;
   unpublishSelectedRoute: (id: string) => void;
   toggleRouteVisibility: (id: string) => void;
@@ -128,11 +132,14 @@ interface MapSidebarProps {
   ) => void;
   clearRoute: () => void;
   saveCurrentRoute: () => void;
+  openAutoRouteModal: () => void;
   shareCurrentRoute: () => void;
   copyRouteJson: () => void;
   removeCheckpoint: (id: string) => void;
   moveCheckpoint: (id: string, direction: number) => void;
   updateCheckpointLabel: (id: string, label: string) => void;
+  savedRoutes: SavedMapRoute[];
+  publicRoutes: SavedMapRoute[];
   mode: "explore" | "pin" | "route" | "feedback";
   setMode: (mode: "explore" | "pin" | "route" | "feedback") => void;
   mapStats: MapCollectionStats;
@@ -315,6 +322,9 @@ export const MapSidebar = memo(function MapSidebar({
   loadSavedRoute,
   deleteSavedRoute,
   duplicateSavedRoute,
+  updateRouteCollectedStats,
+  markRoutePinsCompleted,
+  addRouteResourcesToDailyStats,
   publishSelectedRoute,
   unpublishSelectedRoute,
   toggleRouteVisibility,
@@ -325,6 +335,7 @@ export const MapSidebar = memo(function MapSidebar({
   updateRouteField,
   clearRoute,
   saveCurrentRoute,
+  openAutoRouteModal,
   shareCurrentRoute,
   copyRouteJson,
   removeCheckpoint,
@@ -347,9 +358,30 @@ export const MapSidebar = memo(function MapSidebar({
   isAuthenticated,
   openLoginModal,
   setIsSettingsModalOpen,
+  savedRoutes,
+  publicRoutes,
 }: MapSidebarProps) {
   const [newGroupName, setNewGroupName] = useState("");
   const [joinCode, setJoinCode] = useState("");
+  const [routeToComplete, setRouteToComplete] = useState<SavedMapRoute | null>(null);
+
+  useEffect(() => {
+    const handleOpenRouteCompletion = (e: CustomEvent<string>) => {
+      const routeId = e.detail;
+      const route = savedRoutes.find(r => r.id === routeId) || publicRoutes.find(r => r.id === routeId);
+      if (route) {
+        setRouteToComplete(route);
+        // Force sidebar to routes section if it's not open?
+        // Optional, but good for UX if they are looking at the map
+        setIsSidebarOpen(true);
+        setSidebarSection("routes");
+      }
+    };
+    window.addEventListener('open-route-completion', handleOpenRouteCompletion as EventListener);
+    return () => window.removeEventListener('open-route-completion', handleOpenRouteCompletion as EventListener);
+  }, [savedRoutes, publicRoutes]);
+
+  const [deleteConfirmationId, setDeleteConfirmationId] = useState<string | null>(null);
 
   const safeMapStats = {
     ore_count: mapStats?.ore_count || {},
@@ -388,9 +420,9 @@ export const MapSidebar = memo(function MapSidebar({
       )}
       <aside
         className={cn(
-          "pointer-events-auto flex h-full flex-col overflow-hidden rounded-[32px] border border-white/8 bg-[#030a0d]/96 backdrop-blur-2xl transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] relative",
+          "pointer-events-auto flex h-full flex-col overflow-hidden rounded-[32px] border border-white/8 backdrop-blur-2xl transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] relative group/sidebar bg-[#030a0d]/60 hover:bg-[#030a0d]/96",
           isSidebarOpen
-            ? "w-[400px] sm:w-[460px] opacity-100 translate-x-0"
+            ? "w-[340px] sm:w-[380px] opacity-100 translate-x-0"
             : "w-0 opacity-0 -translate-x-12",
         )}
       >
@@ -573,8 +605,8 @@ export const MapSidebar = memo(function MapSidebar({
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 custom-scrollbar relative z-10">
-              <div className="grid gap-5">
+            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-5 custom-scrollbar relative z-10">
+              <div className="flex flex-col gap-5 w-full min-w-0">
                 {sidebarSection === "officialPins" ? (
                   <section className="rounded-[26px] border border-white/5 bg-black/25 p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_12px_36px_rgba(0,0,0,0.2)]">
                     <div className="mb-4 flex items-center justify-between gap-3">
@@ -1384,7 +1416,7 @@ export const MapSidebar = memo(function MapSidebar({
                         </div>
 
                         {routesView === "mine" ? (
-                          <section className="rounded-[26px] border border-white/5 bg-black/25 p-4">
+                          <section className="rounded-[26px] border border-white/5 bg-black/25 p-4 min-w-0">
                             {!isAuthenticated ? (
                               <LockedFeature
                                 title="Minhas Rotas"
@@ -1393,16 +1425,26 @@ export const MapSidebar = memo(function MapSidebar({
                               />
                             ) : (
                               <>
-                                <button
-                                  onClick={() => {
-                                    clearRoute();
-                                    setMode("route");
-                                  }}
-                                  className="w-full mb-4 flex items-center justify-center gap-2 rounded-xl bg-[var(--cyan)] py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(0,214,163,0.3)] cursor-pointer"
-                                >
-                                  <Plus size={16} strokeWidth={3} />
-                                  Criar Nova Rota
-                                </button>
+                                  <div className="grid grid-cols-2 gap-2 mb-4">
+                                    <button
+                                      onClick={() => {
+                                        clearRoute();
+                                        setMode("route");
+                                      }}
+                                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-[var(--cyan)] py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(0,214,163,0.3)] cursor-pointer"
+                                    >
+                                      <Plus size={16} strokeWidth={3} />
+                                      Nova Rota
+                                    </button>
+                                    <button
+                                      onClick={openAutoRouteModal}
+                                      className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] cursor-pointer"
+                                      title="Abre as opções de filtro para gerar rota automática (excluída no próximo reset)"
+                                    >
+                                      <Route size={16} strokeWidth={3} />
+                                      Auto Rota
+                                    </button>
+                                  </div>
 
                                 <div className="flex items-center justify-between mb-3 px-1">
                                   <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
@@ -1415,12 +1457,12 @@ export const MapSidebar = memo(function MapSidebar({
                                     Nenhuma rota salva.
                                   </div>
                                 ) : (
-                                  <div className="grid gap-2.5">
+                                  <div className="flex flex-col gap-2.5 min-w-0">
                                     {paginatedSavedRoutes.map((route) => (
                                       <div
                                         key={route.id}
                                         className={cn(
-                                          "flex items-center justify-between rounded-xl border p-3 transition-all group",
+                                          "flex items-center justify-between rounded-xl border p-3 transition-all group min-w-0",
                                           selectedSavedRouteId === route.id
                                             ? "border-cyan-500/40 bg-cyan-500/5 shadow-[0_0_15px_rgba(0,214,163,0.1)]"
                                             : "border-white/5 bg-white/[0.01] hover:border-white/15",
@@ -1432,9 +1474,16 @@ export const MapSidebar = memo(function MapSidebar({
                                             loadSavedRoute(route.id)
                                           }
                                         >
-                                          <p className="truncate text-sm font-bold text-slate-200 group-hover:text-white transition-colors">
-                                            {route.name}
-                                          </p>
+                                          <div className="flex items-center gap-2">
+                                            <p className="truncate text-sm font-bold text-slate-200 group-hover:text-white transition-colors">
+                                              {route.name}
+                                            </p>
+                                            {route.isDisposable && (
+                                              <span className="shrink-0 rounded bg-amber-500/20 px-1.5 py-0.5 text-[8px] font-bold text-amber-400 uppercase" title="Será excluída no próximo reset global">
+                                                Temp
+                                              </span>
+                                            )}
+                                          </div>
                                           <p className="text-[10px] text-slate-500">
                                             {route.route.checkpoints.length}{" "}
                                             pontos • {route.color}
@@ -1460,27 +1509,36 @@ export const MapSidebar = memo(function MapSidebar({
                                               <EyeOff size={14} />
                                             )}
                                           </button>
-                                          {route.isPublic ? (
-                                            <button
-                                              onClick={() =>
-                                                unpublishSelectedRoute(route.id)
-                                              }
-                                              className="p-1.5 text-[var(--cyan)] hover:text-red-400 transition cursor-pointer"
-                                              title="Tornar Privada"
-                                            >
-                                              <Globe size={14} />
-                                            </button>
-                                          ) : (
-                                            <button
-                                              onClick={() =>
-                                                publishSelectedRoute(route.id)
-                                              }
-                                              className="p-1.5 text-slate-500 hover:text-[var(--cyan)] transition cursor-pointer"
-                                              title="Tornar Pública"
-                                            >
-                                              <Globe size={14} />
-                                            </button>
+                                          {!route.isDisposable && (
+                                            route.isPublic ? (
+                                              <button
+                                                onClick={() =>
+                                                  unpublishSelectedRoute(route.id)
+                                                }
+                                                className="p-1.5 text-[var(--cyan)] hover:text-red-400 transition cursor-pointer"
+                                                title="Tornar Privada"
+                                              >
+                                                <Globe size={14} />
+                                              </button>
+                                            ) : (
+                                              <button
+                                                onClick={() =>
+                                                  publishSelectedRoute(route.id)
+                                                }
+                                                className="p-1.5 text-slate-500 hover:text-[var(--cyan)] transition cursor-pointer"
+                                                title="Tornar Pública"
+                                              >
+                                                <Globe size={14} />
+                                              </button>
+                                            )
                                           )}
+                                          <button
+                                            onClick={() => setRouteToComplete(route)}
+                                            className="p-1.5 text-slate-500 hover:text-teal-400 transition cursor-pointer"
+                                            title="Finalizar Rota"
+                                          >
+                                            <CircleCheck size={14} />
+                                          </button>
                                           <button
                                             onClick={() =>
                                               deleteSavedRoute(route.id)
@@ -1504,7 +1562,7 @@ export const MapSidebar = memo(function MapSidebar({
                             )}
                           </section>
                         ) : (
-                          <section className="rounded-[26px] border border-white/5 bg-black/25 p-4">
+                          <section className="rounded-[26px] border border-white/5 bg-black/25 p-4 min-w-0">
                             <div className="relative block group mb-4">
                               <Search
                                 className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[var(--cyan)] transition-colors"
@@ -1535,12 +1593,12 @@ export const MapSidebar = memo(function MapSidebar({
                                 Nenhuma rota pública encontrada.
                               </div>
                             ) : (
-                              <div className="grid gap-2.5">
+                              <div className="flex flex-col gap-2.5 min-w-0">
                                 {paginatedPublicRoutes.map((route) => (
                                   <div
                                     key={route.id}
                                     className={cn(
-                                      "flex items-center justify-between rounded-2xl border border-white/5 bg-white/[0.01] p-3.5 hover:border-white/15 hover:bg-white/[0.03] transition-all group",
+                                      "flex items-center justify-between rounded-2xl border border-white/5 bg-white/[0.01] p-3.5 hover:border-white/15 hover:bg-white/[0.03] transition-all group min-w-0",
                                       selectedSavedRouteId === route.id
                                         ? "border-cyan-500/40 bg-cyan-500/5 shadow-[0_0_15px_rgba(0,214,163,0.1)]"
                                         : "border-white/5 bg-white/[0.01] hover:border-white/15",
@@ -1550,7 +1608,7 @@ export const MapSidebar = memo(function MapSidebar({
                                       className="flex-1 min-w-0 cursor-pointer"
                                       onClick={() => loadSavedRoute(route.id)}
                                     >
-                                      <div className="flex items-center gap-2.5 mb-1.5">
+                                      <div className="flex items-center gap-2.5 mb-1.5 min-w-0">
                                         <div className="h-6 w-6 rounded-full border border-white/10 bg-black/40 overflow-hidden shrink-0">
                                           {route.creator?.avatarUrl ? (
                                             <img
@@ -1572,17 +1630,17 @@ export const MapSidebar = memo(function MapSidebar({
                                         </p>
                                       </div>
 
-                                      <div className="flex items-center gap-2 pl-8">
-                                        <p className="text-[10px] font-medium text-slate-500 uppercase tracking-tight">
+                                      <div className="flex items-center gap-2 pl-8 min-w-0">
+                                        <p className="truncate text-[10px] font-medium text-slate-500 uppercase tracking-tight flex-1">
                                           por{" "}
                                           <span className="text-slate-400">
                                             {route.creator?.name || "Anônimo"}
                                           </span>
                                         </p>
-                                        <span className="text-slate-700 text-[10px]">
+                                        <span className="text-slate-700 text-[10px] shrink-0">
                                           •
                                         </span>
-                                        <p className="text-[10px] font-mono text-slate-500">
+                                        <p className="text-[10px] font-mono text-slate-500 shrink-0">
                                           {route.route.checkpoints.length} pts
                                         </p>
                                       </div>
@@ -1592,7 +1650,7 @@ export const MapSidebar = memo(function MapSidebar({
                                         </p>
                                       )}
                                     </div>
-                                    <div className="flex items-center gap-1 ml-2">
+                                    <div className="flex items-center gap-1 ml-2 shrink-0">
                                       <button
                                         onClick={() =>
                                           toggleRouteVisibility(route.id)
@@ -1744,6 +1802,20 @@ export const MapSidebar = memo(function MapSidebar({
           </div>
         </div>
       </aside>
+
+      {routeToComplete && (
+        <RouteCompletionModal
+          isOpen={true}
+          onClose={() => setRouteToComplete(null)}
+          routeTitle={routeToComplete.name}
+          expectedCounts={routeToComplete.route.routeStats?.resourceCounts || {}}
+          onComplete={(data) => {
+            updateRouteCollectedStats(routeToComplete.id, data);
+            addRouteResourcesToDailyStats(data);
+            setRouteToComplete(null);
+          }}
+        />
+      )}
     </div>
   );
 });

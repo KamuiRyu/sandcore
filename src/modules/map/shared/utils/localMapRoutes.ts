@@ -80,6 +80,7 @@ export function createSavedMapRoute(route: CustomRoute): SavedMapRoute {
     description: normalizedRoute.description,
     id: createSavedRouteId(),
     name: normalizedRoute.name.trim() || 'Rota sem nome',
+    isDisposable: normalizedRoute.isDisposable,
     route: {
       ...normalizedRoute,
       createdAt: normalizedRoute.createdAt || now,

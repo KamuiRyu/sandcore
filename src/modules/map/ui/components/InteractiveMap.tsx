@@ -39,10 +39,12 @@ import {
   RefreshCw,
   Shield,
   Trash2,
+  Wand2,
   X,
 } from "lucide-react";
 
 import { MapFeedbackModal } from "./MapFeedbackModal";
+import { AutoRouteFilterModal } from "./AutoRouteFilterModal";
 import { AuthModal } from "../../../authentication/ui/components/AuthModal";
 
 function formatRemainingTime(seconds: number): string {
@@ -387,12 +389,14 @@ const RouteCheckpointBadge = memo(function RouteCheckpointBadge({
   screenX,
   screenY,
   displayedCamera,
+  isCurrent,
 }: {
   checkpoint: RouteCheckpoint;
   index: number;
   screenX: number;
   screenY: number;
   displayedCamera: { scale: number };
+  isCurrent?: boolean;
 }) {
   const isPin = !!(checkpoint.pointId || checkpoint.customPinId);
 
@@ -403,22 +407,37 @@ const RouteCheckpointBadge = memo(function RouteCheckpointBadge({
   }, [displayedCamera.scale, isPin]);
 
   return (
-    <div
-      className={cn(
-        "absolute grid place-items-center rounded-full border border-white bg-orange-500 font-mono font-black text-white shadow-[0_4px_15px_rgba(0,0,0,0.4)] ring-2 ring-orange-950/50 pointer-events-none z-40",
-        isPin ? "h-5 w-5 text-[0.6rem]" : "h-7 w-7 text-[0.7rem]",
+    <>
+      {isCurrent === true && (
+        <div
+          className="absolute z-30 pointer-events-none"
+          style={{
+            left: `${screenX}px`,
+            top: `${screenY}px`,
+            transform: `translate(-50%, -50%) scale(${Math.pow(displayedCamera.scale, 0.2)})`,
+          }}
+        >
+          <div className="w-10 h-10 rounded-full bg-amber-500/50 animate-ping" />
+        </div>
       )}
-      style={{
-        left: `${screenX}px`,
-        top: `${screenY}px`,
-        transform: isPin
-          ? `translate(-50%, -50%) scale(${badgeScale}) translate(20px, -20px)`
-          : `translate(-50%, -50%) scale(${badgeScale})`,
-      }}
-      title={checkpoint.label || `Checkpoint ${index + 1}`}
-    >
-      {index + 1}
-    </div>
+      <div
+        className={cn(
+          "absolute grid place-items-center rounded-full border border-white font-mono font-black text-white shadow-[0_4px_15px_rgba(0,0,0,0.4)] pointer-events-none z-40",
+          isPin ? "h-5 w-5 text-[0.6rem]" : "h-7 w-7 text-[0.7rem]",
+          isCurrent === true ? "bg-amber-500 ring-2 ring-amber-400" : isCurrent === false ? "bg-slate-600 ring-1 ring-slate-800 opacity-80 text-slate-300" : "bg-orange-500 ring-2 ring-orange-950/50"
+        )}
+        style={{
+          left: `${screenX}px`,
+          top: `${screenY}px`,
+          transform: isPin
+            ? `translate(-50%, -50%) scale(${badgeScale}) translate(20px, -20px)`
+            : `translate(-50%, -50%) scale(${badgeScale})`,
+        }}
+        title={checkpoint.label || `Checkpoint ${index + 1}`}
+      >
+        {index + 1}
+      </div>
+    </>
   );
 });
 
@@ -549,6 +568,9 @@ export function InteractiveMap({
     customPins,
     deleteSavedRoute,
     duplicateSavedRoute,
+    updateRouteCollectedStats,
+    markRoutePinsCompleted,
+    addRouteResourcesToDailyStats,
     toast,
     interactiveMap,
     loadSavedRoute,
@@ -593,6 +615,7 @@ export function InteractiveMap({
     getPinTimerRemaining,
     globalTick,
     setSelectedOfficialPointId,
+    setSelectedCustomPinId,
     selectedOfficialPoint,
     user,
     editingCustomPinId,
@@ -610,6 +633,9 @@ export function InteractiveMap({
     updateRouteField,
     clearRoute,
     saveCurrentRoute,
+    generateOptimizedRoute,
+    isAutoRouteModalOpen,
+    setIsAutoRouteModalOpen,
     savedRoutes,
     shareCurrentRoute,
     copyRouteJson,
@@ -659,6 +685,30 @@ export function InteractiveMap({
     referencedOfficialPointIds,
     referencedCustomPinIds,
   } = useMapViewModel();
+
+  const handleMarkCompleted = useCallback((pinId: string, subType?: string, isRestart?: boolean) => {
+    togglePinCompleted(pinId, subType, isRestart);
+    setSelectedOfficialPointId(null);
+    setSelectedCustomPinId?.(null);
+
+    // Verify if it's the last checkpoint of an active route
+    visibleRoutes.forEach(routeId => {
+       const route = savedRoutes.find(r => r.id === routeId) || publicRoutes.find(r => r.id === routeId);
+       if (!route) return;
+       
+       const allCompleted = route.route.checkpoints.every((cp: RouteCheckpoint) => {
+         const cpId = cp.pointId || cp.customPinId;
+         if (!cpId) return true; // Ignore checkpoints without IDs
+         if (cpId === pinId) return true; // It's being marked now
+         const state = completedPins[cpId];
+         return !!state && state.status !== "ready";
+       });
+       
+       if (allCompleted) {
+          window.dispatchEvent(new CustomEvent('open-route-completion', { detail: routeId }));
+       }
+    });
+  }, [togglePinCompleted, setSelectedOfficialPointId, setSelectedCustomPinId, visibleRoutes, savedRoutes, publicRoutes, completedPins]);
 
   useEffect(() => {
     setSearchQuery(externalSearchQuery);
@@ -966,16 +1016,66 @@ export function InteractiveMap({
     return { minX, maxX, minY, maxY };
   }, [cullingCamera, displayedCamera, mapSurfaceSize, isDragging, isMoving]);
 
+  const hiddenRoutePinIds = useMemo(() => {
+    const hidden = new Set<string>();
+    
+    visibleRoutes.forEach((routeId: string) => {
+      const route = savedRoutes.find(r => r.id === routeId) || publicRoutes.find(r => r.id === routeId);
+      if (!route) return;
+      
+      const activeCheckpointIndex = route.route.checkpoints.findIndex((cp: RouteCheckpoint) => {
+         const pinId = cp.pointId || cp.customPinId;
+         if (!pinId) return false;
+         const state = completedPins[pinId];
+         const isCompleted = !!state && state.status !== "ready";
+         return !isCompleted;
+      });
+
+      if (activeCheckpointIndex === -1) {
+         route.route.checkpoints.forEach((cp: RouteCheckpoint) => {
+           if (cp.pointId) hidden.add(cp.pointId);
+           if (cp.customPinId) hidden.add(cp.customPinId);
+         });
+         return;
+      }
+      
+      const activeOrNextIds = new Set<string>();
+      
+      const currentCp = route.route.checkpoints[activeCheckpointIndex];
+      if (currentCp.pointId) activeOrNextIds.add(currentCp.pointId);
+      if (currentCp.customPinId) activeOrNextIds.add(currentCp.customPinId);
+      
+      if (activeCheckpointIndex + 1 < route.route.checkpoints.length) {
+         const nextCp = route.route.checkpoints[activeCheckpointIndex + 1];
+         if (nextCp.pointId) activeOrNextIds.add(nextCp.pointId);
+         if (nextCp.customPinId) activeOrNextIds.add(nextCp.customPinId);
+      }
+      
+      route.route.checkpoints.forEach((cp: RouteCheckpoint) => {
+         const pinId = cp.pointId || cp.customPinId;
+         if (pinId && !activeOrNextIds.has(pinId)) {
+           hidden.add(pinId);
+         }
+      });
+    });
+    
+    return hidden;
+  }, [visibleRoutes, savedRoutes, publicRoutes, completedPins]);
+
   const culledOfficialPoints = useMemo(() => {
-    if (!viewportBounds) return visibleOfficialPoints;
-    return visibleOfficialPoints.filter(
-      (p: MapPointReference) =>
-        p.x >= viewportBounds.minX &&
-        p.x <= viewportBounds.maxX &&
-        p.y >= viewportBounds.minY &&
-        p.y <= viewportBounds.maxY,
-    );
-  }, [visibleOfficialPoints, viewportBounds]);
+    const points = viewportBounds 
+      ? visibleOfficialPoints.filter(
+          (p: MapPointReference) =>
+            p.x >= viewportBounds.minX &&
+            p.x <= viewportBounds.maxX &&
+            p.y >= viewportBounds.minY &&
+            p.y <= viewportBounds.maxY,
+        )
+      : visibleOfficialPoints;
+      
+    if (hiddenRoutePinIds.size === 0) return points;
+    return points.filter((p: MapPointReference) => !hiddenRoutePinIds.has(p.id));
+  }, [visibleOfficialPoints, viewportBounds, hiddenRoutePinIds]);
 
   const finalOfficialPoints = useMemo(() => {
     const scale = cullingCamera.scale;
@@ -1058,15 +1158,19 @@ export function InteractiveMap({
   ]);
 
   const culledCustomPins = useMemo(() => {
-    if (!viewportBounds) return visibleCustomPins;
-    return visibleCustomPins.filter(
-      (p: SavedCustomPin) =>
-        p.x >= viewportBounds.minX &&
-        p.x <= viewportBounds.maxX &&
-        p.y >= viewportBounds.minY &&
-        p.y <= viewportBounds.maxY,
-    );
-  }, [visibleCustomPins, viewportBounds]);
+    const points = viewportBounds 
+      ? visibleCustomPins.filter(
+          (p: SavedCustomPin) =>
+            p.x >= viewportBounds.minX &&
+            p.x <= viewportBounds.maxX &&
+            p.y >= viewportBounds.minY &&
+            p.y <= viewportBounds.maxY,
+        )
+      : visibleCustomPins;
+      
+    if (hiddenRoutePinIds.size === 0) return points;
+    return points.filter((p: SavedCustomPin) => !hiddenRoutePinIds.has(p.id));
+  }, [visibleCustomPins, viewportBounds, hiddenRoutePinIds]);
 
   const finalCustomPins = useMemo(() => {
     const scale = cullingCamera.scale;
@@ -1383,24 +1487,6 @@ export function InteractiveMap({
                 />
               )}
 
-              {/* Renderizar todas as rotas visíveis (salvas/públicas) */}
-              {visibleRoutes.map((routeId: string) => {
-                const route =
-                  savedRoutes.find((r) => r.id === routeId) ||
-                  publicRoutes.find((r) => r.id === routeId);
-                if (!route) return null;
-                return (
-                  <MapRouteLayer
-                    key={route.id}
-                    color={route.color}
-                    isMoving={isMoving}
-                    points={route.route.checkpoints
-                      .map((c: RouteCheckpoint) => `${c.x},${c.y}`)
-                      .join(" ")}
-                  />
-                );
-              })}
-
               {/* Rota Ativa (Modo de Criação/Edição) */}
               {mode === "route" && routePath ? (
                 <MapRouteLayer
@@ -1515,21 +1601,43 @@ export function InteractiveMap({
                 savedRoutes.find((r) => r.id === routeId) ||
                 publicRoutes.find((r) => r.id === routeId);
               if (!route) return null;
-              return route.route.checkpoints.map(
-                (checkpoint: RouteCheckpoint, index: number) => {
-                  const coords = getScreenCoords(checkpoint.x, checkpoint.y);
-                  return (
-                    <RouteCheckpointBadge
-                      checkpoint={checkpoint}
-                      index={index}
-                      key={`${route.id}-${checkpoint.id}`}
-                      screenX={coords.x}
-                      screenY={coords.y}
-                      displayedCamera={displayedCamera}
-                    />
-                  );
-                },
-              );
+              
+              // Achar o primeiro checkpoint que não está concluído
+              const activeCheckpointIndex = route.route.checkpoints.findIndex((cp: RouteCheckpoint) => {
+                 const pinId = cp.pointId || cp.customPinId;
+                 if (!pinId) return false; // Ignore checkpoints without IDs
+                 const state = completedPins[pinId];
+                 const isCompleted = !!state && state.status !== "ready";
+                 return !isCompleted;
+              });
+
+              if (activeCheckpointIndex === -1) return null; // Todos concluídos
+              
+              const checkpointsToRender = [
+                { cp: route.route.checkpoints[activeCheckpointIndex], idx: activeCheckpointIndex }
+              ];
+              
+              if (activeCheckpointIndex + 1 < route.route.checkpoints.length) {
+                checkpointsToRender.push({
+                  cp: route.route.checkpoints[activeCheckpointIndex + 1],
+                  idx: activeCheckpointIndex + 1
+                });
+              }
+              
+              return checkpointsToRender.map(({ cp, idx }) => {
+                const coords = getScreenCoords(cp.x, cp.y);
+                return (
+                  <RouteCheckpointBadge
+                    checkpoint={cp}
+                    index={idx}
+                    key={`${route.id}-${cp.id}`}
+                    screenX={coords.x}
+                    screenY={coords.y}
+                    displayedCamera={displayedCamera}
+                    isCurrent={idx === activeCheckpointIndex}
+                  />
+                );
+              });
             })}
 
             {/* Checkpoints da Rota Ativa (fora do contêiner escalado) */}
@@ -1545,6 +1653,7 @@ export function InteractiveMap({
                         screenX={coords.x}
                         screenY={coords.y}
                         displayedCamera={displayedCamera}
+                        isCurrent={true}
                       />
                     );
                   },
@@ -1686,6 +1795,26 @@ export function InteractiveMap({
             )}
           </button>
 
+          {/* Auto Rota */}
+          <button
+            onClick={() => setIsAutoRouteModalOpen(true)}
+            className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group relative"
+            title="Auto Rota Otimizada"
+            type="button"
+          >
+            <Wand2
+              size={18}
+              className="transition-transform group-hover:scale-110"
+            />
+            <span className="absolute right-1 top-1 flex h-2 w-2">
+              <Plus
+                size={8}
+                strokeWidth={4}
+                className="relative inline-flex text-cyan-400"
+              />
+            </span>
+          </button>
+
           {/* Biblioteca de Rotas */}
           <button
             onClick={() => {
@@ -1765,6 +1894,8 @@ export function InteractiveMap({
         </div>
 
         <MapSidebar
+          savedRoutes={savedRoutes}
+          publicRoutes={publicRoutes}
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
           sidebarSection={sidebarSection}
@@ -1811,6 +1942,9 @@ export function InteractiveMap({
           loadSavedRoute={loadSavedRoute}
           deleteSavedRoute={deleteSavedRoute}
           duplicateSavedRoute={duplicateSavedRoute}
+          updateRouteCollectedStats={updateRouteCollectedStats}
+          markRoutePinsCompleted={markRoutePinsCompleted}
+          addRouteResourcesToDailyStats={addRouteResourcesToDailyStats}
           publishSelectedRoute={publishSelectedRoute}
           unpublishSelectedRoute={unpublishSelectedRoute}
           toggleRouteVisibility={toggleRouteVisibility}
@@ -1821,6 +1955,7 @@ export function InteractiveMap({
           updateRouteField={updateRouteField}
           clearRoute={clearRoute}
           saveCurrentRoute={saveCurrentRoute}
+          openAutoRouteModal={() => setIsAutoRouteModalOpen(true)}
           shareCurrentRoute={shareCurrentRoute}
           copyRouteJson={copyRouteJson}
           removeCheckpoint={removeCheckpoint}
@@ -2025,7 +2160,7 @@ export function InteractiveMap({
                                         <button
                                           type="button"
                                           onClick={() => {
-                                            togglePinCompleted(
+                                            handleMarkCompleted(
                                               activePopupPin.id,
                                               subTypeToUse,
                                             );
@@ -2222,7 +2357,7 @@ export function InteractiveMap({
                             <button
                               type="button"
                               onClick={() =>
-                                togglePinCompleted(activePopupPin.id)
+                                activePopupPin.isCompleted ? togglePinCompleted(activePopupPin.id) : handleMarkCompleted(activePopupPin.id)
                               }
                               className={cn(
                                 "flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold text-white transition active:scale-95 pointer-events-auto",
@@ -2295,7 +2430,7 @@ export function InteractiveMap({
                                           if (!isAuthenticated) return;
                                           const state =
                                             completedPins[activePopupPin.id];
-                                          togglePinCompleted(
+                                          handleMarkCompleted(
                                             activePopupPin.id,
                                             state?.subType,
                                             true,
@@ -2347,7 +2482,7 @@ export function InteractiveMap({
                                 type="button"
                                 onClick={() =>
                                   isAuthenticated &&
-                                  togglePinCompleted(activePopupPin.id)
+                                  handleMarkCompleted(activePopupPin.id)
                                 }
                                 disabled={!isAuthenticated}
                                 className={cn(
@@ -2385,6 +2520,18 @@ export function InteractiveMap({
         }}
         target={feedbackTarget}
         onSubmit={submitFeedback}
+      />
+      
+      <AutoRouteFilterModal
+        isOpen={isAutoRouteModalOpen}
+        onClose={() => setIsAutoRouteModalOpen(false)}
+        onGenerate={generateOptimizedRoute}
+        availableCategories={[...officialPinCategories.base, ...officialPinCategories.identified].map(c => ({
+          type: c.type,
+          label: c.label,
+          iconId: c.iconId
+        }))}
+        initialCategories={selectedTypes}
       />
 
       {hoveredPin && hoveredPinCoords && (

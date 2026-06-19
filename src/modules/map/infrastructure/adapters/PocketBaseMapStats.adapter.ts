@@ -15,6 +15,7 @@ export const pocketBaseMapStatsRepository: MapStatsRepository = {
       })
 
       return records.map((r) => ({
+        id: r.id,
         ore_count: r.ore_count || {},
         mushroom_count: r.mushroom_count || {},
         plant_count: r.plant_count || {},
@@ -32,7 +33,7 @@ export const pocketBaseMapStatsRepository: MapStatsRepository = {
     try {
       // Find if there is already a record for this user and date
       const existing = await pb.collection(collectionName).getList(1, 1, {
-        filter: `owner = "${userId}" && date = "${stats.date}"`,
+        filter: `owner = "${userId}" && date ~ "${stats.date}"`,
         requestKey: null,
       })
 
@@ -57,6 +58,37 @@ export const pocketBaseMapStatsRepository: MapStatsRepository = {
     } catch (error) {
       if (error instanceof ClientResponseError && error.isAbort) return
       logger.error('Failed to save daily stats to PocketBase:', error)
+    }
+  },
+
+  async pruneOldStats(userId: string, oldRecordIds: string[], aggregatedTotal: MapCollectionStats): Promise<void> {
+    try {
+      const existingTotal = await pb.collection(collectionName).getList(1, 1, {
+        filter: `owner = "${userId}" && date ~ "total"`,
+        requestKey: null,
+      })
+
+      const data = {
+        owner: userId,
+        date: "total",
+        ore_count: aggregatedTotal.ore_count,
+        mushroom_count: aggregatedTotal.mushroom_count,
+        plant_count: aggregatedTotal.plant_count,
+        stick_count: aggregatedTotal.stick_count,
+      }
+
+      if (existingTotal.items.length > 0) {
+        await pb.collection(collectionName).update(existingTotal.items[0].id, data, { requestKey: null })
+      } else {
+        await pb.collection(collectionName).create(data, { requestKey: null })
+      }
+
+      for (const id of oldRecordIds) {
+        await pb.collection(collectionName).delete(id, { requestKey: null })
+      }
+    } catch (error) {
+      if (error instanceof ClientResponseError && error.isAbort) return
+      logger.error('Failed to prune old stats from PocketBase:', error)
     }
   },
 }

@@ -153,10 +153,44 @@ export const AppDetailsScreen = () => {
     triggerConfirm(
       "Limpar Estatísticas",
       "Deseja limpar todo o histórico de coletas (Estatísticas)? Esta ação não pode ser desfeita.",
-      () => {
+      async () => {
         setClearingStats(true);
         try {
           localStorage.removeItem("shinobi-map-stats-history");
+          
+          let userId = pb.authStore.model?.id;
+          if (!userId) {
+            const pbAuth = localStorage.getItem('pocketbase_auth');
+            if (pbAuth) {
+              try {
+                const authData = JSON.parse(pbAuth);
+                userId = authData.model?.id;
+                if (authData.token) pb.authStore.save(authData.token, authData.model);
+              } catch (e) {}
+            }
+          }
+
+          if (userId) {
+            try {
+              const records = await pb.collection('user_map_stats').getFullList({ filter: `owner = "${userId}"` });
+              for (const r of records) {
+                try {
+                  await pb.collection('user_map_stats').delete(r.id);
+                } catch (delErr) {
+                  await pb.collection('user_map_stats').update(r.id, {
+                    ore_count: {},
+                    mushroom_count: {},
+                    plant_count: {},
+                    stick_count: 0
+                  });
+                }
+              }
+            } catch (err: any) {
+              console.error("Failed to clear PocketBase", err);
+            }
+          }
+
+          setClearingStats(false);
           window.ipcRenderer?.send("close-panel-window");
           setTimeout(() => {
             window.location.reload();

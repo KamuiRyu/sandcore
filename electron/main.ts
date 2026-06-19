@@ -193,6 +193,13 @@ function createLoginWindow() {
     loginWin.loadFile(path.join(process.env.DIST!, 'index.html'), { query: { windowType: 'login' } })
   }
 
+  loginWin.on('closed', () => {
+    loginWin = null
+    if (!sidebarWin || sidebarWin.isDestroyed()) {
+      app.quit()
+    }
+  })
+
   setupMoveListeners(loginWin)
 }
 
@@ -299,6 +306,17 @@ function createSidebarWindow() {
     }
   })
 
+  // Bring panel to front when sidebar is focused/restored
+  sidebarWin.on('focus', () => {
+    if (panelWin && !panelWin.isDestroyed() && currentTabId) {
+      if (appConfig.alwaysOnTop) {
+        panelWin.setAlwaysOnTop(false)
+        panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
+      }
+      panelWin.showInactive()
+    }
+  })
+
   sidebarWin.on('minimize' as any, (e: { preventDefault: () => void }) => {
     if (appConfig.alwaysOnTop) {
       e.preventDefault()
@@ -319,6 +337,16 @@ function createSidebarWindow() {
     sidebarWin.loadFile(path.join(process.env.DIST!, 'index.html'), { query: { windowType: 'sidebar' } })
   }
 
+  sidebarWin.on('closed', () => {
+    sidebarWin = null
+    if (panelWin && !panelWin.isDestroyed()) {
+      panelWin.close()
+    }
+    if (!loginWin || loginWin.isDestroyed()) {
+      app.quit()
+    }
+  })
+
   setupMoveListeners(sidebarWin)
 }
 
@@ -331,6 +359,7 @@ function createPanelWindow() {
   const zoom = (appConfig.uiScale || 100) / 100
 
   panelWin = new BrowserWindow({
+    parent: sidebarWin && !sidebarWin.isDestroyed() ? sidebarWin : undefined,
     icon: path.join(process.env.VITE_PUBLIC!, 'favicon.ico'),
     width: 0,
     height: 0,
@@ -377,6 +406,11 @@ function createPanelWindow() {
   } else {
     panelWin.loadFile(path.join(process.env.DIST!, 'index.html'), { query: { windowType: 'panel' } })
   }
+
+  panelWin.on('closed', () => {
+    panelWin = null
+    currentTabId = null
+  })
 
   return panelWin
 }
@@ -453,6 +487,9 @@ function openPanel(tabId: string, immediate = false) {
   if (tabId === 'map') {
     panelLogicalW = 1200
     panelLogicalH = 800
+  } else if (tabId === 'crafting') {
+    panelLogicalW = 800
+    panelLogicalH = 600
   }
   
   const physicalPanelW = Math.round(panelLogicalW * zoom)
@@ -503,9 +540,18 @@ function openPanel(tabId: string, immediate = false) {
 
   panel.setBounds({ x: panelX, y: panelY, width: physicalPanelW, height: physicalPanelH })
 
-  if (!panel.isVisible()) {
-    panel.showInactive()
+  if (panel.isMinimized()) {
+    panel.restore()
   }
+
+  // Force Z-order elevation before showing
+  if (appConfig.alwaysOnTop) {
+    panel.setAlwaysOnTop(false)
+    panel.setAlwaysOnTop(true, 'screen-saver', 1)
+  }
+
+  // Force show unconditionally
+  panel.showInactive()
 
   const payload = { tabId, layoutSide: nextLayoutSide, alignSide: nextAlignSide }
   sidebarWin.webContents.send('layout-updated', payload)
@@ -522,7 +568,8 @@ function togglePanel(tabId: string | null) {
 
 
 function handleWindowMoved(win: BrowserWindow) {
-  if (!win || win.isDestroyed()) return
+  if (win === panelWin) return
+  if (win.isMinimized()) return
 
   const [curX, curY] = win.getPosition()
   const [curW, curH] = win.getSize()
@@ -740,6 +787,16 @@ ipcMain.on('minimize-panel-window', () => {
   }
 })
 
+// Clear all stats
+ipcMain.on('clear-all-stats', () => {
+  if (sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.webContents.send('clear-all-stats')
+  }
+  if (panelWin && !panelWin.isDestroyed()) {
+    panelWin.webContents.send('clear-all-stats')
+  }
+})
+
 ipcMain.on('window-control', (event, action) => {
   const window = BrowserWindow.fromWebContents(event.sender)
   if (!window) return
@@ -747,6 +804,11 @@ ipcMain.on('window-control', (event, action) => {
     window.minimize()
   } else if (action === 'close') {
     window.close()
+    if (window === sidebarWin) {
+      if (panelWin && !panelWin.isDestroyed()) {
+        panelWin.close()
+      }
+    }
   } else if (action === 'login-success') {
     createSidebarWindow()
     if (loginWin && !loginWin.isDestroyed()) {
@@ -789,5 +851,18 @@ app.whenReady().then(() => {
   }
   if (appConfig.shortcutSettings) {
     updateShortcutSettings(appConfig.shortcutSettings)
+  }
+})
+
+app.on('browser-window-created', (event, window) => {
+  // Identify popup windows (like OAuth login)
+  if (window !== loginWin && window !== sidebarWin && window !== panelWin) {
+    window.on('closed', () => {
+      BrowserWindow.getAllWindows().forEach(w => {
+        if (!w.isDestroyed()) {
+          w.webContents.send('oauth-popup-closed')
+        }
+      })
+    })
   }
 })
