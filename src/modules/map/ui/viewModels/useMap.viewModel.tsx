@@ -1,3 +1,4 @@
+import { appStorage } from '../../../../lib/storage';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { mapPoints } from "../../core/entities/MapPoints.entity";
 import type { MapLayerId } from "../../core/entities/MapCalibration.entity";
@@ -199,7 +200,6 @@ export function useMapViewModel() {
   const [totalPublicRoutesPages, setTotalPublicRoutesPages] = useState(1);
 
   const [customPinsPage, setCustomPinsPage] = useState(1);
-  const [totalCustomPinsPages, setTotalCustomPinsPages] = useState(1);
   const [notificationSettings, _setNotificationSettings] =
     useState<NotificationSettings>(() =>
       mapDependencies.localNotificationSettingsStorage.read(),
@@ -212,7 +212,7 @@ export function useMapViewModel() {
     Record<string, CompletedPinState>
   >(() => {
     try {
-      const stored = localStorage.getItem("shinobi-map-completed-pins");
+      const stored = appStorage.getItem("shinobi-map-completed-pins");
       return stored ? JSON.parse(stored) : {};
     } catch {
       return {};
@@ -222,7 +222,7 @@ export function useMapViewModel() {
   // --- ESTATISTICAS TEMPORAIS ---
   const [dailyStats, setDailyStats] = useState<MapCollectionStats[]>(() => {
     try {
-      const stored = localStorage.getItem("shinobi-map-stats-history");
+      const stored = appStorage.getItem("shinobi-map-stats-history");
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -287,7 +287,7 @@ export function useMapViewModel() {
           };
         }
         next[todayIdx] = today;
-        localStorage.setItem("shinobi-map-stats-history", JSON.stringify(next));
+        appStorage.setItem("shinobi-map-stats-history", JSON.stringify(next));
         return next;
       });
     },
@@ -299,7 +299,7 @@ export function useMapViewModel() {
       setDailyStats((prev) => {
         const todayStr = new Date().toISOString().split("T")[0];
         const next = [...prev];
-        let todayIdx = next.findIndex((s) => s.date === todayStr);
+        const todayIdx = next.findIndex((s) => s.date === todayStr);
         if (todayIdx === -1) return next;
         const today = { ...next[todayIdx] };
 
@@ -341,7 +341,7 @@ export function useMapViewModel() {
 
         if (decremented) {
           next[todayIdx] = today;
-          localStorage.setItem(
+          appStorage.setItem(
             "shinobi-map-stats-history",
             JSON.stringify(next),
           );
@@ -395,7 +395,7 @@ export function useMapViewModel() {
 
       if (updated) {
         next[todayIdx] = today;
-        localStorage.setItem("shinobi-map-stats-history", JSON.stringify(next));
+        appStorage.setItem("shinobi-map-stats-history", JSON.stringify(next));
         return next;
       }
       return prev;
@@ -525,7 +525,7 @@ export function useMapViewModel() {
                 }
               });
               const final = merged.sort((a, b) => a.date.localeCompare(b.date));
-              localStorage.setItem(
+              appStorage.setItem(
                 "shinobi-map-stats-history",
                 JSON.stringify(final),
               );
@@ -555,7 +555,7 @@ export function useMapViewModel() {
     if (window.ipcRenderer) {
       const handleClearAllStats = async () => {
         setDailyStats([]);
-        localStorage.removeItem("shinobi-map-stats-history");
+        appStorage.removeItem("shinobi-map-stats-history");
         if (isAuthenticated && user?.id) {
           try {
             const records = await pb
@@ -564,7 +564,7 @@ export function useMapViewModel() {
             for (const r of records) {
               try {
                 await pb.collection("user_map_stats").delete(r.id);
-              } catch (delErr) {
+              } catch {
                 await pb.collection("user_map_stats").update(r.id, {
                   ore_count: {},
                   mushroom_count: {},
@@ -602,7 +602,7 @@ export function useMapViewModel() {
 
   const [searchHistory, setSearchHistory] = useState<string[]>(() => {
     try {
-      const stored = localStorage.getItem("shinobi-map-search-history");
+      const stored = appStorage.getItem("shinobi-map-search-history");
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -750,6 +750,7 @@ export function useMapViewModel() {
           matchesLayer && matchesRegion && matchesSearchQuery && matchesType
         );
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     officialPoints,
     debouncedSearchQuery,
@@ -803,6 +804,7 @@ export function useMapViewModel() {
       if (isSearched) return true;
       return selectedLayers.includes("customPins") && matchesSearchQuery;
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     customPins,
     debouncedSearchQuery,
@@ -1008,7 +1010,7 @@ export function useMapViewModel() {
           }
         }
         if (hasChanges) {
-          localStorage.setItem(
+          appStorage.setItem(
             "shinobi-map-completed-pins",
             JSON.stringify(next),
           );
@@ -1023,6 +1025,10 @@ export function useMapViewModel() {
     triggerAlert,
     notificationSettings,
     getLastGlobalResetTime,
+    isAuthenticated,
+    user,
+    pinVisibility,
+    group,
   ]);
 
   // Cleanup de Rotas Descartáveis
@@ -1212,7 +1218,7 @@ export function useMapViewModel() {
       },
     );
     return () => unsubscribe();
-  }, [isAuthenticated, user?.id, group?.id]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (isAuthenticated && user?.id) {
@@ -1493,6 +1499,7 @@ export function useMapViewModel() {
       pinVisibility,
       group,
       incrementResourceStat,
+      decrementResourceStat,
     ],
   );
 
@@ -1861,7 +1868,7 @@ export function useMapViewModel() {
       const next = prev.find((p) => p.id === draftCustomPin.id)
         ? prev.map((p) => (p.id === draftCustomPin.id ? draftCustomPin : p))
         : [...prev, draftCustomPin];
-      localStorage.setItem("shinobi-map-custom-pins", JSON.stringify(next));
+      appStorage.setItem("shinobi-map-custom-pins", JSON.stringify(next));
       return next;
     });
     setDraftCustomPin(null);
@@ -1940,7 +1947,7 @@ export function useMapViewModel() {
 
       const { optimizeRoute } =
         await import("../../core/usecases/OptimizeRoute.usecase");
-      const checkpoints: RouteCheckpoint[] = pointsToRoute.map((p, i) => ({
+      const checkpoints: RouteCheckpoint[] = pointsToRoute.map((p) => ({
         id: createId("checkpoint"),
         pointId: p.pointId,
         customPinId: p.customPinId,
@@ -2008,11 +2015,12 @@ export function useMapViewModel() {
         showToast("Erro", "Falha ao criar rota otimizada.", "error");
       }
     },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
     [visibleOfficialPoints, visibleCustomPins, showToast, user?.id, completedPins, officialPoints],
   );
 
   useEffect(() => {
-    // Atualiza dinamicamente as estatísticas de TODAS as Rotas Temporárias quando os minérios são marcados
+     
     setSavedRoutes((prev) => {
       let hasChanges = false;
       const next = [...prev];
@@ -2128,11 +2136,9 @@ export function useMapViewModel() {
 
           // Merge old and new stats (sum them)
           const currentCollected = route.route.routeStats.collectedCounts || {};
-          const expectedCounts = route.route.routeStats.resourceCounts || {};
           
           Object.entries(collectedData).forEach(([type, count]) => {
             const current = currentCollected[type] || 0;
-            const expected = expectedCounts[type] || 0;
             // Add new count to current (no upper bound to allow multiple runs of the same route)
             currentCollected[type] = Math.max(0, current + count);
           });
@@ -2452,7 +2458,7 @@ export function useMapViewModel() {
     removeCustomPin: useCallback((id: string) => {
       setCustomPins((prev) => {
         const next = prev.filter((p) => p.id !== id);
-        localStorage.setItem("shinobi-map-custom-pins", JSON.stringify(next));
+        appStorage.setItem("shinobi-map-custom-pins", JSON.stringify(next));
         return next;
       });
     }, []),
@@ -2543,7 +2549,7 @@ export function useMapViewModel() {
           return prev.includes(t) ? prev.filter((i) => i !== t) : [...prev, t];
         });
       },
-      [markerTypes],
+      [],
     ),
     toggleCustomPinVisibility: useCallback((id: string) => {
       setCustomPins((prev) =>
@@ -2645,7 +2651,7 @@ export function useMapViewModel() {
     addToHistory: useCallback((item: string) => {
       setSearchHistory((prev) => {
         const next = [item, ...prev.filter((i) => i !== item)].slice(0, 10);
-        localStorage.setItem(
+        appStorage.setItem(
           "shinobi-map-search-history",
           JSON.stringify(next),
         );
@@ -2655,7 +2661,7 @@ export function useMapViewModel() {
     removeFromHistory: useCallback((item: string) => {
       setSearchHistory((prev) => {
         const next = prev.filter((i) => i !== item);
-        localStorage.setItem(
+        appStorage.setItem(
           "shinobi-map-search-history",
           JSON.stringify(next),
         );
@@ -2664,7 +2670,7 @@ export function useMapViewModel() {
     }, []),
     clearHistory: useCallback(() => {
       setSearchHistory([]);
-      localStorage.removeItem("shinobi-map-search-history");
+      appStorage.removeItem("shinobi-map-search-history");
     }, []),
     searchResults,
     paginatedSearchResults,

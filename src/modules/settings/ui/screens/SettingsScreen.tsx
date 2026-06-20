@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Volume2, Keyboard, Trash2 } from 'lucide-react'
 
 const SL = ({ children }: { children: React.ReactNode }) => (
@@ -55,6 +56,48 @@ const ListItem = ({ children, isLast = false, vertical = false }: { children: Re
   </div>
 )
 
+const KbdKey = ({ k }: { k: string }) => (
+  <span
+    className="inline-flex items-center px-1.5 py-0.5 font-mono text-[9px] rounded-[2px]"
+    style={{ background: '#1c1508', border: '1px solid #c8860a', borderBottomWidth: 2, color: '#e8b840', letterSpacing: '0.04em' }}
+  >
+    {k === 'CommandOrControl' || k === 'CmdOrCtrl' ? 'Ctrl' : k}
+  </span>
+)
+
+const SecondaryButton = ({ children, onClick, disabled = false, padding = '4px 10px' }: { children: React.ReactNode, onClick?: () => void, disabled?: boolean, padding?: string }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding,
+      borderRadius: 3, background: 'transparent', border: '1px solid #2e1e06', color: '#c8a840',
+      fontSize: 9, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, letterSpacing: '0.08em',
+      cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.15s', opacity: disabled ? 0.5 : 1,
+      whiteSpace: 'nowrap'
+    }}
+    onMouseEnter={e => { if(!disabled) { e.currentTarget.style.background = 'rgba(74,47,10,0.25)'; e.currentTarget.style.borderColor = '#6a4e18'; e.currentTarget.style.color = '#e8c860'; } }}
+    onMouseLeave={e => { if(!disabled) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#2e1e06'; e.currentTarget.style.color = '#c8a840'; } }}
+  >
+    {children}
+  </button>
+)
+
+const PrimaryButton = ({ children, onClick, disabled = false }: { children: React.ReactNode, onClick?: () => void, disabled?: boolean }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    style={{
+      display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 3,
+      background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none',
+      fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em',
+      cursor: disabled ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1
+    }}
+  >
+    {children}
+  </button>
+)
+
 export const SettingsScreen = () => {
   const [alwaysOnTop, setAlwaysOnTop] = useState(true)
   const [inGameNotifs, setInGameNotifs] = useState(true)
@@ -62,7 +105,24 @@ export const SettingsScreen = () => {
   const [layoutSide, setLayoutSide] = useState<'left' | 'right'>('right')
   const [sidebarOpacity, setSidebarOpacity] = useState(95)
   const [uiScale, setUiScale] = useState(100)
-  const [isScaleDropdownOpen, setIsScaleDropdownOpen] = useState(false)
+  const [isScaleDropdownOpen, setIsScaleDropdownOpen] = useState(false);
+  const scaleDropdownRef = useRef<HTMLDivElement>(null);
+  const [scaleDropdownCoords, setScaleDropdownCoords] = useState<{ bottom: number, right: number } | null>(null);
+
+  const toggleScaleDropdown = () => {
+    if (isScaleDropdownOpen) {
+      setIsScaleDropdownOpen(false);
+    } else {
+      if (scaleDropdownRef.current) {
+        const rect = scaleDropdownRef.current.getBoundingClientRect();
+        setScaleDropdownCoords({
+          bottom: window.innerHeight - rect.top + 6,
+          right: window.innerWidth - rect.right,
+        });
+      }
+      setIsScaleDropdownOpen(true);
+    }
+  };
 
   const [shortcutMap, setShortcutMap] = useState('CommandOrControl+Alt+M')
   const [shortcutSettings, setShortcutSettings] = useState('CommandOrControl+Alt+S')
@@ -148,47 +208,6 @@ export const SettingsScreen = () => {
   const toggleInGameNotifs = () => { const v = !inGameNotifs; setInGameNotifs(v); window.ipcRenderer?.send('set-config', { inGameNotifs: v }) }
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => { const v = parseInt(e.target.value); setVolume(v); window.ipcRenderer?.send('set-config', { volume: v }) }
 
-  const KbdKey = ({ k }: { k: string }) => (
-    <span
-      className="inline-flex items-center px-1.5 py-0.5 font-mono text-[9px] rounded-[2px]"
-      style={{ background: '#1c1508', border: '1px solid #c8860a', borderBottomWidth: 2, color: '#e8b840', letterSpacing: '0.04em' }}
-    >
-      {k === 'CommandOrControl' || k === 'CmdOrCtrl' ? 'Ctrl' : k}
-    </span>
-  )
-
-  const SecondaryButton = ({ children, onClick, disabled = false, padding = '4px 10px' }: { children: React.ReactNode, onClick?: () => void, disabled?: boolean, padding?: string }) => (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding,
-        borderRadius: 3, background: 'transparent', border: '1px solid #2e1e06', color: '#c8a840',
-        fontSize: 9, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, letterSpacing: '0.08em',
-        cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.15s', opacity: disabled ? 0.5 : 1,
-        whiteSpace: 'nowrap'
-      }}
-      onMouseEnter={e => { if(!disabled) { e.currentTarget.style.background = 'rgba(74,47,10,0.25)'; e.currentTarget.style.borderColor = '#6a4e18'; e.currentTarget.style.color = '#e8c860'; } }}
-      onMouseLeave={e => { if(!disabled) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#2e1e06'; e.currentTarget.style.color = '#c8a840'; } }}
-    >
-      {children}
-    </button>
-  )
-
-  const PrimaryButton = ({ children, onClick, disabled = false }: { children: React.ReactNode, onClick?: () => void, disabled?: boolean }) => (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 3,
-        background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none',
-        fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em',
-        cursor: disabled ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1
-      }}
-    >
-      {children}
-    </button>
-  )
 
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ color: '#e8d5a0' }}>
@@ -278,21 +297,25 @@ export const SettingsScreen = () => {
                     <span className="text-xs font-semibold" style={{ color: '#e8d5a0' }}>Escala do HUD</span>
                     <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Ajusta o tamanho da interface</span>
                   </div>
-                  <div className="relative" style={{ WebkitAppRegion: 'no-drag' } as any}>
-                    <SecondaryButton onClick={() => setIsScaleDropdownOpen(!isScaleDropdownOpen)}>
-                      <span>{uiScale === 50 ? '0.5x' : uiScale === 75 ? '0.75x' : uiScale === 100 ? '1x' : '1.3x'}</span>
+                  <div className="relative" style={{ WebkitAppRegion: 'no-drag' } as any} ref={scaleDropdownRef}>
+                    <SecondaryButton onClick={toggleScaleDropdown}>
+                      <span>{uiScale === 75 ? '0.75x' : uiScale === 100 ? '1x' : '1.3x'}</span>
                       <svg className={`w-2 h-2 transition-transform duration-200 ${isScaleDropdownOpen ? 'rotate-180' : ''}`} viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.8">
                         <path d="M1 1L5 5L9 1" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </SecondaryButton>
-                    {isScaleDropdownOpen && (
+                    {isScaleDropdownOpen && scaleDropdownCoords && createPortal(
                       <>
                         <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsScaleDropdownOpen(false)} />
-                        <div
-                          className="absolute right-0 bottom-full mb-1.5 w-24 rounded-[3px] z-50 overflow-hidden"
-                          style={{ background: '#0f0b04', border: '1px solid #3a2508', boxShadow: '0 8px 24px rgba(0,0,0,0.8)' }}
-                        >
-                          {[50, 75, 100, 130].map((scale) => (
+                          <div
+                            className="fixed w-24 rounded-[3px] z-50 overflow-hidden"
+                            style={{ 
+                              background: '#0f0b04', border: '1px solid #3a2508', boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
+                              bottom: scaleDropdownCoords.bottom,
+                              right: scaleDropdownCoords.right
+                            }}
+                          >
+                          {[75, 100, 130].map((scale) => (
                             <button
                               key={scale}
                               onClick={() => { setUiScale(scale); window.ipcRenderer?.send('set-config', { uiScale: scale }); setIsScaleDropdownOpen(false) }}
@@ -304,12 +327,12 @@ export const SettingsScreen = () => {
                                 background: uiScale === scale ? 'rgba(74,47,10,0.4)' : 'transparent',
                               }}
                             >
-                              <span>{scale === 50 ? '0.5x' : scale === 75 ? '0.75x' : scale === 100 ? '1x' : '1.3x'}</span>
+                              <span>{scale === 75 ? '0.75x' : scale === 100 ? '1x' : '1.3x'}</span>
                               {uiScale === scale && <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#c8860a' }} />}
                             </button>
                           ))}
                         </div>
-                      </>
+                      </>, document.body
                     )}
                   </div>
                 </ListItem>

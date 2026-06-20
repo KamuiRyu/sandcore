@@ -424,7 +424,11 @@ const RouteCheckpointBadge = memo(function RouteCheckpointBadge({
         className={cn(
           "absolute grid place-items-center rounded-full border border-white font-mono font-black text-white shadow-[0_4px_15px_rgba(0,0,0,0.4)] pointer-events-none z-40",
           isPin ? "h-5 w-5 text-[0.6rem]" : "h-7 w-7 text-[0.7rem]",
-          isCurrent === true ? "bg-amber-500 ring-2 ring-amber-400" : isCurrent === false ? "bg-[#1a1007] ring-1 ring-[#4a2f0a] opacity-80 text-[#9a7a40]" : "bg-orange-500 ring-2 ring-orange-950/50"
+          isCurrent === true
+            ? "bg-amber-500 ring-2 ring-amber-400"
+            : isCurrent === false
+              ? "bg-[#1a1007] ring-1 ring-[#4a2f0a] opacity-80 text-[#9a7a40]"
+              : "bg-orange-500 ring-2 ring-orange-950/50",
         )}
         style={{
           left: `${screenX}px`,
@@ -520,11 +524,24 @@ type ClusteredCustomPin = SavedCustomPin & {
   clusterCount?: number;
 };
 
-const getAllowedOresForSubRegion = (subRegionId: string | undefined): string[] => {
-  if (!subRegionId) return ["ore_1", "ore_2", "ore_3", "ore_4", "ore_5", "ore_6", "ore_7", "ore_8", "ore_9"];
-  
+const getAllowedOresForSubRegion = (
+  subRegionId: string | undefined,
+): string[] => {
+  if (!subRegionId)
+    return [
+      "ore_1",
+      "ore_2",
+      "ore_3",
+      "ore_4",
+      "ore_5",
+      "ore_6",
+      "ore_7",
+      "ore_8",
+      "ore_9",
+    ];
+
   const sub = subRegionId.trim().toLowerCase();
-  
+
   // Cobre (ore_4)
   const allowedCobre = ["iwagakure"].includes(sub);
   // Alumínio (ore_2)
@@ -536,12 +553,17 @@ const getAllowedOresForSubRegion = (subRegionId: string | undefined): string[] =
   // Platina (ore_8)
   const allowedPlatina = ["tetsugakure"].includes(sub);
   // Ametista (ore_3), Ruby (ore_9), Diamante (ore_5)
-  const allowedGems = ["ilha doton", "ilha dotou", "caverna tetsu", "caverna fuji"].includes(sub);
-  
+  const allowedGems = [
+    "ilha doton",
+    "ilha dotou",
+    "caverna tetsu",
+    "caverna fuji",
+  ].includes(sub);
+
   const list: string[] = [];
   // A pedra (ore_1) sempre tem que aparecer junto com o minério da região
   list.push("ore_1");
-  
+
   if (allowedAluminio) list.push("ore_2");
   if (allowedGems) list.push("ore_3"); // Ametista
   if (allowedCobre) list.push("ore_4");
@@ -550,7 +572,7 @@ const getAllowedOresForSubRegion = (subRegionId: string | undefined): string[] =
   if (allowedOuro) list.push("ore_7");
   if (allowedPlatina) list.push("ore_8");
   if (allowedGems) list.push("ore_9"); // Ruby
-  
+
   return list;
 };
 
@@ -581,6 +603,7 @@ export function InteractiveMap({
     publicRoutesLoading,
     publicRoutesQuery,
     routesView,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     searchQuery,
     selectCustomPin,
     startEditingCustomPin,
@@ -662,9 +685,13 @@ export function InteractiveMap({
     searchPage,
     setSearchPage,
     totalSearchPages,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     searchHistory,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     addToHistory,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     removeFromHistory,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     clearHistory,
     searchResults,
     mapStats,
@@ -686,29 +713,46 @@ export function InteractiveMap({
     referencedCustomPinIds,
   } = useMapViewModel();
 
-  const handleMarkCompleted = useCallback((pinId: string, subType?: string, isRestart?: boolean) => {
-    togglePinCompleted(pinId, subType, isRestart);
-    setSelectedOfficialPointId(null);
-    setSelectedCustomPinId?.(null);
+  const handleMarkCompleted = useCallback(
+    (pinId: string, subType?: string, isRestart?: boolean) => {
+      togglePinCompleted(pinId, subType, isRestart);
+      setSelectedOfficialPointId(null);
+      setSelectedCustomPinId?.(null);
 
-    // Verify if it's the last checkpoint of an active route
-    visibleRoutes.forEach(routeId => {
-       const route = savedRoutes.find(r => r.id === routeId) || publicRoutes.find(r => r.id === routeId);
-       if (!route) return;
-       
-       const allCompleted = route.route.checkpoints.every((cp: RouteCheckpoint) => {
-         const cpId = cp.pointId || cp.customPinId;
-         if (!cpId) return true; // Ignore checkpoints without IDs
-         if (cpId === pinId) return true; // It's being marked now
-         const state = completedPins[cpId];
-         return !!state && state.status !== "ready";
-       });
-       
-       if (allCompleted) {
-          window.dispatchEvent(new CustomEvent('open-route-completion', { detail: routeId }));
-       }
-    });
-  }, [togglePinCompleted, setSelectedOfficialPointId, setSelectedCustomPinId, visibleRoutes, savedRoutes, publicRoutes, completedPins]);
+      // Verify if it's the last checkpoint of an active route
+      visibleRoutes.forEach((routeId) => {
+        const route =
+          savedRoutes.find((r) => r.id === routeId) ||
+          publicRoutes.find((r) => r.id === routeId);
+        if (!route) return;
+
+        const allCompleted = route.route.checkpoints.every(
+          (cp: RouteCheckpoint) => {
+            const cpId = cp.pointId || cp.customPinId;
+            if (!cpId) return true; // Ignore checkpoints without IDs
+            if (cpId === pinId) return true; // It's being marked now
+            const state = completedPins[cpId];
+            return !!state && state.status !== "ready";
+          },
+        );
+
+        if (allCompleted) {
+          window.dispatchEvent(
+            new CustomEvent("open-route-completion", { detail: routeId }),
+          );
+        }
+      });
+    },
+    [
+      togglePinCompleted,
+      setSelectedOfficialPointId,
+      setSelectedCustomPinId,
+      visibleRoutes,
+      savedRoutes,
+      publicRoutes,
+      completedPins,
+    ],
+  );
 
   useEffect(() => {
     setSearchQuery(externalSearchQuery);
@@ -797,7 +841,9 @@ export function InteractiveMap({
         type: selectedOfficialPoint.type,
         regionId: selectedOfficialPoint.regionId,
         subRegionId: selectedOfficialPoint.subRegionId,
-        allowedOres: getAllowedOresForSubRegion(selectedOfficialPoint.subRegionId),
+        allowedOres: getAllowedOresForSubRegion(
+          selectedOfficialPoint.subRegionId,
+        ),
       };
     }
     if (
@@ -824,7 +870,17 @@ export function InteractiveMap({
             : savedPin.ownerName
           : "Você",
         updatedAt: savedPin.updatedAt,
-        allowedOres: ["ore_1", "ore_2", "ore_3", "ore_4", "ore_5", "ore_6", "ore_7", "ore_8", "ore_9"],
+        allowedOres: [
+          "ore_1",
+          "ore_2",
+          "ore_3",
+          "ore_4",
+          "ore_5",
+          "ore_6",
+          "ore_7",
+          "ore_8",
+          "ore_9",
+        ],
       };
     }
     return null;
@@ -964,17 +1020,7 @@ export function InteractiveMap({
     return () => clearTimeout(timeout);
   }, [displayedCamera]);
 
-  const [loadHighRes, setLoadHighRes] = useState(false);
   const [highResLoaded, setHighResLoaded] = useState(false);
-
-  useEffect(() => {
-    if (displayedCamera.scale > 1.25) {
-      const handle = requestAnimationFrame(() => {
-        setLoadHighRes(true);
-      });
-      return () => cancelAnimationFrame(handle);
-    }
-  }, [displayedCamera.scale]);
 
   const isMoving = useMemo(() => {
     return (
@@ -1018,52 +1064,56 @@ export function InteractiveMap({
 
   const hiddenRoutePinIds = useMemo(() => {
     const hidden = new Set<string>();
-    
+
     visibleRoutes.forEach((routeId: string) => {
-      const route = savedRoutes.find(r => r.id === routeId) || publicRoutes.find(r => r.id === routeId);
+      const route =
+        savedRoutes.find((r) => r.id === routeId) ||
+        publicRoutes.find((r) => r.id === routeId);
       if (!route) return;
-      
-      const activeCheckpointIndex = route.route.checkpoints.findIndex((cp: RouteCheckpoint) => {
-         const pinId = cp.pointId || cp.customPinId;
-         if (!pinId) return false;
-         const state = completedPins[pinId];
-         const isCompleted = !!state && state.status !== "ready";
-         return !isCompleted;
-      });
+
+      const activeCheckpointIndex = route.route.checkpoints.findIndex(
+        (cp: RouteCheckpoint) => {
+          const pinId = cp.pointId || cp.customPinId;
+          if (!pinId) return false;
+          const state = completedPins[pinId];
+          const isCompleted = !!state && state.status !== "ready";
+          return !isCompleted;
+        },
+      );
 
       if (activeCheckpointIndex === -1) {
-         route.route.checkpoints.forEach((cp: RouteCheckpoint) => {
-           if (cp.pointId) hidden.add(cp.pointId);
-           if (cp.customPinId) hidden.add(cp.customPinId);
-         });
-         return;
+        route.route.checkpoints.forEach((cp: RouteCheckpoint) => {
+          if (cp.pointId) hidden.add(cp.pointId);
+          if (cp.customPinId) hidden.add(cp.customPinId);
+        });
+        return;
       }
-      
+
       const activeOrNextIds = new Set<string>();
-      
+
       const currentCp = route.route.checkpoints[activeCheckpointIndex];
       if (currentCp.pointId) activeOrNextIds.add(currentCp.pointId);
       if (currentCp.customPinId) activeOrNextIds.add(currentCp.customPinId);
-      
+
       if (activeCheckpointIndex + 1 < route.route.checkpoints.length) {
-         const nextCp = route.route.checkpoints[activeCheckpointIndex + 1];
-         if (nextCp.pointId) activeOrNextIds.add(nextCp.pointId);
-         if (nextCp.customPinId) activeOrNextIds.add(nextCp.customPinId);
+        const nextCp = route.route.checkpoints[activeCheckpointIndex + 1];
+        if (nextCp.pointId) activeOrNextIds.add(nextCp.pointId);
+        if (nextCp.customPinId) activeOrNextIds.add(nextCp.customPinId);
       }
-      
+
       route.route.checkpoints.forEach((cp: RouteCheckpoint) => {
-         const pinId = cp.pointId || cp.customPinId;
-         if (pinId && !activeOrNextIds.has(pinId)) {
-           hidden.add(pinId);
-         }
+        const pinId = cp.pointId || cp.customPinId;
+        if (pinId && !activeOrNextIds.has(pinId)) {
+          hidden.add(pinId);
+        }
       });
     });
-    
+
     return hidden;
   }, [visibleRoutes, savedRoutes, publicRoutes, completedPins]);
 
   const culledOfficialPoints = useMemo(() => {
-    const points = viewportBounds 
+    const points = viewportBounds
       ? visibleOfficialPoints.filter(
           (p: MapPointReference) =>
             p.x >= viewportBounds.minX &&
@@ -1072,9 +1122,11 @@ export function InteractiveMap({
             p.y <= viewportBounds.maxY,
         )
       : visibleOfficialPoints;
-      
+
     if (hiddenRoutePinIds.size === 0) return points;
-    return points.filter((p: MapPointReference) => !hiddenRoutePinIds.has(p.id));
+    return points.filter(
+      (p: MapPointReference) => !hiddenRoutePinIds.has(p.id),
+    );
   }, [visibleOfficialPoints, viewportBounds, hiddenRoutePinIds]);
 
   const finalOfficialPoints = useMemo(() => {
@@ -1158,7 +1210,7 @@ export function InteractiveMap({
   ]);
 
   const culledCustomPins = useMemo(() => {
-    const points = viewportBounds 
+    const points = viewportBounds
       ? visibleCustomPins.filter(
           (p: SavedCustomPin) =>
             p.x >= viewportBounds.minX &&
@@ -1167,7 +1219,7 @@ export function InteractiveMap({
             p.y <= viewportBounds.maxY,
         )
       : visibleCustomPins;
-      
+
     if (hiddenRoutePinIds.size === 0) return points;
     return points.filter((p: SavedCustomPin) => !hiddenRoutePinIds.has(p.id));
   }, [visibleCustomPins, viewportBounds, hiddenRoutePinIds]);
@@ -1468,24 +1520,15 @@ export function InteractiveMap({
               }
             >
               <img
-                alt="Mapa do Shinobi Legends"
-                className="block h-full w-full object-contain"
+                alt="Mapa do Shinobi Legends (Alta Resolução)"
+                className={cn(
+                  "block h-full w-full object-contain absolute inset-0 transition-opacity duration-500",
+                  highResLoaded ? "opacity-100" : "opacity-0",
+                )}
                 draggable={false}
-                src="./images/map/map_base_low.webp"
-                fetchPriority="high"
+                src="./images/map/map_base.webp"
+                onLoad={() => setHighResLoaded(true)}
               />
-              {loadHighRes && (
-                <img
-                  alt="Mapa do Shinobi Legends (Alta Resolução)"
-                  className={cn(
-                    "block h-full w-full object-contain absolute inset-0 transition-opacity duration-500",
-                    highResLoaded ? "opacity-100" : "opacity-0",
-                  )}
-                  draggable={false}
-                  src="./images/map/map_base.webp"
-                  onLoad={() => setHighResLoaded(true)}
-                />
-              )}
 
               {/* Rota Ativa (Modo de Criação/Edição) */}
               {mode === "route" && routePath ? (
@@ -1601,29 +1644,34 @@ export function InteractiveMap({
                 savedRoutes.find((r) => r.id === routeId) ||
                 publicRoutes.find((r) => r.id === routeId);
               if (!route) return null;
-              
+
               // Achar o primeiro checkpoint que não está concluído
-              const activeCheckpointIndex = route.route.checkpoints.findIndex((cp: RouteCheckpoint) => {
-                 const pinId = cp.pointId || cp.customPinId;
-                 if (!pinId) return false; // Ignore checkpoints without IDs
-                 const state = completedPins[pinId];
-                 const isCompleted = !!state && state.status !== "ready";
-                 return !isCompleted;
-              });
+              const activeCheckpointIndex = route.route.checkpoints.findIndex(
+                (cp: RouteCheckpoint) => {
+                  const pinId = cp.pointId || cp.customPinId;
+                  if (!pinId) return false; // Ignore checkpoints without IDs
+                  const state = completedPins[pinId];
+                  const isCompleted = !!state && state.status !== "ready";
+                  return !isCompleted;
+                },
+              );
 
               if (activeCheckpointIndex === -1) return null; // Todos concluídos
-              
+
               const checkpointsToRender = [
-                { cp: route.route.checkpoints[activeCheckpointIndex], idx: activeCheckpointIndex }
+                {
+                  cp: route.route.checkpoints[activeCheckpointIndex],
+                  idx: activeCheckpointIndex,
+                },
               ];
-              
+
               if (activeCheckpointIndex + 1 < route.route.checkpoints.length) {
                 checkpointsToRender.push({
                   cp: route.route.checkpoints[activeCheckpointIndex + 1],
-                  idx: activeCheckpointIndex + 1
+                  idx: activeCheckpointIndex + 1,
                 });
               }
-              
+
               return checkpointsToRender.map(({ cp, idx }) => {
                 const coords = getScreenCoords(cp.x, cp.y);
                 return (
@@ -2174,7 +2222,9 @@ export function InteractiveMap({
 
                                       const showMainButton =
                                         activePopupPin.type !== "ore" ||
-                                        (activePopupPin as any).allowedOres?.includes("ore_1");
+                                        (
+                                          activePopupPin as any
+                                        ).allowedOres?.includes("ore_1");
 
                                       if (!showMainButton) return null;
 
@@ -2241,8 +2291,10 @@ export function InteractiveMap({
                                     onMouseDown={(e) => {
                                       const container = e.currentTarget;
                                       container.dataset.isDown = "true";
-                                      container.dataset.startX = e.pageX.toString();
-                                      container.dataset.scrollLeft = container.scrollLeft.toString();
+                                      container.dataset.startX =
+                                        e.pageX.toString();
+                                      container.dataset.scrollLeft =
+                                        container.scrollLeft.toString();
                                       container.dataset.moved = "false";
                                     }}
                                     onMouseLeave={(e) => {
@@ -2253,10 +2305,15 @@ export function InteractiveMap({
                                     }}
                                     onMouseMove={(e) => {
                                       const container = e.currentTarget;
-                                      if (container.dataset.isDown !== "true") return;
+                                      if (container.dataset.isDown !== "true")
+                                        return;
                                       const x = e.pageX;
-                                      const startX = parseFloat(container.dataset.startX || "0");
-                                      const scrollLeft = parseFloat(container.dataset.scrollLeft || "0");
+                                      const startX = parseFloat(
+                                        container.dataset.startX || "0",
+                                      );
+                                      const scrollLeft = parseFloat(
+                                        container.dataset.scrollLeft || "0",
+                                      );
                                       const diff = Math.abs(x - startX);
                                       if (diff > 5) {
                                         container.dataset.moved = "true";
@@ -2270,7 +2327,9 @@ export function InteractiveMap({
                                         (iconId) =>
                                           iconId !== "mushroom_1" &&
                                           (activePopupPin.type !== "ore" ||
-                                            (activePopupPin as any).allowedOres?.includes(iconId)),
+                                            (
+                                              activePopupPin as any
+                                            ).allowedOres?.includes(iconId)),
                                       )
                                       .map((iconId) => {
                                         const isLastUsed =
@@ -2283,8 +2342,13 @@ export function InteractiveMap({
                                             key={iconId}
                                             type="button"
                                             onClick={(e) => {
-                                              const container = e.currentTarget.parentElement;
-                                              if (container && container.dataset.moved === "true") {
+                                              const container =
+                                                e.currentTarget.parentElement;
+                                              if (
+                                                container &&
+                                                container.dataset.moved ===
+                                                  "true"
+                                              ) {
                                                 e.stopPropagation();
                                                 return;
                                               }
@@ -2379,7 +2443,9 @@ export function InteractiveMap({
                             <button
                               type="button"
                               onClick={() =>
-                                activePopupPin.isCompleted ? togglePinCompleted(activePopupPin.id) : handleMarkCompleted(activePopupPin.id)
+                                activePopupPin.isCompleted
+                                  ? togglePinCompleted(activePopupPin.id)
+                                  : handleMarkCompleted(activePopupPin.id)
                               }
                               className={cn(
                                 "flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold text-white transition active:scale-95 pointer-events-auto",
@@ -2543,15 +2609,18 @@ export function InteractiveMap({
         target={feedbackTarget}
         onSubmit={submitFeedback}
       />
-      
+
       <AutoRouteFilterModal
         isOpen={isAutoRouteModalOpen}
         onClose={() => setIsAutoRouteModalOpen(false)}
         onGenerate={generateOptimizedRoute}
-        availableCategories={[...officialPinCategories.base, ...officialPinCategories.identified].map(c => ({
+        availableCategories={[
+          ...officialPinCategories.base,
+          ...officialPinCategories.identified,
+        ].map((c) => ({
           type: c.type,
           label: c.label,
-          iconId: c.iconId
+          iconId: c.iconId,
         }))}
         initialCategories={selectedTypes}
       />

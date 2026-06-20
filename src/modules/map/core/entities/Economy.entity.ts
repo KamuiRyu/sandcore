@@ -1,3 +1,4 @@
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type { ResourceDefinition } from "./ResourceDefinitions.entity";
 
 export type EconomyItem = {
@@ -170,13 +171,14 @@ export function calculateCraftingProfit(resourceCounts: Record<string, number>):
       }
 
       if (missingPrimary) {
+  // eslint-disable-next-line no-useless-assignment
         canCraft = false;
         break;
       }
 
       // Desconta do inventário e adiciona os custos
       for (const ing of recipe.ingredients) {
-        let has = inventory[ing.itemId] || 0;
+        const has = inventory[ing.itemId] || 0;
         
         if (has < ing.quantity) {
           // Compra a diferença

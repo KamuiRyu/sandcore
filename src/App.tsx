@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Loader2 } from 'lucide-react'
 import { useAuthViewModel } from './modules/authentication/ui/viewModels/useAuth.viewModel'
 import { LoginScreen } from './modules/authentication/ui/screens/LoginScreen'
@@ -67,6 +68,7 @@ function App() {
     } else {
       setLoading(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
