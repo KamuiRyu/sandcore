@@ -318,7 +318,7 @@ function createSidebarWindow() {
   const zoom = (appConfig.uiScale || 100) / 100
 
   const width = Math.round(56 * zoom)
-  const height = Math.round(420 * zoom)
+  const height = Math.round(580 * zoom)
 
   let x: number | undefined
   let y: number | undefined
@@ -576,7 +576,7 @@ function openPanel(tabId: string, immediate = false) {
   const [curX, curY] = sidebarWin.getPosition()
 
   const physicalSidebarW = Math.round(60 * zoom)
-  const physicalSidebarH = Math.round(360 * zoom)
+  const physicalSidebarH = Math.round(580 * zoom)
 
   let panelLogicalW = 1200
   let panelLogicalH = 800
@@ -901,7 +901,7 @@ ipcMain.on('set-config', (_event, newConfig) => {
       sidebarWin.webContents.setZoomFactor(zoom)
       const [curX, curY] = sidebarWin.getPosition()
       const newW = Math.round(56 * zoom)
-      const newH = Math.round(420 * zoom)
+      const newH = Math.round(580 * zoom)
       sidebarWin.setBounds({ x: curX, y: curY, width: newW, height: newH })
     }
     if (panelWin && !panelWin.isDestroyed()) {
