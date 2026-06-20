@@ -86,13 +86,23 @@ export const LoginForm = ({ viewModel, rememberMe, setRememberMe }: LoginFormPro
       />
 
       <div className="flex items-center justify-between font-mono text-[0.55rem] font-black uppercase tracking-wider pt-0.5">
-        <label className="flex items-center gap-2 cursor-pointer text-slate-400 hover:text-slate-300 transition-colors">
-          <input
-            type="checkbox"
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
-            className="rounded-[2px] border-[#4a2f0a] bg-[#1a1105] text-[#c8860a] focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5 cursor-pointer accent-[#c8860a]"
-          />
+        <label className="flex items-center gap-2 cursor-pointer select-none" style={{ color: '#9a7a40' }}>
+          <span
+            onClick={() => setRememberMe(!rememberMe)}
+            style={{
+              width: 14, height: 14, flexShrink: 0, borderRadius: 2, display: 'inline-flex',
+              alignItems: 'center', justifyContent: 'center',
+              border: `1px solid ${rememberMe ? '#c8860a' : '#4a2f0a'}`,
+              background: rememberMe ? 'rgba(200,134,10,0.2)' : '#0d0a04',
+              transition: 'all 0.15s',
+            }}
+          >
+            {rememberMe && (
+              <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                <path d="M1 4L3 6L7 2" stroke="#c8860a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </span>
           <span>Lembrar de mim</span>
         </label>
         <button
