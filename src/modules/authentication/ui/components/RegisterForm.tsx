@@ -78,7 +78,7 @@ export const RegisterForm = ({ viewModel }: RegisterFormProps) => {
       <button
         type="submit"
         disabled={viewModel.authLoading}
-        className="w-full bg-[#03A696] hover:bg-[#028A7D] text-white font-bold tracking-wider text-xs rounded-lg py-3 flex items-center justify-center relative transition-all active:scale-[0.99] cursor-pointer"
+        className="w-full bg-gradient-to-r from-[#c8860a] to-[#e0a020] text-black shadow-[0_0_15px_rgba(200,134,10,0.4)] hover:scale-105 active:scale-95 text-white font-mono text-[0.65rem] font-black uppercase tracking-[0.1em] rounded-[2px] py-3 flex items-center justify-center relative transition-all active:scale-[0.99] cursor-pointer"
         style={{ WebkitAppRegion: 'no-drag' } as any}
       >
         {viewModel.authLoading ? (

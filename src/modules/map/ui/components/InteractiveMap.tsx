@@ -1685,7 +1685,7 @@ export function InteractiveMap({
         </div>
 
         {/* Painel Flutuante de Atalhos Rápidos (Canto Superior Direito) */}
-        <div className="absolute top-3 right-3 sm:top-5 sm:right-5 z-[60] flex flex-col gap-1.5 rounded-2xl border border-white/8 bg-[#030c10]/70 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl">
+        <div className="absolute top-3 right-3 sm:top-5 sm:right-5 z-[60] flex flex-col gap-1.5 rounded-[2px] border border-[#c8860a]/30 bg-[#030c10]/70 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl">
           {/* Adicionar Pin */}
           <button
             onClick={() => {
@@ -1697,7 +1697,7 @@ export function InteractiveMap({
               }
             }}
             className={cn(
-              "grid h-10 w-10 place-items-center rounded-full border transition-all duration-200 cursor-pointer group relative",
+              "grid h-10 w-10 place-items-center rounded-[2px] border transition-all duration-200 cursor-pointer group relative",
               mode === "pin"
                 ? "border-amber-500 bg-amber-500/20 text-white shadow-[0_0_15px_rgba(200,134,10,0.4)]"
                 : "border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95",
@@ -1733,7 +1733,7 @@ export function InteractiveMap({
               }
             }}
             className={cn(
-              "grid h-10 w-10 place-items-center rounded-full border transition-all duration-200 cursor-pointer group relative",
+              "grid h-10 w-10 place-items-center rounded-[2px] border transition-all duration-200 cursor-pointer group relative",
               mode === "feedback"
                 ? "border-purple-500 bg-purple-500/20 text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]"
                 : "border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95",
@@ -1772,7 +1772,7 @@ export function InteractiveMap({
               }
             }}
             className={cn(
-              "grid h-10 w-10 place-items-center rounded-full border transition-all duration-200 cursor-pointer group relative",
+              "grid h-10 w-10 place-items-center rounded-[2px] border transition-all duration-200 cursor-pointer group relative",
               mode === "route"
                 ? "border-orange-500 bg-orange-500/20 text-white shadow-[0_0_15px_rgba(249,115,22,0.4)]"
                 : "border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95",
@@ -1798,7 +1798,7 @@ export function InteractiveMap({
           {/* Auto Rota */}
           <button
             onClick={() => setIsAutoRouteModalOpen(true)}
-            className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group relative"
+            className="grid h-10 w-10 place-items-center rounded-[2px] border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group relative"
             title="Auto Rota Otimizada"
             type="button"
           >
@@ -1824,7 +1824,7 @@ export function InteractiveMap({
               setSidebarSection("routes");
               setIsSidebarOpen(true);
             }}
-            className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group"
+            className="grid h-10 w-10 place-items-center rounded-[2px] border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group"
             title="Biblioteca de Rotas"
             type="button"
           >
@@ -1841,7 +1841,7 @@ export function InteractiveMap({
               selectCustomPin(null);
               setIsSidebarOpen(true);
             }}
-            className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group"
+            className="grid h-10 w-10 place-items-center rounded-[2px] border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group"
             title="Meus Pinos Customizados"
             type="button"
           >
@@ -1852,11 +1852,11 @@ export function InteractiveMap({
           </button>
         </div>
 
-        <div className="absolute bottom-3 right-3 sm:bottom-5 sm:right-5 z-[60] rounded-2xl border border-white/8 bg-[#030c10]/70 px-2 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl">
+        <div className="absolute bottom-3 right-3 sm:bottom-5 sm:right-5 z-[60] rounded-[2px] border border-[#c8860a]/30 bg-[#030c10]/70 px-2 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl">
           <div className="grid justify-items-center gap-2">
             <button
               aria-label="Aproximar mapa"
-              className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer"
+              className="grid h-8 w-8 place-items-center rounded-[2px] border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer"
               onClick={zoomIn}
               title="Aproximar"
               type="button"
@@ -1885,7 +1885,7 @@ export function InteractiveMap({
 
             <button
               aria-label="Afastar mapa"
-              className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white disabled:cursor-not-allowed disabled:opacity-45 active:scale-95 transition-all duration-200 cursor-pointer"
+              className="grid h-8 w-8 place-items-center rounded-[2px] border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white disabled:cursor-not-allowed disabled:opacity-45 active:scale-95 transition-all duration-200 cursor-pointer"
               disabled={displayedZoomScale <= minMapZoom}
               onClick={zoomOut}
               title="Afastar"

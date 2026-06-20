@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuthViewModel } from '../viewModels/useAuth.viewModel'
 import { LoginForm } from '../components/LoginForm'
 import { RegisterForm } from '../components/RegisterForm'
+import { SunagakureLogo } from '../../../app/ui/components/SunagakureLogo'
 
 export const LoginScreen = () => {
   const viewModel = useAuthViewModel()
@@ -70,24 +71,17 @@ export const LoginScreen = () => {
         <div className="flex-1 flex flex-col justify-center gap-7 my-auto w-full">
           {/* Logo and Subtitle Section matching Mockup */}
           <div className="flex flex-col items-center">
-            <img 
-              src="./images/logo.webp" 
-              alt="Shinobi Map Logo" 
-              className="h-20 w-auto object-contain drop-shadow-[0_4px_16px_rgba(0,168,150,0.15)]"
-              draggable={false}
-            />
-            <p className="text-slate-500 text-[10px] tracking-widest font-mono uppercase mt-1">Explore. Descubra. Domine.</p>
+            <SunagakureLogo width={76} height={76} className="drop-shadow-[0_4px_16px_rgba(200,134,10,0.15)]" />
+
+            <p className="text-[#9a7a40] text-[0.6rem] tracking-[0.2em] font-mono font-black uppercase mt-1">Explore. Descubra. Domine.</p>
 
             {/* Custom Horizontal Line with Mini Shuriken SVG */}
             <div className="flex items-center justify-center gap-3 w-full mt-3">
-              <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-teal-500/30"></div>
-              <img 
-                src="./images/logo_mini.webp" 
-                alt="Logo" 
-                className="w-4 h-4 animate-[spin_20s_linear_infinite] flex-none object-contain" 
-                draggable={false}
-              />
-              <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-teal-500/30"></div>
+              <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-[#c8860a]/30"></div>
+              <div className="animate-[spin_20s_linear_infinite] flex-none">
+                <SunagakureLogo width={16} height={16} />
+              </div>
+              <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-[#c8860a]/30"></div>
             </div>
           </div>
 
@@ -102,7 +96,7 @@ export const LoginScreen = () => {
             {/* Divider */}
             <div className="flex items-center gap-2.5 my-3.5">
               <div className="h-[1px] flex-1 bg-slate-800/85"></div>
-              <span className="text-slate-500 text-[10px] uppercase font-semibold tracking-wider">ou continue com</span>
+              <span className="text-[#9a7a40] text-[0.55rem] font-black font-mono uppercase tracking-[0.15em]">ou continue com</span>
               <div className="h-[1px] flex-1 bg-slate-800/85"></div>
             </div>
 
@@ -112,7 +106,7 @@ export const LoginScreen = () => {
                 type="button" 
                 onClick={() => handleOAuth('google')}
                 disabled={viewModel.authLoading}
-                className="bg-[#11151A] hover:bg-[#181D22] border border-[#1A222C] rounded-lg py-2.5 px-4 flex items-center justify-center gap-2 text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer"
+                className="bg-[#1a1105] hover:bg-[#2a1b08] border border-[#4a2f0a] rounded-[2px] py-2.5 px-4 flex items-center justify-center gap-2 text-[0.65rem] font-black font-mono uppercase tracking-widest text-[#c8860a] hover:text-[#f0d9a0] transition-all cursor-pointer"
                 style={{ WebkitAppRegion: 'no-drag' } as any}
               >
                 <svg className="w-4 h-4 flex-none" viewBox="0 0 24 24" fill="none">
@@ -127,7 +121,7 @@ export const LoginScreen = () => {
                 type="button" 
                 onClick={() => handleOAuth('discord')}
                 disabled={viewModel.authLoading}
-                className="bg-[#11151A] hover:bg-[#181D22] border border-[#1A222C] rounded-lg py-2.5 px-4 flex items-center justify-center gap-2 text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer"
+                className="bg-[#1a1105] hover:bg-[#2a1b08] border border-[#4a2f0a] rounded-[2px] py-2.5 px-4 flex items-center justify-center gap-2 text-[0.65rem] font-black font-mono uppercase tracking-widest text-[#c8860a] hover:text-[#f0d9a0] transition-all cursor-pointer"
                 style={{ WebkitAppRegion: 'no-drag' } as any}
               >
                 <svg className="w-4 h-4 text-[#5865F2] flex-none" viewBox="0 0 127.14 96.36" fill="currentColor">
@@ -140,13 +134,13 @@ export const LoginScreen = () => {
         </div>
 
         {/* Footer */}
-        <div className="text-xs text-center text-slate-500 mt-3">
+        <div className="text-[0.6rem] font-mono font-black uppercase tracking-widest text-center text-[#9a7a40] mt-3">
           {viewModel.isRegisterMode ? (
             <p>
               Já tem uma conta?{' '}
               <span 
                 onClick={() => viewModel.setIsRegisterMode(false)}
-                className="text-teal-500 font-semibold hover:underline cursor-pointer transition-colors"
+                className="text-[#c8860a] font-semibold hover:underline cursor-pointer transition-colors"
                 style={{ WebkitAppRegion: 'no-drag' } as any}
               >
                 Entrar
@@ -157,7 +151,7 @@ export const LoginScreen = () => {
               Não tem uma conta?{' '}
               <span 
                 onClick={() => viewModel.setIsRegisterMode(true)}
-                className="text-teal-500 font-semibold hover:underline cursor-pointer transition-colors"
+                className="text-[#c8860a] font-semibold hover:underline cursor-pointer transition-colors"
                 style={{ WebkitAppRegion: 'no-drag' } as any}
               >
                 Criar conta
@@ -168,7 +162,7 @@ export const LoginScreen = () => {
 
         {/* Absolute Floating Error Alert */}
         {viewModel.generalError && (
-          <div className="absolute bottom-16 left-8 right-8 bg-[#1C0F13] border border-[#3D1A22] text-red-400 text-xs py-2.5 px-3.5 rounded-lg text-center shadow-2xl z-50 flex items-center justify-between gap-2">
+          <div className="absolute bottom-16 left-8 right-8 bg-[#1C0F13] border border-[#3D1A22] text-red-400 text-xs py-2.5 px-3.5 rounded-[2px] text-center shadow-2xl z-50 flex items-center justify-between gap-2">
             <span className="flex-1 text-center font-medium leading-relaxed">{viewModel.generalError}</span>
             <button 
               type="button" 
@@ -183,12 +177,12 @@ export const LoginScreen = () => {
 
         {/* Absolute Floating Success Alert */}
         {viewModel.resetSuccess && (
-          <div className="absolute bottom-16 left-8 right-8 bg-[#0C1F1C] border border-[#14534A] text-teal-400 text-xs py-2.5 px-3.5 rounded-lg text-center shadow-2xl z-50 flex items-center justify-between gap-2 animate-in fade-in slide-in-from-bottom-2">
+          <div className="absolute bottom-16 left-8 right-8 bg-[#0f0b04] border border-[#4a2f0a] text-[#c8860a] text-xs py-2.5 px-3.5 rounded-[2px] text-center shadow-2xl z-50 flex items-center justify-between gap-2 animate-in fade-in slide-in-from-bottom-2">
             <span className="flex-1 text-center font-medium leading-relaxed">{viewModel.resetSuccess}</span>
             <button 
               type="button" 
               onClick={() => viewModel.setResetSuccess('')} 
-              className="text-teal-400 hover:text-teal-300 font-bold text-xs cursor-pointer flex-none px-1"
+              className="text-[#c8860a] hover:text-teal-300 font-bold text-xs cursor-pointer flex-none px-1"
               style={{ WebkitAppRegion: 'no-drag' } as any}
             >
               ✕

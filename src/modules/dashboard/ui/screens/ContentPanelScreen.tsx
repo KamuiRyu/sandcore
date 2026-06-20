@@ -9,6 +9,9 @@ import {
   Info,
   type LucideIcon,
   FileText,
+  Map,
+  X,
+  Minus,
 } from "lucide-react";
 import { GroupsScreen } from "../../../groups/ui/screens/GroupsScreen";
 import { MapScreen } from "../../../map/ui/screens/MapScreen";
@@ -82,12 +85,22 @@ export const ContentPanelScreen = ({
       >
         {isMapTab && (
           <div className="h-14 bg-transparent border-b border-[#4a2f0a] px-4 flex items-center justify-between gap-4 select-none z-50 flex-none relative">
-            {/* Logo */}
-            <div className="flex items-center gap-2 flex-none">
-              <SunagakureLogo width={20} height={20} active={true} />
-              <span className="font-bold text-sm tracking-widest text-[#c8860a]" style={{ fontFamily: "'Cinzel', serif" }}>
-                SHINOBI MAP
-              </span>
+            {/* Title row */}
+            <div className="flex items-center gap-2 min-w-0 flex-none">
+              <div
+                className="flex items-center justify-center w-[18px] h-[18px] rounded-full border flex-shrink-0"
+                style={{ borderColor: "#c8860a", color: "#c8860a" }}
+              >
+                <Map size={10} />
+              </div>
+              <div className="flex items-center gap-2" style={{ fontFamily: "'Cinzel', serif" }}>
+                <span className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "#c8860a" }}>
+                  SandCore
+                </span>
+                <span className="text-[10px] uppercase tracking-[0.12em]" style={{ color: "#9a9080" }}>
+                  MAPA
+                </span>
+              </div>
             </div>
 
             {/* Search, Help */}
@@ -118,8 +131,8 @@ export const ContentPanelScreen = ({
                 onClick={() =>
                   window.dispatchEvent(new CustomEvent("open-map-settings"))
                 }
-                className="w-8 h-8 rounded-[1px] border border-[#4a2f0a] transition-all cursor-pointer text-[#9a7a40]"
-                style={{ background: "#2e1f08" }}
+                className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#4a2f0a] transition-all cursor-pointer"
+                style={{ background: "#2e1f08", color: "#9a7a40" }}
                 onMouseEnter={(e) => {
                   const el = e.currentTarget;
                   el.style.borderColor = "#c8860a";
@@ -134,23 +147,12 @@ export const ContentPanelScreen = ({
                 }}
                 title="Configurações do Mapa"
               >
-                <svg
-                  className="w-4 h-4 mx-auto"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="12" cy="12" r="3"></circle>
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
+                <Settings size={11} />
               </button>
               <button
-                onClick={handleClose}
-                className="w-8 h-8 rounded-[1px] border border-[#4a2f0a] transition-all cursor-pointer text-[#9a7a40]"
-                style={{ background: "#2e1f08" }}
+                onClick={() => window.ipcRenderer?.send("minimize-panel-window")}
+                className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#4a2f0a] transition-all cursor-pointer"
+                style={{ background: "#2e1f08", color: "#9a7a40" }}
                 onMouseEnter={(e) => {
                   const el = e.currentTarget;
                   el.style.borderColor = "#c8860a";
@@ -165,25 +167,17 @@ export const ContentPanelScreen = ({
                 }}
                 title="Minimizar"
               >
-                <svg
-                  className="w-3 h-3 mx-auto"
-                  viewBox="0 0 10 10"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.2"
-                >
-                  <line x1="1" y1="5" x2="9" y2="5" />
-                </svg>
+                <Minus size={11} />
               </button>
               <button
                 onClick={handleClose}
-                className="w-8 h-8 rounded-[1px] border border-[#4a2f0a] transition-all cursor-pointer text-[#9a7a40]"
-                style={{ background: "#2e1f08" }}
+                className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#4a2f0a] transition-all cursor-pointer"
+                style={{ background: "#2e1f08", color: "#9a7a40" }}
                 onMouseEnter={(e) => {
                   const el = e.currentTarget;
-                  el.style.borderColor = "#ff3333";
-                  el.style.color = "#ffffff";
-                  el.style.background = "#cc0000";
+                  el.style.borderColor = "#c8860a";
+                  el.style.color = "#c8860a";
+                  el.style.background = "#4a2f0a";
                 }}
                 onMouseLeave={(e) => {
                   const el = e.currentTarget;
@@ -193,15 +187,7 @@ export const ContentPanelScreen = ({
                 }}
                 title="Fechar"
               >
-                <svg
-                  className="w-3 h-3 mx-auto"
-                  viewBox="0 0 10 10"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.2"
-                >
-                  <path d="M1 1L9 9M9 1L1 9" />
-                </svg>
+                <X size={11} />
               </button>
             </div>
           </div>

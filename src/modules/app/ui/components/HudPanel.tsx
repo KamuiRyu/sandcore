@@ -110,7 +110,7 @@ export const HudPanel = memo(function HudPanel({
                     {/* Title row */}
                     <div className="flex items-center gap-2" style={{ fontFamily: "'Cinzel', serif" }}>
                       <span className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "#c8860a" }}>
-                        Shinobi Map
+                        SandCore
                       </span>
                       <span className="text-[10px] uppercase tracking-[0.12em]" style={{ color: "#9a9080" }}>
                         {title}

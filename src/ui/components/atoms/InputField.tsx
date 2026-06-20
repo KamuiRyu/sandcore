@@ -21,7 +21,7 @@ export const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
         <div className="relative w-full">
           {/* Left Icon */}
           {Icon && (
-            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-teal-500">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#c8860a]">
               <Icon size={15} />
             </span>
           )}
@@ -30,12 +30,12 @@ export const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
           <input
             ref={ref}
             type={actualType}
-            className={`w-full bg-[#11151A] text-slate-200 placeholder-slate-500 text-sm rounded-lg border transition-all py-2.5 focus:ring-0 focus:outline-none 
+            className={`w-full bg-[#1a1105] text-slate-200 placeholder-slate-500 text-sm rounded-[2px] border transition-all py-2.5 focus:ring-0 focus:outline-none 
               ${Icon ? 'pl-10' : 'pl-3.5'} 
               ${isPassword ? 'pr-14' : hasError ? 'pr-9' : 'pr-3.5'} 
               ${hasError 
                 ? 'border-red-500/50 focus:border-red-500' 
-                : 'border-[#1A222C] focus:border-teal-500'
+                : 'border-[#4a2f0a] focus:border-[#c8860a]'
               } 
               ${className}
             `}
@@ -72,7 +72,7 @@ export const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
                 {/* Floating Tooltip Popup */}
                 {showTooltip && (
                   <div 
-                    className="absolute left-full top-1/2 -translate-y-1/2 ml-2.5 w-max max-w-[200px] bg-[#1C0F13] border border-[#3D1A22] text-red-400 text-[11px] font-medium py-1.5 px-2.5 rounded-lg shadow-xl z-50 transition-all duration-150 animate-in fade-in slide-in-from-left-1
+                    className="absolute left-full top-1/2 -translate-y-1/2 ml-2.5 w-max max-w-[200px] bg-[#1C0F13] border border-[#3D1A22] text-red-400 text-[11px] font-medium py-1.5 px-2.5 rounded-[2px] shadow-xl z-50 transition-all duration-150 animate-in fade-in slide-in-from-left-1
                       after:content-[''] after:absolute after:right-full after:top-1/2 after:-translate-y-1/2 after:border-[5px] after:border-transparent after:border-r-[#1C0F13]
                       before:content-[''] before:absolute before:right-full before:top-1/2 before:-translate-y-1/2 before:border-[6px] before:border-transparent before:border-r-[#3D1A22] before:-z-10
                     "

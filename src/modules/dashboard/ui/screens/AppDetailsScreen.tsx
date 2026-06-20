@@ -132,7 +132,7 @@ export const AppDetailsScreen = () => {
           </div>
           <div style={{ minWidth: 0 }}>
             <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 14, fontWeight: 900, color: '#ffffff', letterSpacing: '0.12em', margin: 0 }}>
-              SHINOBI MAP HUD
+              SANDCORE HUD
             </h3>
             <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: '#c8a030', margin: '4px 0 0', letterSpacing: '0.08em' }}>
               v{appVersion} · BUILD ELECTRON

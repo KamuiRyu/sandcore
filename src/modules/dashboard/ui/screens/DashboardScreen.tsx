@@ -77,7 +77,7 @@ export const DashboardScreen = () => {
             className="w-3.5 h-3.5 object-contain" 
             draggable={false}
           />
-          <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase">Shinobi Map • Overlay</span>
+          <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase">SandCore • Overlay</span>
         </div>
         <div className="flex items-center h-full">
           <button 

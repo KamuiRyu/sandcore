@@ -216,7 +216,7 @@ const LockedFeature = ({
   <div className="flex flex-col items-center justify-center py-12 px-6 text-center animate-[fade-in_200ms_ease-out]">
     <div className="mb-4 relative">
       <div className="absolute inset-0 bg-[#c8860a]/20 blur-2xl rounded-full" />
-      <div className="relative grid h-16 w-16 place-items-center rounded-2xl border border-white/10 bg-black/40 text-[#c8860a]">
+      <div className="relative grid h-16 w-16 place-items-center rounded-[2px] border border-white/10 bg-black/40 text-[#c8860a]">
         <Shield size={32} />
         <div className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-red-500 text-[#f0d9a0] shadow-lg ring-2 ring-slate-900">
           <LogOut size={12} strokeWidth={3} />
@@ -231,7 +231,7 @@ const LockedFeature = ({
     </p>
     <button
       onClick={onLogin}
-      className="flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-black transition hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)] cursor-pointer"
+      className="flex items-center gap-2 rounded-[2px] bg-white px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-black transition hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)] cursor-pointer"
     >
       Entrar na conta
     </button>
@@ -255,7 +255,7 @@ function PaginationControls({
         type="button"
         disabled={currentPage === 1}
         onClick={() => onPageChange(currentPage - 1)}
-        className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[#9a7a40] hover:border-[#c8860a]/30 hover:bg-[#4a2f0a]/20 hover:text-[#ffdd66] disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+        className="flex h-8 w-8 items-center justify-center rounded-[2px] border border-white/10 bg-white/5 text-[#9a7a40] hover:border-[#c8860a]/30 hover:bg-[#4a2f0a]/20 hover:text-[#ffdd66] disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
       >
         <ChevronLeft size={14} />
       </button>
@@ -267,13 +267,25 @@ function PaginationControls({
         type="button"
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
-        className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[#9a7a40] hover:border-[#c8860a]/30 hover:bg-[#4a2f0a]/20 hover:text-[#ffdd66] disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+        className="flex h-8 w-8 items-center justify-center rounded-[2px] border border-white/10 bg-white/5 text-[#9a7a40] hover:border-[#c8860a]/30 hover:bg-[#4a2f0a]/20 hover:text-[#ffdd66] disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
       >
         <ChevronRight size={14} />
       </button>
     </div>
   );
 }
+
+
+const TechSection = ({ children, className }: { children: React.ReactNode, className?: string }) => (
+  <section className={cn('relative overflow-hidden p-5', className)} style={{ background: 'rgba(13,10,4,0.7)', border: '1px solid #3a2508', borderRadius: 3 }}>
+    <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: 'linear-gradient(180deg,#c8860a,#7a4e08)' }} />
+    <div style={{ position: 'absolute', top: 6, left: 6, width: 10, height: 10, borderTop: '1px solid #c8860a', borderLeft: '1px solid #c8860a' }} />
+    <div style={{ position: 'absolute', bottom: 6, left: 6, width: 10, height: 10, borderBottom: '1px solid #c8860a', borderLeft: '1px solid #c8860a' }} />
+    <div style={{ position: 'absolute', top: 6, right: 6, width: 10, height: 10, borderTop: '1px solid #c8860a', borderRight: '1px solid #c8860a' }} />
+    <div style={{ position: 'absolute', bottom: 6, right: 6, width: 10, height: 10, borderBottom: '1px solid #c8860a', borderRight: '1px solid #c8860a' }} />
+    {children}
+  </section>
+);
 
 export const MapSidebar = memo(function MapSidebar({
   isSidebarOpen,
@@ -401,74 +413,93 @@ export const MapSidebar = memo(function MapSidebar({
   };
 
   return (
-    <div className="pointer-events-none absolute left-0 top-1/2 z-[60] -translate-y-1/2 h-[calc(100%-2rem)] sm:h-[calc(100%-3rem)] flex items-center pl-3 sm:pl-5">
+    <div className="pointer-events-none absolute left-0 top-0 bottom-0 z-[60] flex items-center">
       {!isSidebarOpen && (
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="pointer-events-auto group relative flex h-16 w-11 items-center justify-center rounded-r-2xl border border-l-0 border-white/10 bg-[#030a0d]/90 backdrop-blur-xl text-[#ffdd66] transition-all duration-300 hover:w-13 hover:bg-[#030a0d] active:scale-95 shadow-[10px_0_40px_rgba(0,0,0,0.5)] cursor-pointer -ml-3 sm:-ml-5"
+          className="pointer-events-auto group absolute left-0 flex h-24 w-8 items-center justify-center rounded-r-[2px] border border-l-0 border-[#4a2f0a] bg-[#0c0804]/90 backdrop-blur-xl text-[#c8860a] transition-all duration-300 hover:w-10 hover:bg-[#161008] hover:text-[#e8a820] active:scale-95 shadow-[4px_0_15px_rgba(0,0,0,0.5)] cursor-pointer"
           title="Abrir Menu"
         >
           <ChevronRight
-            size={22}
-            strokeWidth={3}
+            size={18}
+            strokeWidth={2.5}
             className="transition-transform group-hover:translate-x-0.5"
           />
           <div className="absolute inset-0 tech-corner-accent opacity-20 pointer-events-none" />
-          {/* Neon Glow effect */}
-          <div className="absolute -right-0.5 top-1/4 bottom-1/4 w-[2px] bg-[#c8860a] shadow-[0_0_10px_rgba(200,134,10,0.6)] opacity-40 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute -right-[1px] top-1/4 bottom-1/4 w-[1px] bg-[#c8860a] shadow-[0_0_8px_rgba(200,134,10,0.6)] opacity-40 group-hover:opacity-100 transition-opacity" />
         </button>
       )}
       <aside
         className={cn(
-          "pointer-events-auto flex h-full flex-col overflow-hidden rounded-2xl transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-[0_20px_60px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,221,102,0.12)] relative group/sidebar",
+          "pointer-events-auto flex h-full flex-col overflow-hidden rounded-r-[2px] transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-[10px_0_60px_rgba(0,0,0,0.6),1px_0_0_0_rgba(255,221,102,0.12)] relative group/sidebar border-y border-r border-l-0 border-[#4a2f0a] w-[380px] sm:w-[420px] absolute left-0 bg-[#0a0805]",
           isSidebarOpen
-            ? "w-[340px] sm:w-[380px] opacity-100 translate-x-0"
-            : "w-0 opacity-0 -translate-x-12",
+            ? "translate-x-0"
+            : "-translate-x-[105%]",
         )}
         style={{
-          background: 'linear-gradient(170deg, #1a1208 0%, #0f0b04 60%, #0b0804 100%)',
+          background: "linear-gradient(160deg,#0e0b05 0%,#090704 100%)",
+          borderColor: "rgba(255, 221, 102, 0.4)",
         }}
       >
+        <div
+          className="absolute top-0 left-0 right-0 h-[3px] pointer-events-none z-10"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent 0%, #4a2f0a 15%, #c8860a 40%, #e8a820 50%, #c8860a 60%, #4a2f0a 85%, transparent 100%)",
+          }}
+        />
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("./images/noise.svg")', pointerEvents: 'none', zIndex: 0, opacity: 0.04 }} />
 
         <div className="flex h-full flex-col relative z-10">
-          <div className="flex items-center justify-between px-6 py-5 border-b border-[#4a2f0a] bg-transparent">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="relative group flex-shrink-0">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#ff5500] to-[#c8860a] blur-md opacity-20 group-hover:opacity-40 transition-opacity rounded-xl" />
-                <div className="relative grid h-10 w-10 place-items-center rounded-xl bg-black/50 border border-[#4a2f0a] text-[#ffdd66] shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
-                  <Compass
-                    size={18}
-                    className="transition-transform duration-700 ease-out group-hover:rotate-[360deg]"
-                  />
+          <header
+            className="relative flex items-center justify-between px-4 py-[10px] border-b border-[#4a2f0a] shrink-0 z-20"
+            style={{
+              background: "transparent",
+            }}
+          >
+            <div className="flex flex-col min-w-0 flex-1">
+              <div className="flex items-center gap-2 min-w-0">
+                <div
+                  className="flex items-center justify-center w-[18px] h-[18px] rounded-full border flex-shrink-0"
+                  style={{ borderColor: "#c8860a", color: "#c8860a" }}
+                >
+                  <Compass size={10} />
+                </div>
+                <div className="flex items-center gap-2" style={{ fontFamily: "'Cinzel', serif" }}>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "#c8860a" }}>
+                    MAPA INTERATIVO
+                  </span>
                 </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <h2 className="text-sm font-bold uppercase tracking-widest text-[#c8860a]" style={{ fontFamily: "'Cinzel', serif" }}>
-                  MAPA INTERATIVO
-                </h2>
-                <div className="flex items-start gap-1.5 mt-0.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#c8860a] shadow-[0_0_8px_#c8860a] animate-pulse mt-0.5 flex-shrink-0" />
-                  <p className="text-[8.5px] font-mono font-bold text-[#9a7a40] uppercase tracking-widest leading-relaxed">
-                    Explore pins, crie trajetos e marque recursos.
-                  </p>
-                </div>
-              </div>
+              <span className="text-[9px] tracking-wide pl-[26px] mt-0.5" style={{ color: "#9a7a40" }}>
+                Explore pins, crie trajetos e marque recursos.
+              </span>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-              <button
-                onClick={() => setIsSidebarOpen(false)}
-                className="grid h-8 w-8 place-items-center rounded-lg border border-[#4a2f0a] bg-transparent text-[#8b3a2a] hover:border-[rgba(139,58,42,0.4)] hover:bg-[rgba(139,58,42,0.2)] hover:text-[#e07060] transition-all duration-300 active:scale-90 cursor-pointer shadow-sm"
-                title="Fechar Menu"
-              >
-                <X size={15} />
-              </button>
-            </div>
-          </div>
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#4a2f0a] transition-all cursor-pointer self-start"
+              style={{ background: "#2e1f08", color: "#9a7a40" }}
+              onMouseEnter={(e) => {
+                const el = e.currentTarget;
+                el.style.borderColor = "#c8860a";
+                el.style.color = "#c8860a";
+                el.style.background = "#4a2f0a";
+              }}
+              onMouseLeave={(e) => {
+                const el = e.currentTarget;
+                el.style.borderColor = "#4a2f0a";
+                el.style.color = "#9a7a40";
+                el.style.background = "#2e1f08";
+              }}
+              title="Fechar Menu"
+            >
+              <X size={11} />
+            </button>
+          </header>
 
           <div className="flex flex-1 flex-col overflow-hidden">
-            <div className="px-4 py-3 border-b border-[#4a2f0a]/60 bg-transparent">
-              <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-black/30 border border-white/5">
+            <div className="px-4 py-3 border-b border-[#4a2f0a] bg-[rgba(13,10,4,0.4)]">
+              <div className="grid grid-cols-4 gap-1 p-[2px] rounded-[3px] bg-[#0c0804] border border-[#2e1e06]">
                 {(
                   [
                     { id: "officialPins", icon: Layers, label: "Oficiais" },
@@ -482,30 +513,27 @@ export const MapSidebar = memo(function MapSidebar({
                     <button
                       key={id}
                       className={cn(
-                        "relative rounded-lg py-2 px-1 transition-all duration-200 active:scale-95 cursor-pointer flex flex-col items-center justify-center gap-1",
+                        "relative rounded-[2px] py-2 px-1 transition-all duration-200 cursor-pointer flex flex-col items-center justify-center gap-1.5",
                         isActive
-                          ? "bg-[rgba(74,47,10,0.7)] shadow-[inset_0_1px_0_rgba(255,221,102,0.08)]"
-                          : "bg-transparent hover:bg-[rgba(74,47,10,0.3)]",
+                          ? "bg-[rgba(74,47,10,0.25)] border border-[#6a4e18]"
+                          : "bg-transparent border border-transparent hover:bg-white/5 hover:border-[#4a2f0a]",
                       )}
                       onClick={() => setSidebarSection(id)}
                       type="button"
                     >
-                      {isActive && (
-                        <span className="absolute top-0 left-3 right-3 h-px bg-gradient-to-r from-transparent via-[#c8860a]/60 to-transparent" />
-                      )}
                       <Icon
-                        size={14}
+                        size={12}
                         className={cn(
                           "transition-all duration-200 shrink-0",
                           isActive
-                            ? "text-[#ffdd66] scale-110"
-                            : "text-[#4a3a1a]",
+                            ? "text-[#e8c860]"
+                            : "text-[#c8a840]",
                         )}
                       />
                       <span
                         className={cn(
-                          "text-[8px] font-mono font-bold tracking-wider uppercase transition-colors duration-200",
-                          isActive ? "text-[#ffdd66]" : "text-[#4a3a1a]",
+                          "text-[9px] font-mono font-bold tracking-wider uppercase transition-colors duration-200",
+                          isActive ? "text-[#e8c860]" : "text-[#c8a840]",
                         )}
                       >
                         {label}
@@ -519,40 +547,36 @@ export const MapSidebar = memo(function MapSidebar({
             <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-5 custom-scrollbar relative z-10">
               <div className="flex flex-col gap-5 w-full min-w-0">
                 {sidebarSection === "officialPins" ? (
-                  <section className="rounded-[26px] border border-[#4a2f0a] bg-[#161008]/80 p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_12px_36px_rgba(0,0,0,0.2)]">
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <span className="grid h-9 w-9 place-items-center rounded-xl border border-[#4a2f0a] bg-white/5 text-[#f0d9a0]">
-                          <Layers size={16} />
+                  <TechSection>
+                    
+                    <div className="mb-5 flex items-center justify-between gap-3 relative z-10 w-full">
+                      <div className="flex items-center gap-2 mb-1 w-full">
+                        <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>[</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#c8a030', whiteSpace: 'nowrap' }}>
+                          <Layers size={11} /> CATEGORIAS / Pins no mapa
                         </span>
-                        <div>
-                          <p className="text-[0.62rem] font-black uppercase tracking-[0.2em] text-[#9a7a40]">
-                            Categorias
-                          </p>
-                          <h3 className="text-base font-bold tracking-tight text-[#f0d9a0]">
-                            Pins no mapa
-                          </h3>
-                        </div>
+                        <div className="flex-1" style={{ borderTop: '1px dashed rgba(200,160,48,0.25)' }} />
+                        <span className="font-mono text-[9px] font-bold text-[#9a7a40] uppercase tracking-wider bg-black/40 px-2 py-0.5 border border-[#3a2508] rounded-[2px]">
+                          {
+                            officialPinCategories.base.filter(
+                              (category) => category.total > 0,
+                            ).length
+                          }{" "}
+                          grupos
+                        </span>
+                        <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>]</span>
                       </div>
-                      <span className="rounded-full border border-[#4a2f0a] bg-white/5 px-2.5 py-0.5 font-mono text-[0.58rem] font-bold text-[#9a7a40] uppercase tracking-wider">
-                        {
-                          officialPinCategories.base.filter(
-                            (category) => category.total > 0,
-                          ).length
-                        }{" "}
-                        grupos
-                      </span>
                     </div>
 
-                    <div className="relative group mb-5">
+                    <div className="relative group mb-5 z-10">
                       <Search
-                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9a7a40] group-focus-within:text-[#ffdd66] transition-colors"
-                        size={14}
+                        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#9a7a40] group-focus-within:text-[#c8860a] transition-colors"
+                        size={12}
                       />
                       <input
-                        className="w-full rounded-xl border border-[#4a2f0a] bg-black/40 py-2.5 pl-10 pr-4 text-xs text-[#f0d9a0] placeholder-slate-600 outline-none transition-all duration-300 focus:border-[#c8860a]/40 focus:bg-black/60"
+                        className="w-full rounded-[2px] border border-[#3a2508] bg-black/40 py-2 pl-8 pr-4 text-[10px] text-[#f0d9a0] placeholder-[#9a7a40]/60 outline-none transition-all duration-300 focus:border-[#c8860a]/40 focus:bg-black/60 font-mono tracking-wide"
                         onChange={(e) => setSidebarSearchQuery(e.target.value)}
-                        placeholder="Filtrar categorias..."
+                        placeholder="FILTRAR CATEGORIAS..."
                         type="text"
                         value={sidebarSearchQuery}
                       />
@@ -565,10 +589,10 @@ export const MapSidebar = memo(function MapSidebar({
                           <button
                             key={category.type}
                             className={cn(
-                              "group relative min-h-[9.5rem] overflow-hidden p-3 text-left transition-all duration-300 hover:-translate-y-1.5 cursor-pointer rounded-2xl border",
+                              "group relative min-h-[9.5rem] overflow-hidden p-3 text-left transition-all duration-300 hover:-translate-y-1 cursor-pointer rounded-[2px] border z-10",
                               selectedTypes.includes(category.type)
-                                ? "border-[#c8860a] bg-[rgba(74,47,10,0.3)] shadow-[0_12px_28px_rgba(0,0,0,0.4)]"
-                                : "border-[#4a2f0a] bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.05]",
+                                ? "border-[#c8860a] bg-[rgba(200,134,10,0.1)] shadow-[0_0_15px_rgba(200,134,10,0.2)]"
+                                : "border-[#3a2508] bg-black/40 hover:border-[#c8860a]/50 hover:bg-black/60",
                             )}
                             onClick={() =>
                               toggleSelectedType(category.type as MapMarkerType)
@@ -597,7 +621,7 @@ export const MapSidebar = memo(function MapSidebar({
                               {category.count}
                             </span>
                             <div className="grid gap-2.5 mt-2">
-                              <div className="grid h-[4.75rem] place-items-center rounded-xl border border-[#4a2f0a] bg-transparent shadow-inner transition-all duration-300 group-hover:border-[#c8860a]/40 group-hover:bg-[rgba(74,47,10,0.2)]">
+                              <div className="grid h-[4.75rem] place-items-center rounded-[2px] border border-[#4a2f0a] bg-transparent shadow-inner transition-all duration-300 group-hover:border-[#c8860a]/40 group-hover:bg-[rgba(74,47,10,0.2)]">
                                 <IconImage
                                   className="h-14 w-14 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.65)] transition-all duration-300 group-hover:scale-115 group-hover:-translate-y-1"
                                   iconId={category.iconId}
@@ -645,7 +669,7 @@ export const MapSidebar = memo(function MapSidebar({
                       <div className="mt-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
                         <div className="mb-5 flex items-center justify-between px-1">
                           <div className="flex items-center gap-3">
-                            <span className="grid h-8 w-8 place-items-center rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-400">
+                            <span className="grid h-8 w-8 place-items-center rounded-[2px] border border-emerald-500/20 bg-emerald-500/5 text-emerald-400">
                               <Search size={14} />
                             </span>
                             <div>
@@ -667,7 +691,7 @@ export const MapSidebar = memo(function MapSidebar({
                             <button
                               key={category.type}
                               className={cn(
-                                "group relative min-h-[9rem] overflow-hidden p-3 text-left transition-all duration-300 hover:-translate-y-1 cursor-pointer rounded-2xl border",
+                                "group relative min-h-[9rem] overflow-hidden p-3 text-left transition-all duration-300 hover:-translate-y-1 cursor-pointer rounded-[2px] border",
                                 selectedTypes.includes(category.type)
                                   ? "border-emerald-500/40 bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(113,92,255,0.02))] shadow-[0_8px_20px_rgba(0,0,0,0.3)]"
                                   : "border-[#4a2f0a] bg-white/[0.02] hover:border-white/12",
@@ -695,7 +719,7 @@ export const MapSidebar = memo(function MapSidebar({
                               </span>
 
                               <div className="grid gap-2 mt-2">
-                                <div className="grid h-16 place-items-center rounded-xl border border-white/6 bg-transparent transition-all duration-300 group-hover:bg-emerald-500/5">
+                                <div className="grid h-16 place-items-center rounded-[2px] border border-white/6 bg-transparent transition-all duration-300 group-hover:bg-emerald-500/5">
                                   <IconImage
                                     className="h-11 w-11 object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)] transition-all duration-300 group-hover:scale-110"
                                     iconId={category.iconId}
@@ -728,11 +752,11 @@ export const MapSidebar = memo(function MapSidebar({
                         </div>
                       </div>
                     )}
-                  </section>
+                  </TechSection>
                 ) : null}
 
                 {sidebarSection === "customPins" ? (
-                  <section className="rounded-[26px] border border-[#4a2f0a] bg-[#161008]/80 p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_12px_36px_rgba(0,0,0,0.2)]">
+                  <TechSection>
                     {!isAuthenticated ? (
                       <LockedFeature
                         title="Pinos Personalizados"
@@ -743,7 +767,7 @@ export const MapSidebar = memo(function MapSidebar({
                       <div className="grid gap-4 animate-[fade-in_150ms_ease-out]">
                         <div className="flex items-center justify-between border-b border-white/10 pb-3">
                           <div className="flex items-center gap-2">
-                            <span className="grid h-8 w-8 place-items-center rounded-lg border border-[#4a2f0a] bg-white/5 text-[#ffdd66]">
+                            <span className="grid h-8 w-8 place-items-center rounded-[2px] border border-[#4a2f0a] bg-white/5 text-[#ffdd66]">
                               <MapPin size={15} />
                             </span>
                             <div>
@@ -768,7 +792,7 @@ export const MapSidebar = memo(function MapSidebar({
                             <button
                               type="button"
                               onClick={cancelCustomPin}
-                              className="rounded-full border border-red-500/25 bg-red-950/10 px-3 py-1 text-xs font-semibold text-red-400 hover:bg-red-500/20 hover:text-[#f0d9a0] transition cursor-pointer"
+                              className="rounded-[2px] border border-red-500/25 bg-red-950/10 px-3 py-1 text-xs font-semibold text-red-400 hover:bg-red-500/20 hover:text-[#f0d9a0] transition cursor-pointer"
                             >
                               Cancelar
                             </button>
@@ -777,7 +801,7 @@ export const MapSidebar = memo(function MapSidebar({
                               <button
                                 type="button"
                                 onClick={confirmCustomPin}
-                                className="rounded-full border border-[#c8860a] bg-[#4a2f0a]/40 px-3.5 py-1 text-xs font-semibold text-[#ffdd66] hover:bg-[#c8860a] hover:text-black transition cursor-pointer"
+                                className="rounded-[2px] border border-[#c8860a] bg-[#4a2f0a]/40 px-3.5 py-1 text-xs font-semibold text-[#ffdd66] hover:bg-[#c8860a] hover:text-black transition cursor-pointer"
                                 title="Concluir edição"
                               >
                                 Concluir
@@ -797,7 +821,7 @@ export const MapSidebar = memo(function MapSidebar({
                               updateSelectedPinField("name", e.target.value)
                             }
                             placeholder="ex: Entrada Secreta"
-                            className="w-full rounded-xl border border-[#4a2f0a] bg-black/40 px-4 py-2 text-sm text-[#f0d9a0] outline-none focus:border-[#c8860a]/50 transition"
+                            className="w-full rounded-[2px] border border-[#4a2f0a] bg-black/40 px-4 py-2 text-sm text-[#f0d9a0] outline-none focus:border-[#c8860a]/50 transition"
                           />
                         </div>
 
@@ -847,7 +871,7 @@ export const MapSidebar = memo(function MapSidebar({
                                     updateSelectedPinField("iconId", icon.id)
                                   }
                                   className={cn(
-                                    "grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg border border-[#4a2f0a] bg-white/5 cursor-pointer transition hover:bg-white/10",
+                                    "grid h-7 w-7 flex-shrink-0 place-items-center rounded-[2px] border border-[#4a2f0a] bg-white/5 cursor-pointer transition hover:bg-white/10",
                                     selectedCustomPin.iconId === icon.id &&
                                       "border-[#c8860a]/50 bg-[#4a2f0a]/20 shadow-[0_0_8px_rgba(200,134,10,0.2)]",
                                   )}
@@ -869,7 +893,7 @@ export const MapSidebar = memo(function MapSidebar({
                           </label>
                           <div
                             className={cn(
-                              "relative group cursor-pointer border-2 border-dashed border-white/10 rounded-2xl p-4 transition hover:bg-white/5",
+                              "relative group cursor-pointer border-2 border-dashed border-white/10 rounded-[2px] p-4 transition hover:bg-white/5",
                               selectedCustomPin.imageUrl
                                 ? "border-[#c8860a]/30 bg-[#c8860a]/5"
                                 : "",
@@ -901,7 +925,7 @@ export const MapSidebar = memo(function MapSidebar({
                             />
 
                             {selectedCustomPin.imageUrl ? (
-                              <div className="relative aspect-video rounded-lg overflow-hidden border border-white/10">
+                              <div className="relative aspect-video rounded-[2px] overflow-hidden border border-white/10">
                                 <img
                                   src={selectedCustomPin.imageUrl}
                                   alt="Preview"
@@ -933,7 +957,7 @@ export const MapSidebar = memo(function MapSidebar({
                               updateSelectedPinField("tags", e.target.value)
                             }
                             placeholder="Vila, Recurso, etc..."
-                            className="w-full rounded-xl border border-[#4a2f0a] bg-black/40 px-3.5 py-2 text-xs text-[#f0d9a0] outline-none focus:border-[#c8860a]/50 transition"
+                            className="w-full rounded-[2px] border border-[#4a2f0a] bg-black/40 px-3.5 py-2 text-xs text-[#f0d9a0] outline-none focus:border-[#c8860a]/50 transition"
                           />
                         </div>
 
@@ -951,7 +975,7 @@ export const MapSidebar = memo(function MapSidebar({
                             }
                             placeholder="Observações..."
                             rows={2}
-                            className="w-full rounded-xl border border-[#4a2f0a] bg-black/40 px-3.5 py-2 text-sm text-[#f0d9a0] outline-none focus:border-[#c8860a]/50 transition resize-none custom-scrollbar"
+                            className="w-full rounded-[2px] border border-[#4a2f0a] bg-black/40 px-3.5 py-2 text-sm text-[#f0d9a0] outline-none focus:border-[#c8860a]/50 transition resize-none custom-scrollbar"
                           />
                         </div>
                       </div>
@@ -959,7 +983,7 @@ export const MapSidebar = memo(function MapSidebar({
                       <div className="grid gap-4 animate-[fade-in_150ms_ease-out]">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <span className="grid h-9 w-9 place-items-center rounded-xl border border-[#4a2f0a] bg-white/5 text-[#ffdd66]">
+                            <span className="grid h-9 w-9 place-items-center rounded-[2px] border border-[#4a2f0a] bg-white/5 text-[#ffdd66]">
                               <MapPin size={16} />
                             </span>
                             <div>
@@ -973,7 +997,7 @@ export const MapSidebar = memo(function MapSidebar({
                           </div>
                           <button
                             onClick={openCustomPinsSection}
-                            className="flex items-center gap-1.5 rounded-full bg-[var(--cyan)] px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-black transition hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(0,214,163,0.3)] cursor-pointer"
+                            className="flex items-center gap-1.5 rounded-[2px] bg-gradient-to-r from-[#c8860a] to-[#e0a020] px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-black transition hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(200,134,10,0.4)] cursor-pointer"
                           >
                             <Plus size={12} strokeWidth={3} />
                             Criar
@@ -994,7 +1018,7 @@ export const MapSidebar = memo(function MapSidebar({
                               <div
                                 key={pin.id}
                                 className={cn(
-                                  "flex items-center justify-between rounded-xl border p-3 transition-all duration-300 hover:-translate-y-0.5 group relative",
+                                  "flex items-center justify-between rounded-[2px] border p-3 transition-all duration-300 hover:-translate-y-0.5 group relative",
                                   editingCustomPinId === pin.id
                                     ? "border-[#c8860a]/40 bg-[linear-gradient(180deg,rgba(200,134,10,0.08),rgba(9,15,28,0.75))] shadow-[0_8px_24px_rgba(0,0,0,0.3)]"
                                     : "border-[#4a2f0a] bg-transparent hover:border-white/12 hover:bg-white/[0.03]",
@@ -1005,7 +1029,7 @@ export const MapSidebar = memo(function MapSidebar({
                                   onClick={() => selectCustomPin(pin.id)}
                                 >
                                   <div
-                                    className="grid h-9 w-9 place-items-center rounded-xl border border-[#4a2f0a] shadow-md shrink-0"
+                                    className="grid h-9 w-9 place-items-center rounded-[2px] border border-[#4a2f0a] shadow-md shrink-0"
                                     style={{ backgroundColor: pin.color }}
                                   >
                                     <IconImage
@@ -1072,16 +1096,16 @@ export const MapSidebar = memo(function MapSidebar({
                         )}
                       </div>
                     )}
-                  </section>
+                  </TechSection>
                 ) : null}
 
                 {sidebarSection === "routes" ? (
                   <div className="grid gap-4 animate-[fade-in_150ms_ease-out]">
                     {mode === "route" ? (
-                      <section className="rounded-[26px] border border-[#4a2f0a] bg-[#161008]/80 p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_12px_36px_rgba(0,0,0,0.2)]">
+                      <TechSection>
                         <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
                           <div className="flex items-center gap-2">
-                            <span className="grid h-8 w-8 place-items-center rounded-lg border border-[#4a2f0a] bg-white/5 text-orange-400">
+                            <span className="grid h-8 w-8 place-items-center rounded-[2px] border border-[#4a2f0a] bg-white/5 text-orange-400">
                               <Route size={15} />
                             </span>
                             <div>
@@ -1099,7 +1123,7 @@ export const MapSidebar = memo(function MapSidebar({
                             <button
                               type="button"
                               onClick={() => setMode("explore")}
-                              className="rounded-full border border-red-500/25 bg-red-950/10 px-3 py-1 text-xs font-semibold text-red-400 hover:bg-red-500/20 hover:text-[#f0d9a0] transition cursor-pointer"
+                              className="rounded-[2px] border border-red-500/25 bg-red-950/10 px-3 py-1 text-xs font-semibold text-red-400 hover:bg-red-500/20 hover:text-[#f0d9a0] transition cursor-pointer"
                             >
                               Sair
                             </button>
@@ -1110,7 +1134,7 @@ export const MapSidebar = memo(function MapSidebar({
                                 !isAuthenticated ||
                                 currentRoute.checkpoints.length === 0
                               }
-                              className="rounded-full border border-[#c8860a] bg-[#4a2f0a]/40 px-3.5 py-1 text-xs font-semibold text-[#ffdd66] hover:bg-[#c8860a] hover:text-black transition cursor-pointer disabled:opacity-30"
+                              className="rounded-[2px] border border-[#c8860a] bg-[#4a2f0a]/40 px-3.5 py-1 text-xs font-semibold text-[#ffdd66] hover:bg-[#c8860a] hover:text-black transition cursor-pointer disabled:opacity-30"
                             >
                               {selectedSavedRouteId ? "Salvar" : "Criar"}
                               {!isAuthenticated && (
@@ -1135,7 +1159,7 @@ export const MapSidebar = memo(function MapSidebar({
                                 updateRouteField("name", e.target.value)
                               }
                               placeholder="Ex: Rota de Farm Stick"
-                              className="w-full rounded-xl border border-[#4a2f0a] bg-black/40 px-3.5 py-2 text-sm text-[#f0d9a0] outline-none focus:border-[#c8860a]/50 transition"
+                              className="w-full rounded-[2px] border border-[#4a2f0a] bg-black/40 px-3.5 py-2 text-sm text-[#f0d9a0] outline-none focus:border-[#c8860a]/50 transition"
                             />
                           </div>
 
@@ -1182,21 +1206,21 @@ export const MapSidebar = memo(function MapSidebar({
                               <div className="flex items-center gap-1.5 justify-end">
                                 <button
                                   onClick={shareCurrentRoute}
-                                  className="p-2 rounded-lg bg-white/5 text-[#9a7a40] hover:text-[#f0d9a0] transition cursor-pointer"
+                                  className="p-2 rounded-[2px] bg-white/5 text-[#9a7a40] hover:text-[#f0d9a0] transition cursor-pointer"
                                   title="Compartilhar"
                                 >
                                   <Share2 size={14} />
                                 </button>
                                 <button
                                   onClick={copyRouteJson}
-                                  className="p-2 rounded-lg bg-white/5 text-[#9a7a40] hover:text-[#f0d9a0] transition cursor-pointer"
+                                  className="p-2 rounded-[2px] bg-white/5 text-[#9a7a40] hover:text-[#f0d9a0] transition cursor-pointer"
                                   title="Copiar JSON"
                                 >
                                   <Code2 size={14} />
                                 </button>
                                 <button
                                   onClick={clearRoute}
-                                  className="p-2 rounded-lg bg-white/5 text-[#9a7a40] hover:text-red-400 transition cursor-pointer"
+                                  className="p-2 rounded-[2px] bg-white/5 text-[#9a7a40] hover:text-red-400 transition cursor-pointer"
                                   title="Limpar Tudo"
                                 >
                                   <Trash2 size={14} />
@@ -1216,7 +1240,7 @@ export const MapSidebar = memo(function MapSidebar({
                               }
                               placeholder="Descrição opcional..."
                               rows={2}
-                              className="w-full rounded-xl border border-[#4a2f0a] bg-black/40 px-3.5 py-2 text-sm text-[#f0d9a0] outline-none focus:border-[#c8860a]/50 transition resize-none custom-scrollbar"
+                              className="w-full rounded-[2px] border border-[#4a2f0a] bg-black/40 px-3.5 py-2 text-sm text-[#f0d9a0] outline-none focus:border-[#c8860a]/50 transition resize-none custom-scrollbar"
                             />
                           </div>
 
@@ -1235,10 +1259,10 @@ export const MapSidebar = memo(function MapSidebar({
                                   (cp: RouteCheckpoint, idx: number) => (
                                     <div
                                       key={cp.id}
-                                      className="flex items-center justify-between rounded-xl bg-white/[0.03] border border-[#4a2f0a] p-2.5 group hover:border-white/10 transition-colors"
+                                      className="flex items-center justify-between rounded-[2px] bg-white/[0.03] border border-[#4a2f0a] p-2.5 group hover:border-white/10 transition-colors"
                                     >
                                       <div className="flex items-center gap-3 min-w-0">
-                                        <span className="shrink-0 grid h-5 w-5 place-items-center rounded-lg bg-orange-500 text-[10px] font-black text-[#f0d9a0] shadow-lg">
+                                        <span className="shrink-0 grid h-5 w-5 place-items-center rounded-[2px] bg-orange-500 text-[10px] font-black text-[#f0d9a0] shadow-lg">
                                           {idx + 1}
                                         </span>
                                         <div className="min-w-0">
@@ -1298,17 +1322,15 @@ export const MapSidebar = memo(function MapSidebar({
                             </div>
                           )}
                         </div>
-                      </section>
+                      </TechSection>
                     ) : (
                       <>
-                        <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/[0.03] border border-[#4a2f0a] shadow-inner">
+                        <div className="flex items-center gap-1 p-1 rounded-[2px] bg-[#0c0804] border border-[#2e1e06] shadow-inner">
                           <button
                             onClick={() => setRoutesView("mine")}
                             className={cn(
-                              "flex-1 rounded-xl py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer",
-                              routesView === "mine"
-                                ? "bg-white/10 text-[#f0d9a0] shadow-lg"
-                                : "text-[#9a7a40] hover:text-[#f0d9a0]",
+                              "flex-1 rounded-[2px] py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer",
+                              routesView === "mine" ? "bg-[rgba(200,134,10,0.15)] border border-[#c8860a] text-[#ffdd66] shadow-[0_0_15px_rgba(200,134,10,0.2)]" : "text-[#9a7a40] hover:text-[#f0d9a0] border border-transparent",
                             )}
                           >
                             Minhas Rotas
@@ -1316,10 +1338,8 @@ export const MapSidebar = memo(function MapSidebar({
                           <button
                             onClick={() => setRoutesView("public")}
                             className={cn(
-                              "flex-1 rounded-xl py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer",
-                              routesView === "public"
-                                ? "bg-white/10 text-[#f0d9a0] shadow-lg"
-                                : "text-[#9a7a40] hover:text-[#f0d9a0]",
+                              "flex-1 rounded-[2px] py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer",
+                              routesView === "public" ? "bg-[rgba(200,134,10,0.15)] border border-[#c8860a] text-[#ffdd66] shadow-[0_0_15px_rgba(200,134,10,0.2)]" : "text-[#9a7a40] hover:text-[#f0d9a0] border border-transparent",
                             )}
                           >
                             Públicas
@@ -1327,7 +1347,7 @@ export const MapSidebar = memo(function MapSidebar({
                         </div>
 
                         {routesView === "mine" ? (
-                          <section className="rounded-[26px] border border-[#4a2f0a] bg-[#161008]/80 p-4 min-w-0">
+                          <TechSection>
                             {!isAuthenticated ? (
                               <LockedFeature
                                 title="Minhas Rotas"
@@ -1342,14 +1362,14 @@ export const MapSidebar = memo(function MapSidebar({
                                         clearRoute();
                                         setMode("route");
                                       }}
-                                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-[var(--cyan)] py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(0,214,163,0.3)] cursor-pointer"
+                                      className="w-full flex items-center justify-center gap-2 rounded-[2px] bg-gradient-to-r from-[#c8860a] to-[#e0a020] py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(200,134,10,0.4)] cursor-pointer"
                                     >
                                       <Plus size={16} strokeWidth={3} />
                                       Nova Rota
                                     </button>
                                     <button
                                       onClick={openAutoRouteModal}
-                                      className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] cursor-pointer"
+                                      className="w-full flex items-center justify-center gap-1.5 rounded-[2px] bg-amber-500 py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] cursor-pointer"
                                       title="Abre as opções de filtro para gerar rota automática (excluída no próximo reset)"
                                     >
                                       <Route size={16} strokeWidth={3} />
@@ -1373,7 +1393,7 @@ export const MapSidebar = memo(function MapSidebar({
                                       <div
                                         key={route.id}
                                         className={cn(
-                                          "flex items-center justify-between rounded-xl border p-3 transition-all group min-w-0",
+                                          "flex items-center justify-between rounded-[2px] border p-3 transition-all group min-w-0",
                                           selectedSavedRouteId === route.id
                                             ? "border-[#c8860a]/40 bg-[#c8860a]/5 shadow-[0_0_15px_rgba(200,134,10,0.1)]"
                                             : "border-[#4a2f0a] bg-transparent hover:border-white/15",
@@ -1471,9 +1491,9 @@ export const MapSidebar = memo(function MapSidebar({
                                 )}
                               </>
                             )}
-                          </section>
+                          </TechSection>
                         ) : (
-                          <section className="rounded-[26px] border border-[#4a2f0a] bg-[#161008]/80 p-4 min-w-0">
+                          <TechSection>
                             <div className="relative block group mb-4">
                               <Search
                                 className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#9a7a40] group-focus-within:text-[#ffdd66] transition-colors"
@@ -1486,7 +1506,7 @@ export const MapSidebar = memo(function MapSidebar({
                                 onChange={(e) =>
                                   setPublicRoutesQuery(e.target.value)
                                 }
-                                className="w-full rounded-xl border border-[#4a2f0a] bg-black/40 py-2.5 pl-9 pr-4 text-xs text-[#f0d9a0] outline-none focus:border-[#c8860a]/30 transition-all"
+                                className="w-full rounded-[2px] border border-[#4a2f0a] bg-black/40 py-2.5 pl-9 pr-4 text-xs text-[#f0d9a0] outline-none focus:border-[#c8860a]/30 transition-all"
                               />
                             </div>
                             {publicRoutesLoading ? (
@@ -1509,7 +1529,7 @@ export const MapSidebar = memo(function MapSidebar({
                                   <div
                                     key={route.id}
                                     className={cn(
-                                      "flex items-center justify-between rounded-2xl border border-[#4a2f0a] bg-transparent p-3.5 hover:border-white/15 hover:bg-white/[0.03] transition-all group min-w-0",
+                                      "flex items-center justify-between rounded-[2px] border border-[#4a2f0a] bg-transparent p-3.5 hover:border-white/15 hover:bg-white/[0.03] transition-all group min-w-0",
                                       selectedSavedRouteId === route.id
                                         ? "border-[#c8860a]/40 bg-[#c8860a]/5 shadow-[0_0_15px_rgba(200,134,10,0.1)]"
                                         : "border-[#4a2f0a] bg-transparent hover:border-white/15",
@@ -1566,7 +1586,7 @@ export const MapSidebar = memo(function MapSidebar({
                                         onClick={() =>
                                           toggleRouteVisibility(route.id)
                                         }
-                                        className="p-2 text-[#9a7a40] hover:text-[#f0d9a0] hover:bg-white/5 rounded-lg transition cursor-pointer"
+                                        className="p-2 text-[#9a7a40] hover:text-[#f0d9a0] hover:bg-white/5 rounded-[2px] transition cursor-pointer"
                                         title={
                                           visibleRoutes.includes(route.id)
                                             ? "Ocultar no Mapa"
@@ -1583,7 +1603,7 @@ export const MapSidebar = memo(function MapSidebar({
                                         onClick={() =>
                                           duplicateSavedRoute(route.id)
                                         }
-                                        className="p-2 text-[#9a7a40] hover:text-[#ffdd66] hover:bg-white/5 rounded-lg transition cursor-pointer"
+                                        className="p-2 text-[#9a7a40] hover:text-[#ffdd66] hover:bg-white/5 rounded-[2px] transition cursor-pointer"
                                         title="Importar para minhas rotas"
                                       >
                                         <Plus size={16} />
@@ -1598,7 +1618,7 @@ export const MapSidebar = memo(function MapSidebar({
                                 />
                               </div>
                             )}
-                          </section>
+                          </TechSection>
                         )}
                       </>
                     )}
@@ -1607,10 +1627,10 @@ export const MapSidebar = memo(function MapSidebar({
 
                 {sidebarSection === "search" ? (
                   <div className="grid gap-4 animate-[fade-in_150ms_ease-out]">
-                    <section className="rounded-[26px] border border-[#4a2f0a] bg-[#161008]/80 p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02),0_12px_36px_rgba(0,0,0,0.2)]">
+                    <TechSection>
                       <div className="mb-4 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <span className="grid h-9 w-9 place-items-center rounded-xl border border-[#4a2f0a] bg-white/5 text-[#f0d9a0]">
+                          <span className="grid h-9 w-9 place-items-center rounded-[2px] border border-[#4a2f0a] bg-white/5 text-[#f0d9a0]">
                             <Search size={16} />
                           </span>
                           <div>
@@ -1654,11 +1674,11 @@ export const MapSidebar = memo(function MapSidebar({
                                   }
                                 }
                               }}
-                              className="flex items-center justify-between rounded-xl border border-[#4a2f0a] bg-transparent p-3 hover:border-white/15 hover:bg-white/[0.03] transition-all cursor-pointer group"
+                              className="flex items-center justify-between rounded-[2px] border border-[#4a2f0a] bg-transparent p-3 hover:border-white/15 hover:bg-white/[0.03] transition-all cursor-pointer group"
                             >
                               <div className="flex items-center gap-3 min-w-0">
                                 <div
-                                  className="h-9 w-9 rounded-lg border border-white/10 flex items-center justify-center shrink-0"
+                                  className="h-9 w-9 rounded-[2px] border border-white/10 flex items-center justify-center shrink-0"
                                   style={{
                                     backgroundColor:
                                       item.color || "transparent",
@@ -1705,7 +1725,7 @@ export const MapSidebar = memo(function MapSidebar({
                           />
                         </div>
                       )}
-                    </section>
+                    </TechSection>
                   </div>
                 ) : null}
               </div>

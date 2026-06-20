@@ -292,6 +292,21 @@ function setupMoveListeners(win: BrowserWindow) {
   })
 }
 
+function forcePanelToFront() {
+  if (panelWin && !panelWin.isDestroyed() && currentTabId) {
+    if (process.platform === 'win32') {
+      panelWin.hide()
+    }
+    if (appConfig.alwaysOnTop) {
+      panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
+    } else {
+      panelWin.setAlwaysOnTop(true)
+      panelWin.setAlwaysOnTop(false)
+    }
+    panelWin.showInactive()
+  }
+}
+
 function createSidebarWindow() {
   if (sidebarWin && !sidebarWin.isDestroyed()) {
     sidebarWin.focus()
@@ -370,6 +385,12 @@ function createSidebarWindow() {
     }
   })
 
+  sidebarWin.on('focus', () => {
+    if (!appConfig.alwaysOnTop) {
+      forcePanelToFront()
+    }
+  })
+
   sidebarWin.on('minimize' as any, () => {
     if (panelWin && !panelWin.isDestroyed()) {
       panelWin.hide()
@@ -385,9 +406,7 @@ function createSidebarWindow() {
       sidebarWin?.show()
     }
 
-    if (panelWin && !panelWin.isDestroyed() && currentTabId) {
-      panelWin.showInactive()
-    }
+    forcePanelToFront()
   })
 
   sidebarWin.webContents.on('dom-ready', () => {
@@ -916,9 +935,7 @@ ipcMain.on('close-panel-window', () => {
 
 // Minimize window
 ipcMain.on('minimize-panel-window', () => {
-  if (sidebarWin && !sidebarWin.isDestroyed()) {
-    sidebarWin.minimize()
-  }
+  closePanel()
 })
 
 // Clear all stats

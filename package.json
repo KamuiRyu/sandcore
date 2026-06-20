@@ -1,11 +1,11 @@
 {
-  "name": "slp-map",
+  "name": "sandcore",
   "version": "1.0.6-beta",
-  "description": "Mapa interativo para Shinobi Legends",
+  "description": "Mapa interativo para SandCore",
   "author": "Hyoou",
   "main": "dist-electron/main.js",
   "type": "module",
-  "repository": "KamuiRyu/slp-map",
+  "repository": "KamuiRyu/sandcore",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && electron-builder --config electron-builder.config.cjs",

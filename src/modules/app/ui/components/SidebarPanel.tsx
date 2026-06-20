@@ -90,7 +90,7 @@ export const SidebarPanel = memo(function SidebarPanel({
                   color: "#9a7a40",
                 }}
               >
-                <span style={{ color: "#c8860a" }}>Shinobi Map</span>
+                <span style={{ color: "#c8860a" }}>SandCore</span>
                 <span style={{ color: "#4a2f0a" }}>›</span>
                 <span>{title}</span>
               </div>

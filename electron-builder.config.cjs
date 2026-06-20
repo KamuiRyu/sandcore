@@ -2,9 +2,9 @@ const pkg = require("./package.json");
 const versionStr = pkg.version.replace(/\./g, "_");
 
 module.exports = {
-  appId: "com.hyoou.shinobimap",
-  productName: "Shinobi Map",
-  executableName: "ShinobiMap",
+  appId: "com.hyoou.sandcore",
+  productName: "SandCore",
+  executableName: "SandCore",
   compression: "maximum",
   directories: {
     output: "release",
@@ -13,7 +13,7 @@ module.exports = {
     {
       provider: "github",
       owner: "KamuiRyu",
-      repo: "slp-map"
+      repo: "sandcore"
     }
   ],
   files: ["dist/**/*", "dist-electron/**/*", "package.json"],
@@ -37,10 +37,10 @@ module.exports = {
     allowToChangeInstallationDirectory: true,
     createDesktopShortcut: true,
     include: "build/nsis/installer.nsh",
-    artifactName: "ShinobiMap_" + versionStr + "_setup.${ext}",
+    artifactName: "SandCore_" + versionStr + "_setup.${ext}",
   },
 
   portable: {
-    artifactName: "ShinobiMap_" + versionStr + "_portable.${ext}",
+    artifactName: "SandCore_" + versionStr + "_portable.${ext}",
   },
 };
