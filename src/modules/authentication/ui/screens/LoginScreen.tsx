@@ -3,6 +3,7 @@ import { useAuthViewModel } from '../viewModels/useAuth.viewModel'
 import { LoginForm } from '../components/LoginForm'
 import { RegisterForm } from '../components/RegisterForm'
 import { SunagakureLogo } from '../../../app/ui/components/SunagakureLogo'
+import { Clock, XCircle } from 'lucide-react'
 
 export const LoginScreen = () => {
   const viewModel = useAuthViewModel()
@@ -34,6 +35,54 @@ export const LoginScreen = () => {
 
   const handleOAuth = (provider: 'google' | 'discord') => {
     viewModel.loginWithOAuth(provider)
+  }
+
+  if (viewModel.authScreen === 'awaiting_approval') {
+    return (
+      <div className={`h-screen w-screen bg-[#0f0b04] flex flex-col items-center justify-center relative rounded-xl border border-[#4a2f0a] overflow-hidden text-slate-300 transition-all duration-300 ease-out font-sans select-none ${isMounted && !isClosing ? 'opacity-100 scale-100 blur-none' : 'opacity-0 scale-95 blur-sm'}`}>
+        <div className="absolute top-0 left-0 right-0 h-8 flex items-center justify-end select-none z-50" style={{ WebkitAppRegion: 'drag' } as any}>
+          <button onClick={handleClose} className="h-full w-11 hover:bg-red-600 hover:text-white transition flex items-center justify-center text-slate-400 cursor-pointer" style={{ WebkitAppRegion: 'no-drag' } as any}>
+            <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M1 1L9 9M9 1L1 9" /></svg>
+          </button>
+        </div>
+        <div className="flex flex-col items-center gap-5 px-10 text-center max-w-sm">
+          <div className="w-16 h-16 rounded-full border border-[#c8860a]/40 flex items-center justify-center" style={{ background: 'rgba(200,134,10,0.08)' }}>
+            <Clock size={28} style={{ color: '#c8860a' }} />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold tracking-[0.12em] uppercase mb-2" style={{ color: '#e8d5a0', fontFamily: "'Cinzel', serif" }}>Aguardando Aprovação</h2>
+            <p className="text-[11px] leading-relaxed" style={{ color: '#9a7a40' }}>Sua conta foi criada com sucesso. Um administrador precisa aprovar seu acesso à vila. Você será notificado em breve.</p>
+          </div>
+          <button onClick={viewModel.logout} className="text-[10px] font-mono uppercase tracking-widest cursor-pointer transition-colors" style={{ color: '#6a5028' }} onMouseEnter={e => (e.currentTarget.style.color = '#c8860a')} onMouseLeave={e => (e.currentTarget.style.color = '#6a5028')}>
+            Usar outra conta
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (viewModel.authScreen === 'rejected') {
+    return (
+      <div className={`h-screen w-screen bg-[#0f0b04] flex flex-col items-center justify-center relative rounded-xl border border-[#4a2f0a] overflow-hidden text-slate-300 transition-all duration-300 ease-out font-sans select-none ${isMounted && !isClosing ? 'opacity-100 scale-100 blur-none' : 'opacity-0 scale-95 blur-sm'}`}>
+        <div className="absolute top-0 left-0 right-0 h-8 flex items-center justify-end select-none z-50" style={{ WebkitAppRegion: 'drag' } as any}>
+          <button onClick={handleClose} className="h-full w-11 hover:bg-red-600 hover:text-white transition flex items-center justify-center text-slate-400 cursor-pointer" style={{ WebkitAppRegion: 'no-drag' } as any}>
+            <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M1 1L9 9M9 1L1 9" /></svg>
+          </button>
+        </div>
+        <div className="flex flex-col items-center gap-5 px-10 text-center max-w-sm">
+          <div className="w-16 h-16 rounded-full border border-red-800/40 flex items-center justify-center" style={{ background: 'rgba(120,20,20,0.1)' }}>
+            <XCircle size={28} style={{ color: '#e07070' }} />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold tracking-[0.12em] uppercase mb-2" style={{ color: '#e07070', fontFamily: "'Cinzel', serif" }}>Acesso Recusado</h2>
+            <p className="text-[11px] leading-relaxed" style={{ color: '#9a7a40' }}>Seu acesso à vila foi recusado por um administrador. Entre em contato com a gestão para mais informações.</p>
+          </div>
+          <button onClick={viewModel.logout} className="text-[10px] font-mono uppercase tracking-widest cursor-pointer transition-colors" style={{ color: '#6a5028' }} onMouseEnter={e => (e.currentTarget.style.color = '#c8860a')} onMouseLeave={e => (e.currentTarget.style.color = '#6a5028')}>
+            Usar outra conta
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
