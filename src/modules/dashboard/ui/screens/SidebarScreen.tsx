@@ -35,7 +35,7 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
     <div
       className="w-full h-full select-none"
       style={{
-        background: 'linear-gradient(180deg, #161008 0%, #0f0b04 100%)',
+        background: 'linear-gradient(180deg, #0e0b05 0%, #090704 100%)',
         border: '1px solid rgba(255,221,102,0.4)',
         borderRadius: 8,
         WebkitAppRegion: 'drag',
@@ -60,7 +60,7 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
         </div>
 
         {/* Divider logo → nav */}
-        <div style={{ width: 28, height: 1, background: 'linear-gradient(90deg, transparent, #4a2f0a, transparent)', margin: '4px 0', flexShrink: 0 }} />
+        <div style={{ width: 28, height: 1, background: 'linear-gradient(90deg, transparent, rgba(200,134,10,0.4), transparent)', margin: '4px 0', flexShrink: 0 }} />
 
         {/* Main nav */}
         <div className="flex flex-col items-center w-full" style={{ padding: '10px 0', gap: 2, flexShrink: 0 }}>
@@ -77,7 +77,7 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
 
         {/* Bottom nav */}
         <div className="flex flex-col items-center w-full" style={{ marginTop: 'auto', padding: '10px 0', gap: 2 }}>
-          <div style={{ width: 28, height: 1, background: 'linear-gradient(90deg, transparent, #4a2f0a, transparent)', margin: '0 0 6px', flexShrink: 0 }} />
+          <div style={{ width: 28, height: 1, background: 'linear-gradient(90deg, transparent, rgba(200,134,10,0.4), transparent)', margin: '0 0 6px', flexShrink: 0 }} />
           <NavItem isActive={activeTab === 'settings'} label="Configurações" onClick={() => handleTabClick('settings')}>
             <Settings size={18} />
           </NavItem>
@@ -101,10 +101,10 @@ interface NavItemProps {
 }
 
 const NavItem = ({ isActive, isExit = false, label, onClick, children }: NavItemProps) => {
-  const baseColor   = isExit ? '#8b3a2a'            : '#4a3a1a'
-  const hoverBg     = isExit ? 'rgba(139,58,42,0.2)' : 'rgba(74,47,10,0.4)'
-  const hoverBorder = isExit ? 'rgba(139,58,42,0.4)' : 'rgba(200,134,10,0.2)'
-  const hoverColor  = isExit ? '#e07060'             : '#d4a85a'
+  const baseColor   = isExit ? '#7a3020'             : '#6a5028'
+  const hoverBg     = isExit ? 'rgba(120,48,32,0.2)' : 'rgba(74,47,10,0.35)'
+  const hoverBorder = isExit ? 'rgba(180,80,50,0.4)' : 'rgba(200,134,10,0.3)'
+  const hoverColor  = isExit ? '#e07060'             : '#c8a040'
 
   return (
     <div style={{ position: 'relative' }}>
@@ -115,9 +115,9 @@ const NavItem = ({ isActive, isExit = false, label, onClick, children }: NavItem
           width: 40, height: 40,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           borderRadius: 3, cursor: 'pointer', position: 'relative',
-          border: isActive ? '1px solid #4a2f0a' : '1px solid transparent',
-          background: isActive ? 'rgba(74,47,10,0.5)' : 'transparent',
-          color: isActive ? '#ffdd66' : baseColor,
+          border: isActive ? '1px solid rgba(200,134,10,0.35)' : '1px solid transparent',
+          background: isActive ? 'rgba(74,47,10,0.4)' : 'transparent',
+          color: isActive ? '#e8b840' : baseColor,
           transition: 'all .2s',
           WebkitAppRegion: 'no-drag',
         } as React.CSSProperties}

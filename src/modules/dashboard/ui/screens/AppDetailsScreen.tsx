@@ -78,7 +78,7 @@ export const AppDetailsScreen = () => {
   const handleClearCache = () => {
     triggerConfirm("Limpar Marcações", "Deseja limpar as marcações ativas do mapa salvas localmente? Esta ação não pode ser desfeita.", () => {
       setClearingCache(true);
-      try { localStorage.removeItem("shinobi-map-completed-pins"); window.ipcRenderer?.send("close-panel-window"); setTimeout(() => window.location.reload(), 300); }
+      try { localStorage.removeItem("shinobi-map-completed-pins"); setTimeout(() => window.location.reload(), 300); }
       catch (e) { console.error(e); setClearingCache(false); }
     });
   };
@@ -99,7 +99,7 @@ export const AppDetailsScreen = () => {
             }
           } catch (err) { console.error(err); }
         }
-        setClearingStats(false); window.ipcRenderer?.send("close-panel-window"); setTimeout(() => window.location.reload(), 300);
+        setClearingStats(false); setTimeout(() => window.location.reload(), 300);
       } catch (e) { console.error(e); setClearingStats(false); }
     });
   };
@@ -291,27 +291,27 @@ export const AppDetailsScreen = () => {
 
       {/* Confirm modal */}
       {confirmModal.isOpen && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(5,8,5,0.92)', backdropFilter: 'blur(4px)' }}>
-          <div style={{ width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 16, borderRadius: 3, padding: 18, background: '#0a0e0a', border: '1px solid #3e2010', boxShadow: '0 0 40px rgba(0,0,0,0.9)' }}>
+        <div style={{ position: 'absolute', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(9,7,4,0.92)', backdropFilter: 'blur(4px)' }}>
+          <div style={{ width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 16, borderRadius: 3, padding: 18, background: '#0e0b05', border: '1px solid #3a2508', boxShadow: '0 0 40px rgba(0,0,0,0.9)' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 3, background: 'rgba(120,20,20,0.2)', border: '1px solid #7a1414', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Trash2 size={16} style={{ color: '#cc3333' }} />
+              <div style={{ width: 36, height: 36, borderRadius: 3, background: 'rgba(200,134,10,0.08)', border: '1px solid #c8860a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Trash2 size={16} style={{ color: '#c8860a' }} />
               </div>
               <div style={{ minWidth: 0 }}>
                 <h4 style={{ fontFamily: "'Cinzel', serif", fontSize: 12, fontWeight: 700, color: '#f0e8c0', margin: '0 0 4px' }}>{confirmModal.title}</h4>
-                <p style={{ fontSize: 10, color: '#7a8060', margin: 0, lineHeight: 1.6 }}>{confirmModal.message}</p>
+                <p style={{ fontSize: 10, color: '#9a7a40', margin: 0, lineHeight: 1.6 }}>{confirmModal.message}</p>
               </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button
                 onClick={() => setConfirmModal((p) => ({ ...p, isOpen: false }))}
-                style={{ padding: '6px 14px', borderRadius: 3, fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em', cursor: 'pointer', background: 'rgba(30,40,20,0.4)', border: '1px solid #2e3e1e', color: '#7a9060' }}
+                style={{ padding: '6px 14px', borderRadius: 3, fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em', cursor: 'pointer', background: 'transparent', border: '1px solid #2e1e06', color: '#9a7a40' }}
               >
                 CANCELAR
               </button>
               <button
                 onClick={confirmModal.onConfirm}
-                style={{ padding: '6px 14px', borderRadius: 3, fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em', cursor: 'pointer', background: 'rgba(120,20,20,0.25)', border: '1px solid #7a1414', color: '#e07070' }}
+                style={{ padding: '6px 14px', borderRadius: 3, fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em', cursor: 'pointer', background: 'linear-gradient(135deg,#b87a08,#e8a820)', border: 'none', color: '#0a0800' }}
               >
                 CONFIRMAR
               </button>
