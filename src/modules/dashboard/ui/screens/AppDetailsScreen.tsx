@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
-import {
-  Info,
-  HelpCircle,
-  HardDrive,
-  Trash2,
-  ShieldCheck,
-  Zap,
-  RefreshCw,
-} from "lucide-react";
+import { ShieldCheck, Zap, RefreshCw, Trash2, RotateCcw, FileText } from "lucide-react";
 import { pb } from "../../../../lib/pocketbase";
+
+const SL = ({ children }: { children: string }) => (
+  <div className="flex items-center gap-2 mb-2">
+    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>[</span>
+    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#c8a030', whiteSpace: 'nowrap' }}>
+      {children}
+    </span>
+    <div className="flex-1" style={{ borderTop: '1px dashed rgba(200,160,48,0.25)' }} />
+    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>]</span>
+  </div>
+)
 
 export const AppDetailsScreen = () => {
   const [pocketbaseConnected, setPocketbaseConnected] = useState(false);
@@ -17,41 +20,23 @@ export const AppDetailsScreen = () => {
   const [uiScale, setUiScale] = useState(100);
   const [alwaysOnTop, setAlwaysOnTop] = useState(true);
 
-  // Version & Update States
   const [appVersion, setAppVersion] = useState("1.0.6-beta");
   const [updateStatus, setUpdateStatus] = useState<
-    | "idle"
-    | "checking"
-    | "available"
-    | "not-available"
-    | "downloading"
-    | "downloaded"
-    | "error"
+    "idle" | "checking" | "available" | "not-available" | "downloading" | "downloaded" | "error"
   >("idle");
   const [updateVersion, setUpdateVersion] = useState("");
   const [downloadPercent, setDownloadPercent] = useState(0);
   const [updaterError, setUpdaterError] = useState("");
 
-  // Custom Confirm Modal State
   const [confirmModal, setConfirmModal] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  }>({
-    isOpen: false,
-    title: "",
-    message: "",
-    onConfirm: () => {},
-  });
+    isOpen: boolean; title: string; message: string; onConfirm: () => void;
+  }>({ isOpen: false, title: "", message: "", onConfirm: () => {} });
 
   useEffect(() => {
-    // Check connection to pocketbase
     pb.send("/api/health", { method: "GET" })
       .then(() => setPocketbaseConnected(true))
       .catch(() => setPocketbaseConnected(false));
 
-    // Fetch scaling config and app version
     if (window.ipcRenderer) {
       window.ipcRenderer.getConfig().then((config) => {
         if (config) {
@@ -59,53 +44,26 @@ export const AppDetailsScreen = () => {
           if ("alwaysOnTop" in config) setAlwaysOnTop(config.alwaysOnTop);
         }
       });
+      window.ipcRenderer.invoke("get-app-version")
+        .then((v) => { if (v) setAppVersion(v) })
+        .catch((err) => console.error(err));
 
-      window.ipcRenderer
-        .invoke("get-app-version")
-        .then((version) => {
-          if (version) setAppVersion(version);
-        })
-        .catch((err) => console.error("Error fetching version:", err));
-
-      // Listen for updates from main process
-      const handleUpdateStatus = (
-        _event: any,
-        data: { status: any; version?: string; message?: string },
-      ) => {
+      const handleUpdateStatus = (_event: any, data: { status: any; version?: string; message?: string }) => {
         let status = data.status;
-        const msg = data.message || "";
-        const lowerMsg = msg.toLowerCase();
-
-        // If the error indicates no versions are published or not found on GitHub, treat it as "no updates available"
-        if (
-          status === "error" &&
-          (lowerMsg.includes("no published versions on github") ||
-            lowerMsg.includes("notfound") ||
-            lowerMsg.includes("not found") ||
-            lowerMsg.includes("404"))
-        ) {
+        const lowerMsg = (data.message || "").toLowerCase();
+        if (status === "error" && (lowerMsg.includes("no published versions") || lowerMsg.includes("notfound") || lowerMsg.includes("not found") || lowerMsg.includes("404"))) {
           status = "not-available";
         }
-
         setUpdateStatus(status);
         if (data.version) setUpdateVersion(data.version);
         if (data.message) setUpdaterError(data.message);
-
-        if (status === "not-available") {
-          setTimeout(() => {
-            setUpdateStatus("idle");
-          }, 3000);
-        }
+        if (status === "not-available") setTimeout(() => setUpdateStatus("idle"), 3000);
       };
-
       const handleUpdateProgress = (_event: any, data: { percent: number }) => {
-        setUpdateStatus("downloading");
-        setDownloadPercent(data.percent);
+        setUpdateStatus("downloading"); setDownloadPercent(data.percent);
       };
-
       window.ipcRenderer.on("update-status", handleUpdateStatus);
       window.ipcRenderer.on("update-progress", handleUpdateProgress);
-
       return () => {
         window.ipcRenderer?.off("update-status", handleUpdateStatus);
         window.ipcRenderer?.off("update-progress", handleUpdateProgress);
@@ -113,399 +71,249 @@ export const AppDetailsScreen = () => {
     }
   }, []);
 
-  const triggerConfirm = (
-    title: string,
-    message: string,
-    onConfirm: () => void,
-  ) => {
-    setConfirmModal({
-      isOpen: true,
-      title,
-      message,
-      onConfirm: () => {
-        onConfirm();
-        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
-      },
-    });
+  const triggerConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmModal({ isOpen: true, title, message, onConfirm: () => { onConfirm(); setConfirmModal((p) => ({ ...p, isOpen: false })) } });
   };
 
   const handleClearCache = () => {
-    triggerConfirm(
-      "Limpar Marcações",
-      "Deseja limpar as marcações ativas do mapa salvas localmente? Esta ação não pode ser desfeita.",
-      () => {
-        setClearingCache(true);
-        try {
-          localStorage.removeItem("shinobi-map-completed-pins");
-          window.ipcRenderer?.send("close-panel-window");
-          setTimeout(() => {
-            window.location.reload();
-          }, 300);
-        } catch (e) {
-          console.error(e);
-          setClearingCache(false);
-        }
-      },
-    );
+    triggerConfirm("Limpar Marcações", "Deseja limpar as marcações ativas do mapa salvas localmente? Esta ação não pode ser desfeita.", () => {
+      setClearingCache(true);
+      try { localStorage.removeItem("shinobi-map-completed-pins"); setTimeout(() => window.location.reload(), 300); }
+      catch (e) { console.error(e); setClearingCache(false); }
+    });
   };
 
   const handleClearStats = () => {
-    triggerConfirm(
-      "Limpar Estatísticas",
-      "Deseja limpar todo o histórico de coletas (Estatísticas)? Esta ação não pode ser desfeita.",
-      async () => {
-        setClearingStats(true);
-        try {
-          localStorage.removeItem("shinobi-map-stats-history");
-
-          let userId = pb.authStore.model?.id;
-          if (!userId) {
-            const pbAuth = localStorage.getItem("pocketbase_auth");
-            if (pbAuth) {
-              try {
-                const authData = JSON.parse(pbAuth);
-                userId = authData.model?.id;
-                if (authData.token)
-                  pb.authStore.save(authData.token, authData.model);
-              } catch (e) {}
+    triggerConfirm("Limpar Estatísticas", "Deseja limpar todo o histórico de coletas? Esta ação não pode ser desfeita.", async () => {
+      setClearingStats(true);
+      try {
+        localStorage.removeItem("shinobi-map-stats-history");
+        let userId = pb.authStore.model?.id;
+        if (!userId) { const pbAuth = localStorage.getItem("pocketbase_auth"); if (pbAuth) { try { const d = JSON.parse(pbAuth); userId = d.model?.id; if (d.token) pb.authStore.save(d.token, d.model); } catch {} } }
+        if (userId) {
+          try {
+            const records = await pb.collection("user_map_stats").getFullList({ filter: `owner = "${userId}"` });
+            for (const r of records) {
+              try { await pb.collection("user_map_stats").delete(r.id); }
+              catch { await pb.collection("user_map_stats").update(r.id, { ore_count: {}, mushroom_count: {}, plant_count: {}, stick_count: 0 }); }
             }
-          }
-
-          if (userId) {
-            try {
-              const records = await pb
-                .collection("user_map_stats")
-                .getFullList({ filter: `owner = "${userId}"` });
-              for (const r of records) {
-                try {
-                  await pb.collection("user_map_stats").delete(r.id);
-                } catch (delErr) {
-                  await pb.collection("user_map_stats").update(r.id, {
-                    ore_count: {},
-                    mushroom_count: {},
-                    plant_count: {},
-                    stick_count: 0,
-                  });
-                }
-              }
-            } catch (err: any) {
-              console.error("Failed to clear PocketBase", err);
-            }
-          }
-
-          setClearingStats(false);
-          window.ipcRenderer?.send("close-panel-window");
-          setTimeout(() => {
-            window.location.reload();
-          }, 300);
-        } catch (e) {
-          console.error(e);
-          setClearingStats(false);
+          } catch (err) { console.error(err); }
         }
-      },
-    );
+        setClearingStats(false); setTimeout(() => window.location.reload(), 300);
+      } catch (e) { console.error(e); setClearingStats(false); }
+    });
   };
 
-  const handleCheckForUpdates = () => {
-    if (window.ipcRenderer) {
-      setUpdaterError("");
-      window.ipcRenderer.send("check-for-updates");
-    }
-  };
+  const handleCheckForUpdates = () => { if (window.ipcRenderer) { setUpdaterError(""); window.ipcRenderer.send("check-for-updates"); } };
+  const handleInstallUpdate = () => { if (window.ipcRenderer) window.ipcRenderer.send("quit-and-install-update"); };
 
-  const handleInstallUpdate = () => {
-    if (window.ipcRenderer) {
-      window.ipcRenderer.send("quit-and-install-update");
-    }
-  };
+  const statusDot = (ok: boolean) => (
+    <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: ok ? '#4caf50' : '#cc3333', boxShadow: ok ? '0 0 5px rgba(76,175,80,0.6)' : '0 0 5px rgba(204,51,51,0.6)', flexShrink: 0 }} />
+  );
+
+  const Kbd = ({ k }: { k: string }) => (
+    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 600, padding: '2px 7px', borderRadius: 3, background: '#1c1508', border: '1px solid #c8860a', borderBottomWidth: 2, color: '#e8b840', letterSpacing: '0.06em' }}>{k}</span>
+  );
 
   return (
-    <div className="flex flex-col h-full overflow-hidden text-slate-200 relative">
-      {/* Title */}
-      <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2 mb-1">
-        <Info className="w-5 h-5 text-teal-400" />
-        Detalhes da Aplicação
-      </h2>
-      <div className="h-[1px] bg-slate-800/60 w-full mb-4"></div>
+    <div className="relative" style={{ color: '#e8d5a0' }}>
+      <div className="flex flex-col" style={{ gap: 12, paddingBottom: 8 }}>
 
-      {/* Main Content Info */}
-      <div className="flex-1 flex flex-col justify-between overflow-y-auto pr-1 custom-scrollbar space-y-4">
-        {/* App Logo and Info */}
-        <div className="bg-[#11161D]/55 border border-slate-800/60 p-4 rounded-xl flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center flex-none">
-            <img
-              src="./images/logo_mini.webp"
-              alt="Logo"
-              className="w-7 h-7 object-contain"
-              draggable={false}
-            />
+        {/* App info */}
+        <div style={{ background: 'rgba(13,10,4,0.7)', border: '1px solid #3a2508', borderRadius: 3, padding: '14px 14px', display: 'flex', alignItems: 'center', gap: 14, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: 'linear-gradient(180deg,#c8860a,#7a4e08)' }} />
+          {/* Corner brackets */}
+          <div style={{ position: 'absolute', top: 6, left: 6, width: 10, height: 10, borderTop: '1px solid #c8860a', borderLeft: '1px solid #c8860a' }} />
+          <div style={{ position: 'absolute', top: 6, right: 6, width: 10, height: 10, borderTop: '1px solid #c8860a', borderRight: '1px solid #c8860a' }} />
+          <div style={{ position: 'absolute', bottom: 6, left: 6, width: 10, height: 10, borderBottom: '1px solid #c8860a', borderLeft: '1px solid #c8860a' }} />
+          <div style={{ position: 'absolute', bottom: 6, right: 6, width: 10, height: 10, borderBottom: '1px solid #c8860a', borderRight: '1px solid #c8860a' }} />
+          <div style={{ width: 52, height: 52, borderRadius: 4, background: 'rgba(200,134,10,0.08)', border: '1px solid #c8860a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <img src="./images/logo_mini.webp" alt="Logo" style={{ width: 32, height: 32, objectFit: 'contain' }} draggable={false} />
           </div>
-          <div className="min-w-0">
-            <h3 className="font-black text-slate-100 text-sm tracking-wide">
-              SHINOBI MAP HUD
+          <div style={{ minWidth: 0 }}>
+            <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 14, fontWeight: 900, color: '#ffffff', letterSpacing: '0.12em', margin: 0 }}>
+              SANDCORE HUD
             </h3>
-            <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-              Versão {appVersion} • Build Electron
+            <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: '#c8a030', margin: '4px 0 0', letterSpacing: '0.08em' }}>
+              v{appVersion} · BUILD ELECTRON
             </p>
           </div>
         </div>
 
-        {/* System Diagnostics */}
-        <div className="space-y-2">
-          <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-slate-500 ml-1">
-            Diagnóstico do Sistema
-          </span>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-[#11161D] border border-slate-800/80 p-3 rounded-lg flex items-center justify-between">
-              <span className="text-xs text-slate-400 flex items-center gap-1.5">
-                <Zap size={13} className="text-teal-400" />
-                Servidor API
-              </span>
-              <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                  pocketbaseConnected
-                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                    : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                }`}
-              >
-                {pocketbaseConnected ? "ONLINE" : "OFFLINE"}
-              </span>
-            </div>
-            <div className="bg-[#11161D] border border-slate-800/80 p-3 rounded-lg flex items-center justify-between">
-              <span className="text-xs text-slate-400 flex items-center gap-1.5">
-                <ShieldCheck size={13} className="text-teal-400" />
-                IPC Electron
-              </span>
-              <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded">
-                CONECTADO
-              </span>
-            </div>
+        {/* Diagnostics */}
+        <div>
+          <SL>Diagnóstico do Sistema</SL>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+            {[
+              { label: 'Servidor API', icon: Zap, ok: pocketbaseConnected },
+              { label: 'IPC Electron', icon: ShieldCheck, ok: true },
+            ].map(({ label, icon: Icon, ok }) => (
+              <div key={label} style={{ padding: '8px 10px', borderRadius: 3, background: 'rgba(13,10,4,0.8)', border: '1px solid #2e1e06', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 10, color: '#c8c8b0', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon size={12} style={{ color: '#9a7a40' }} /> {label}
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: ok ? '#4caf50' : '#cc3333', letterSpacing: '0.06em' }}>
+                  {statusDot(ok)} {ok ? 'ONLINE' : 'OFFLINE'}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Update Section */}
-        <div className="space-y-2">
-          <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-slate-500 ml-1">
-            Atualização do Software
-          </span>
-          <div className="bg-[#11161D]/55 border border-slate-800/60 p-4 rounded-xl space-y-3">
+        {/* Update */}
+        <div>
+          <SL>Atualização do Software</SL>
+          <div style={{ padding: '10px 12px', borderRadius: 3, background: 'rgba(13,10,4,0.8)', border: '1px solid #2e1e06' }}>
             {updateStatus === "idle" && (
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold text-slate-200">
-                    Verificar atualizações
-                  </span>
-                  <span className="text-[10px] text-slate-400">
-                    Verifique se há novas versões do mapa
-                  </span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#f0e8c0' }}>Verificar atualizações</div>
+                  <div style={{ fontSize: 10, color: '#7a8060', marginTop: 3 }}>Verifique se há novas versões</div>
                 </div>
                 <button
                   onClick={handleCheckForUpdates}
-                  className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-slate-100 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-teal-900/20"
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 4, background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none', fontWeight: 700, fontSize: 10, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.1em', cursor: 'pointer', whiteSpace: 'nowrap' }}
                 >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  Verificar
+                  <RefreshCw size={12} /> VERIFICAR
                 </button>
               </div>
             )}
-
             {updateStatus === "checking" && (
-              <div className="flex items-center gap-3">
-                <RefreshCw className="w-4 h-4 text-teal-400 animate-spin" />
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold text-slate-200">
-                    Buscando atualizações...
-                  </span>
-                  <span className="text-[10px] text-slate-400">
-                    Conectando ao servidor de distribuição
-                  </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <RefreshCw size={16} style={{ color: '#c8860a', animation: 'spin 1s linear infinite' }} />
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#f0e8c0' }}>Buscando atualizações...</div>
+                  <div style={{ fontSize: 9, color: '#7a8060', marginTop: 2 }}>Conectando ao servidor</div>
                 </div>
               </div>
             )}
-
             {updateStatus === "available" && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-teal-400">
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span className="text-xs font-bold">
-                    Nova versão {updateVersion} disponível!
-                  </span>
-                </div>
-                <div className="text-[10px] text-slate-400">
-                  Iniciando o download automático da atualização...
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <RefreshCw size={14} style={{ color: '#c8860a', animation: 'spin 1s linear infinite' }} />
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#c8860a' }}>Nova versão {updateVersion}!</div>
+                  <div style={{ fontSize: 9, color: '#7a8060', marginTop: 2 }}>Iniciando download automático...</div>
                 </div>
               </div>
             )}
-
             {updateStatus === "downloading" && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-[10px] font-mono text-slate-400">
-                  <span>Baixando atualização ({updateVersion})...</span>
-                  <span className="font-bold text-teal-400">
-                    {downloadPercent}%
-                  </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: '#7a8060' }}>
+                  <span>Baixando ({updateVersion})...</span>
+                  <span style={{ color: '#c8860a', fontWeight: 700 }}>{downloadPercent}%</span>
                 </div>
-                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                  <div
-                    className="bg-teal-400 h-full rounded-full transition-all duration-300"
-                    style={{ width: `${downloadPercent}%` }}
-                  />
+                <div style={{ width: '100%', height: 4, borderRadius: 2, background: '#1e1e0e', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${downloadPercent}%`, background: 'linear-gradient(90deg,#b87a08,#e8a820)', borderRadius: 2, transition: 'width 0.3s' }} />
                 </div>
               </div>
             )}
-
             {updateStatus === "downloaded" && (
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-emerald-400">
-                    Atualização {updateVersion} baixada!
-                  </span>
-                  <span className="text-[10px] text-slate-400">
-                    Reinicie para aplicar as alterações
-                  </span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#4caf50' }}>Atualização {updateVersion} pronta!</div>
+                  <div style={{ fontSize: 9, color: '#7a8060', marginTop: 2 }}>Reinicie para aplicar</div>
                 </div>
-                <button
-                  onClick={handleInstallUpdate}
-                  className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-slate-100 text-xs font-bold transition-all cursor-pointer shadow-md shadow-emerald-900/20"
-                >
-                  Reiniciar e Instalar
+                <button onClick={handleInstallUpdate} style={{ padding: '7px 14px', borderRadius: 4, background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', fontWeight: 700, fontSize: 10, fontFamily: "'JetBrains Mono', monospace", cursor: 'pointer', letterSpacing: '0.08em', border: 'none' }}>
+                  REINICIAR
                 </button>
               </div>
             )}
-
             {updateStatus === "not-available" && (
-              <div className="flex items-center gap-2 text-emerald-400">
-                <ShieldCheck className="w-4.5 h-4.5" />
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold">
-                    Você está atualizado
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    Aplicativo rodando na última versão ({appVersion})
-                  </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <ShieldCheck size={16} style={{ color: '#4caf50' }} />
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#4caf50' }}>Você está atualizado</div>
+                  <div style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: '#7a8060', marginTop: 2 }}>v{appVersion} é a última versão</div>
                 </div>
               </div>
             )}
-
             {updateStatus === "error" && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-rose-400">
-                    Falha ao atualizar
-                  </span>
-                  <button
-                    onClick={handleCheckForUpdates}
-                    className="px-2.5 py-1.2 rounded-lg bg-rose-950 border border-rose-800 text-rose-300 text-[10px] font-semibold hover:bg-rose-900 transition-all cursor-pointer"
-                  >
-                    Tentar Novamente
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#cc3333' }}>Falha ao atualizar</span>
+                  <button onClick={handleCheckForUpdates} style={{ padding: '5px 10px', borderRadius: 3, background: 'rgba(120,20,20,0.2)', border: '1px solid #7a1414', color: '#e07070', fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", cursor: 'pointer', letterSpacing: '0.08em' }}>
+                    TENTAR NOVAMENTE
                   </button>
                 </div>
-                <p className="text-[10px] text-slate-500 font-mono leading-tight">
-                  {updaterError ||
-                    "Erro ao conectar ao servidor de atualizações."}
-                </p>
+                <p style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: '#7a8060', margin: 0, lineHeight: 1.5 }}>{updaterError || "Erro ao conectar ao servidor."}</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* App Config Summary */}
-        <div className="space-y-2">
-          <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-slate-500 ml-1">
-            Configuração Ativa
-          </span>
-          <div className="bg-[#11161D] border border-slate-800/80 p-3.5 rounded-lg space-y-2 text-xs">
-            <div className="flex justify-between">
-              <span className="text-slate-400">Escala de Interface</span>
-              <span className="font-semibold text-slate-200">{uiScale}%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">
-                Sempre no Topo (Always-On-Top)
-              </span>
-              <span className="font-semibold text-slate-200">
-                {alwaysOnTop ? "Ativo" : "Inativo"}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Atalho - Abrir Mapa</span>
-              <span className="font-mono text-teal-400 font-bold bg-[#0B0E12] px-1.5 py-0.5 rounded border border-slate-800">
-                Ctrl + Alt + M
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Atalho - Configurações</span>
-              <span className="font-mono text-teal-400 font-bold bg-[#0B0E12] px-1.5 py-0.5 rounded border border-slate-800">
-                Ctrl + Alt + S
-              </span>
-            </div>
+        {/* Config summary */}
+        <div>
+          <SL>Configuração Ativa</SL>
+          <div style={{ borderRadius: 3, overflow: 'hidden', border: '1px solid #2e1e06' }}>
+            {[
+              { label: 'Escala de Interface', render: () => <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 3, background: '#0d0e0a', border: '1px solid #2e3020', color: '#f0e8c0' }}>{uiScale}%</span> },
+              { label: 'Sempre no Topo', render: () => <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: alwaysOnTop ? '#4caf50' : '#7a8060', letterSpacing: '0.06em' }}>{statusDot(alwaysOnTop)} {alwaysOnTop ? 'ATIVO' : 'INATIVO'}</span> },
+              { label: 'Atalho — Abrir Mapa', render: () => <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Kbd k="Ctrl" /><span style={{ color: '#5a6040', fontSize: 9 }}>+</span><Kbd k="Alt" /><span style={{ color: '#5a6040', fontSize: 9 }}>+</span><Kbd k="M" /></span> },
+              { label: 'Atalho — Configurações', render: () => <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Kbd k="Ctrl" /><span style={{ color: '#5a6040', fontSize: 9 }}>+</span><Kbd k="Alt" /><span style={{ color: '#5a6040', fontSize: 9 }}>+</span><Kbd k="S" /></span> },
+            ].map(({ label, render }, i, arr) => (
+              <div
+                key={label}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', fontSize: 10, background: 'rgba(13,10,4,0.8)', borderBottom: i < arr.length - 1 ? '1px solid rgba(46,30,6,0.7)' : 'none' }}
+              >
+                <span style={{ color: '#a0a880' }}>{label}</span>
+                {render()}
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Action / Troubleshooting utilities */}
-        <div className="space-y-2">
-          <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-slate-500 ml-1">
-            Ferramentas de Suporte
-          </span>
-          <div className="space-y-2">
+        {/* Support tools */}
+        <div>
+          <SL>Ferramentas de Suporte</SL>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             <button
-              onClick={handleClearCache}
-              disabled={clearingCache}
-              className="w-full flex items-center justify-between bg-rose-500/5 hover:bg-rose-500/10 border border-rose-500/20 p-2.5 rounded-lg text-xs text-rose-400 transition-colors disabled:opacity-50 cursor-pointer text-left"
+              onClick={handleClearCache} disabled={clearingCache}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '10px 8px', borderRadius: 3, background: 'transparent', border: '1px solid #2e1e06', color: '#c8a840', fontSize: 9, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer', transition: 'all 0.15s', opacity: clearingCache ? 0.5 : 1 }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(74,47,10,0.25)'; e.currentTarget.style.borderColor = '#6a4e18'; e.currentTarget.style.color = '#e8c860'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#2e1e06'; e.currentTarget.style.color = '#c8a840'; }}
             >
-              <span className="flex items-center gap-2">
-                <Trash2 size={14} />
-                Limpar Marcações Ativas do Mapa
-              </span>
-              <HardDrive size={14} />
+              <Trash2 size={16} />
+              LIMPAR MARCAÇÕES
             </button>
             <button
-              onClick={handleClearStats}
-              disabled={clearingStats}
-              className="w-full flex items-center justify-between bg-rose-500/5 hover:bg-rose-500/10 border border-rose-500/20 p-2.5 rounded-lg text-xs text-rose-400 transition-colors disabled:opacity-50 cursor-pointer text-left"
+              onClick={handleClearStats} disabled={clearingStats}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '10px 8px', borderRadius: 3, background: 'transparent', border: '1px solid #2e1e06', color: '#c8a840', fontSize: 9, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer', transition: 'all 0.15s', opacity: clearingStats ? 0.5 : 1 }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(74,47,10,0.25)'; e.currentTarget.style.borderColor = '#6a4e18'; e.currentTarget.style.color = '#e8c860'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#2e1e06'; e.currentTarget.style.color = '#c8a840'; }}
             >
-              <span className="flex items-center gap-2">
-                <Trash2 size={14} />
-                Limpar Histórico de Estatísticas
-              </span>
-              <RefreshCw size={14} />
+              <RotateCcw size={16} />
+              LIMPAR ESTATÍSTICAS
             </button>
           </div>
         </div>
+
       </div>
 
-      {/* Beautiful Custom Confirm Modal Overlay */}
+      {/* Confirm modal */}
       {confirmModal.isOpen && (
-        <div className="absolute inset-0 bg-[#080A0C]/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-[#0B0E12] border border-[#222B37] rounded-2xl p-5 w-full max-w-sm flex flex-col gap-4 shadow-[0_0_50px_rgba(0,0,0,0.85)] border-t border-t-rose-500/30 animate-in zoom-in-95 duration-200">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/25 flex items-center justify-center flex-none">
-                <Trash2 className="w-5 h-5 text-rose-400" />
+        <div style={{ position: 'absolute', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(9,7,4,0.92)', backdropFilter: 'blur(4px)' }}>
+          <div style={{ width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 16, borderRadius: 3, padding: 18, background: '#0e0b05', border: '1px solid #3a2508', boxShadow: '0 0 40px rgba(0,0,0,0.9)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 3, background: 'rgba(200,134,10,0.08)', border: '1px solid #c8860a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Trash2 size={16} style={{ color: '#c8860a' }} />
               </div>
-              <div className="flex flex-col gap-1 min-w-0">
-                <h4 className="text-sm font-bold text-white tracking-wide">
-                  {confirmModal.title}
-                </h4>
-                <p className="text-[11px] text-slate-400 leading-normal">
-                  {confirmModal.message}
-                </p>
+              <div style={{ minWidth: 0 }}>
+                <h4 style={{ fontFamily: "'Cinzel', serif", fontSize: 12, fontWeight: 700, color: '#f0e8c0', margin: '0 0 4px' }}>{confirmModal.title}</h4>
+                <p style={{ fontSize: 10, color: '#9a7a40', margin: 0, lineHeight: 1.6 }}>{confirmModal.message}</p>
               </div>
             </div>
-
-            <div className="flex justify-end gap-2 mt-1">
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button
-                onClick={() =>
-                  setConfirmModal((prev) => ({ ...prev, isOpen: false }))
-                }
-                className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 font-bold text-xs transition-all cursor-pointer"
+                onClick={() => setConfirmModal((p) => ({ ...p, isOpen: false }))}
+                style={{ padding: '6px 14px', borderRadius: 3, fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em', cursor: 'pointer', background: 'transparent', border: '1px solid #2e1e06', color: '#9a7a40' }}
               >
-                Cancelar
+                CANCELAR
               </button>
               <button
                 onClick={confirmModal.onConfirm}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-[0_0_15px_rgba(225,29,72,0.35)]"
+                style={{ padding: '6px 14px', borderRadius: 3, fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em', cursor: 'pointer', background: 'linear-gradient(135deg,#b87a08,#e8a820)', border: 'none', color: '#0a0800' }}
               >
-                Confirmar
+                CONFIRMAR
               </button>
             </div>
           </div>
@@ -514,5 +322,4 @@ export const AppDetailsScreen = () => {
     </div>
   );
 };
-
 export default AppDetailsScreen;

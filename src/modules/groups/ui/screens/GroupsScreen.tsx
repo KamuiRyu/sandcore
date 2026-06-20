@@ -1,6 +1,100 @@
-import { useState } from 'react'
-import { Shield, Loader2, Users, UserPlus, Plus, Copy, LogOut } from 'lucide-react'
+import React, { useState } from 'react'
+import { Loader2, Users, UserPlus, Plus, Copy, LogOut, Shield } from 'lucide-react'
 import { useGroupViewModel } from '../viewModels/useGroup.viewModel'
+
+const SL = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex items-center gap-2 mb-2">
+    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>[</span>
+    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#c8a030', whiteSpace: 'nowrap' }}>
+      {children}
+    </span>
+    <div className="flex-1" style={{ borderTop: '1px dashed rgba(200,160,48,0.25)' }} />
+    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>]</span>
+  </div>
+)
+
+const TechCard = ({ children, style }: { children: React.ReactNode, style?: React.CSSProperties }) => (
+  <div style={{ background: 'rgba(13,10,4,0.7)', border: '1px solid #3a2508', borderRadius: 3, padding: '14px 14px', position: 'relative', overflow: 'hidden', ...style }}>
+    <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: 'linear-gradient(180deg,#c8860a,#7a4e08)' }} />
+    <div style={{ position: 'absolute', top: 6, left: 6, width: 10, height: 10, borderTop: '1px solid #c8860a', borderLeft: '1px solid #c8860a' }} />
+    <div style={{ position: 'absolute', top: 6, right: 6, width: 10, height: 10, borderTop: '1px solid #c8860a', borderRight: '1px solid #c8860a' }} />
+    <div style={{ position: 'absolute', bottom: 6, left: 6, width: 10, height: 10, borderBottom: '1px solid #c8860a', borderLeft: '1px solid #c8860a' }} />
+    <div style={{ position: 'absolute', bottom: 6, right: 6, width: 10, height: 10, borderBottom: '1px solid #c8860a', borderRight: '1px solid #c8860a' }} />
+    <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
+  </div>
+)
+
+const ListContainer = ({ children }: { children: React.ReactNode }) => (
+  <div style={{ borderRadius: 3, overflow: 'hidden', border: '1px solid #2e1e06' }}>
+    {children}
+  </div>
+)
+
+const ListItem = ({ children, isLast = false }: { children: React.ReactNode, isLast?: boolean }) => (
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '8px 12px',
+      fontSize: 10,
+      background: 'rgba(13,10,4,0.8)',
+      borderBottom: isLast ? 'none' : '1px solid rgba(46,30,6,0.7)',
+    }}
+  >
+    {children}
+  </div>
+)
+
+const PrimaryButton = ({ children, onClick, disabled = false, padding = '5px 12px' }: { children: React.ReactNode, onClick?: () => void, disabled?: boolean, padding?: string }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    style={{
+      display: 'flex', alignItems: 'center', gap: 6, padding, borderRadius: 3,
+      background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none',
+      fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em',
+      cursor: disabled ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1
+    }}
+  >
+    {children}
+  </button>
+)
+
+const SecondaryButton = ({ children, onClick, disabled = false, padding = '4px 10px' }: { children: React.ReactNode, onClick?: () => void, disabled?: boolean, padding?: string }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding,
+      borderRadius: 3, background: 'transparent', border: '1px solid #2e1e06', color: '#c8a840',
+      fontSize: 9, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, letterSpacing: '0.08em',
+      cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.15s', opacity: disabled ? 0.5 : 1,
+      whiteSpace: 'nowrap'
+    }}
+    onMouseEnter={e => { if(!disabled) { e.currentTarget.style.background = 'rgba(74,47,10,0.25)'; e.currentTarget.style.borderColor = '#6a4e18'; e.currentTarget.style.color = '#e8c860'; } }}
+    onMouseLeave={e => { if(!disabled) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#2e1e06'; e.currentTarget.style.color = '#c8a840'; } }}
+  >
+    {children}
+  </button>
+)
+
+const ErrorButton = ({ children, onClick, disabled = false }: { children: React.ReactNode, onClick?: () => void, disabled?: boolean }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '7px 14px', borderRadius: 3,
+      background: 'rgba(120,20,20,0.2)', border: '1px solid #7a1414', color: '#e07070',
+      fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", cursor: disabled ? 'not-allowed' : 'pointer', letterSpacing: '0.08em',
+      transition: 'all 0.15s', opacity: disabled ? 0.5 : 1, width: '100%'
+    }}
+    onMouseEnter={e => { if(!disabled) { e.currentTarget.style.background = 'rgba(120,20,20,0.4)'; } }}
+    onMouseLeave={e => { if(!disabled) { e.currentTarget.style.background = 'rgba(120,20,20,0.2)'; } }}
+  >
+    {children}
+  </button>
+)
 
 export const GroupsScreen = () => {
   const {
@@ -20,171 +114,167 @@ export const GroupsScreen = () => {
   const [newGroupName, setNewGroupName] = useState('')
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2 mb-1">
-        <Shield className="w-5 h-5 text-teal-400" />
-        Sistema de Clã
-      </h2>
-      <div className="h-[1px] bg-slate-800/60 w-full mb-3"></div>
-
+    <div className="flex flex-col h-full overflow-hidden" style={{ color: '#e8d5a0' }}>
       {groupLoading ? (
         <div className="flex-1 flex flex-col items-center justify-center">
-          <Loader2 className="animate-spin text-teal-500 w-8 h-8 mb-2" />
-          <span className="text-xs text-slate-400">Carregando informações do clã...</span>
+          <Loader2 className="animate-spin w-8 h-8 mb-2" style={{ color: '#c8860a' }} />
+          <span className="text-xs" style={{ color: '#9a7a40' }}>Carregando informações do clã...</span>
         </div>
       ) : !group ? (
-        <div className="flex-1 flex flex-col justify-between overflow-y-auto pr-1 custom-scrollbar">
-          <div className="space-y-4">
-            <div className="rounded-xl border border-dashed border-[#1E2732] bg-[#11161D]/30 p-4 text-center">
-              <Users size={28} className="mx-auto text-slate-600 mb-2 opacity-40" />
-              <p className="text-[11px] text-slate-400 leading-normal">
-                Você não faz parte de nenhum grupo tático. Crie o seu clã ou entre em um existente para compartilhar pontos no mapa.
-              </p>
+        <div className="flex-1 flex flex-col justify-between overflow-y-auto pr-1 custom-scrollbar space-y-4">
+          {/* Empty state */}
+          <div
+            className="rounded-[2px] border border-dashed p-4 text-center"
+            style={{ borderColor: '#2e1e06', background: 'rgba(13,10,4,0.8)' }}
+          >
+            <Users size={28} className="mx-auto mb-2 opacity-30" style={{ color: '#c8a030' }} />
+            <p className="text-[11px] leading-normal" style={{ color: '#9a7a40' }}>
+              Você não faz parte de nenhum grupo tático. Crie o seu clã ou entre em um existente para compartilhar pontos no mapa.
+            </p>
+          </div>
+
+          {groupError && (
+            <div
+              className="text-[10px] p-2.5 rounded-[2px] font-medium border"
+              style={{ background: 'rgba(139,26,26,0.15)', borderColor: '#8b1a1a', color: '#c0392b' }}
+            >
+              {groupError}
             </div>
+          )}
 
-            {groupError && (
-              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] p-2.5 rounded-lg font-medium">
-                {groupError}
-              </div>
-            )}
-
-            {/* Entrar no Grupo */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500 ml-1">
-                Entrar no Grupo
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Código (ex: ABC123)"
-                  value={joinCode}
-                  onChange={(e) => {
-                    setJoinCode(e.target.value.toUpperCase())
-                    setGroupError(null)
-                  }}
-                  className="flex-1 rounded-xl border border-[#222B37] bg-[#11161D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500/50 transition-colors"
-                />
-                <button
-                  onClick={() => joinGroup(joinCode)}
-                  disabled={!joinCode.trim() || groupLoading}
-                  className="px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer shadow-[0_0_15px_rgba(20,184,166,0.2)]"
-                >
-                  <UserPlus size={14} />
-                  Entrar
-                </button>
-              </div>
+          {/* Entrar */}
+          <div className="space-y-2">
+            <SL>Entrar no Grupo</SL>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Código (ex: ABC123)"
+                value={joinCode}
+                onChange={(e) => { setJoinCode(e.target.value.toUpperCase()); setGroupError(null) }}
+                className="flex-1 rounded-[2px] px-3 py-2 text-xs outline-none transition-colors"
+                style={{
+                  background: 'rgba(13,10,4,0.8)',
+                  border: '1px solid #2e1e06',
+                  color: '#e8d5a0',
+                }}
+                onFocus={e => (e.currentTarget.style.borderColor = '#c8860a')}
+                onBlur={e => (e.currentTarget.style.borderColor = '#2e1e06')}
+              />
+              <PrimaryButton onClick={() => joinGroup(joinCode)} disabled={!joinCode.trim() || groupLoading} padding="8px 14px">
+                <UserPlus size={14} />
+                ENTRAR
+              </PrimaryButton>
             </div>
+          </div>
 
-            {/* Criar Novo Clã */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500 ml-1">
-                Criar Novo Clã
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Nome do seu clã"
-                  value={newGroupName}
-                  onChange={(e) => {
-                    setNewGroupName(e.target.value)
-                    setGroupError(null)
-                  }}
-                  className="flex-1 rounded-xl border border-[#222B37] bg-[#11161D] px-3 py-2 text-xs text-white outline-none focus:border-teal-500/50 transition-colors"
-                />
-                <button
-                  onClick={() => createGroup(newGroupName)}
-                  disabled={!newGroupName.trim() || groupLoading}
-                  className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-white text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
-                >
-                  <Plus size={14} />
-                  Criar
-                </button>
-              </div>
+          {/* Criar */}
+          <div className="space-y-2">
+            <SL>Criar Novo Clã</SL>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Nome do seu clã"
+                value={newGroupName}
+                onChange={(e) => { setNewGroupName(e.target.value); setGroupError(null) }}
+                className="flex-1 rounded-[2px] px-3 py-2 text-xs outline-none transition-colors"
+                style={{
+                  background: 'rgba(13,10,4,0.8)',
+                  border: '1px solid #2e1e06',
+                  color: '#e8d5a0',
+                }}
+                onFocus={e => (e.currentTarget.style.borderColor = '#c8860a')}
+                onBlur={e => (e.currentTarget.style.borderColor = '#2e1e06')}
+              />
+              <SecondaryButton onClick={() => createGroup(newGroupName)} disabled={!newGroupName.trim() || groupLoading} padding="8px 14px">
+                <Plus size={14} />
+                CRIAR
+              </SecondaryButton>
             </div>
           </div>
         </div>
       ) : (
         <div className="flex-1 flex flex-col justify-between overflow-hidden">
-          <div className="flex-1 flex flex-col overflow-hidden space-y-3">
-            {/* Group Details Card */}
-            <div className="rounded-xl border border-teal-500/15 bg-teal-950/5 p-2.5 relative overflow-hidden group">
-              <div className="absolute top-1/2 -translate-y-1/2 right-2 opacity-5 pointer-events-none">
-                <Shield size={36} className="text-teal-400" />
+          <div className="flex-1 flex flex-col overflow-hidden space-y-4">
+            {/* Group Card */}
+            <TechCard>
+              <div className="absolute top-1/2 -translate-y-1/2 right-2 opacity-[0.04] pointer-events-none z-0">
+                <Shield size={40} style={{ color: '#c8860a' }} />
               </div>
               <div className="relative z-10 flex items-center justify-between gap-3">
                 <div className="flex flex-col min-w-0">
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-teal-400/80">
+                  <span
+                    className="text-[9px] font-bold uppercase tracking-wider"
+                    style={{ fontFamily: "'Cinzel', serif", color: '#9a7a40' }}
+                  >
                     Grupo Ativo
                   </span>
-                  <h4 className="text-sm font-black text-white mt-0.5 truncate max-w-[140px] leading-tight">
+                  <h4
+                    className="text-sm font-black mt-0.5 truncate max-w-[140px] leading-tight"
+                    style={{ color: '#f0e8c0', fontFamily: "'Cinzel', serif", letterSpacing: '0.08em' }}
+                  >
                     {group.name}
                   </h4>
                 </div>
-                <div className="flex items-center gap-2 bg-[#0B0E12]/80 border border-[#1E2732] rounded-lg p-1.5 px-2">
+                <div
+                  className="flex items-center gap-2 rounded-[2px] p-1.5 px-2"
+                  style={{ background: 'rgba(13,10,4,0.8)', border: '1px solid #2e1e06' }}
+                >
                   <div className="flex flex-col">
-                    <span className="text-[8px] font-mono font-bold uppercase text-slate-500 leading-none mb-0.5">
+                    <span className="text-[8px] font-mono font-bold uppercase leading-none mb-0.5" style={{ color: '#9a7a40' }}>
                       Convite
                     </span>
-                    <span className="text-[11px] font-mono font-black text-teal-400 tracking-wider leading-none">
+                    <span className="text-[11px] font-mono font-black tracking-wider leading-none" style={{ color: '#c8860a' }}>
                       {group.inviteCode}
                     </span>
                   </div>
-                  <button
-                    onClick={copyInviteCode}
-                    className={`flex items-center gap-1 rounded px-2 py-1 text-[8px] font-bold uppercase transition-all active:scale-95 cursor-pointer border ${
-                      copySuccess 
-                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
-                        : 'bg-white/5 border-white/10 text-white hover:bg-white/10'
-                    }`}
-                  >
+                  <SecondaryButton onClick={copyInviteCode} padding="4px 8px">
                     <Copy size={9} />
-                    {copySuccess ? 'Copiado!' : 'Copiar'}
-                  </button>
+                    {copySuccess ? 'COPIADO!' : 'COPIAR'}
+                  </SecondaryButton>
                 </div>
               </div>
-            </div>
+            </TechCard>
 
-            {/* Members List */}
+            {/* Members */}
             <div className="flex-1 flex flex-col overflow-hidden min-h-[100px]">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500 ml-1 mb-2 block">
-                Membros ({members.length})
-              </span>
-              <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
-                {members.map((member) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center justify-between p-2 rounded-lg bg-[#11161D] border border-slate-800/60"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="h-6 w-6 rounded bg-teal-500/10 flex items-center justify-center text-teal-400 font-black text-[10px] border border-teal-500/20 uppercase">
-                        {member.userName.charAt(0)}
+              <SL>Membros ({members.length})</SL>
+              <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+                <ListContainer>
+                  {members.map((member, idx) => (
+                    <ListItem key={member.id} isLast={idx === members.length - 1}>
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="h-7 w-7 rounded-[3px] flex items-center justify-center font-black text-[11px] uppercase"
+                          style={{ background: 'rgba(200,134,10,0.08)', border: '1px solid #c8860a', color: '#c8860a' }}
+                        >
+                          {member.userName.charAt(0)}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold leading-tight" style={{ color: '#e8d5a0' }}>
+                            {member.userName}
+                          </span>
+                          <span className="text-[9px] font-mono uppercase leading-none mt-1" style={{ color: '#9a7a40', letterSpacing: '0.04em' }}>
+                            {member.role === 'admin' ? 'Líder' : 'Membro'}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-white leading-tight">
-                          {member.userName}
-                        </span>
-                        <span className="text-[8px] font-mono text-slate-500 uppercase leading-none mt-0.5">
-                          {member.role === 'admin' ? 'Líder' : 'Membro'}
-                        </span>
-                      </div>
-                    </div>
-                    {member.role === 'admin' && (
-                      <Shield size={11} className="text-teal-400 opacity-60" />
-                    )}
-                  </div>
-                ))}
+                      {member.role === 'admin' && (
+                        <Shield size={12} style={{ color: '#c8860a', opacity: 0.8 }} />
+                      )}
+                    </ListItem>
+                  ))}
+                </ListContainer>
               </div>
             </div>
           </div>
 
-          {/* Leave Group Button */}
-          <button
-            onClick={leaveGroup}
-            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-rose-500/20 bg-rose-950/10 py-2 text-xs font-bold uppercase tracking-wider text-rose-400 hover:bg-rose-500/10 transition-all active:scale-95 cursor-pointer"
-          >
-            <LogOut size={13} />
-            Sair do Grupo
-          </button>
+          {/* Leave */}
+          <div className="mt-3">
+            <ErrorButton onClick={leaveGroup}>
+              <LogOut size={13} />
+              SAIR DO CLÃ
+            </ErrorButton>
+          </div>
         </div>
       )}
     </div>

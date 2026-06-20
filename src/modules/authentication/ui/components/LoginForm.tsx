@@ -85,20 +85,20 @@ export const LoginForm = ({ viewModel, rememberMe, setRememberMe }: LoginFormPro
         {...register('password')}
       />
 
-      <div className="flex items-center justify-between text-xs pt-0.5">
+      <div className="flex items-center justify-between font-mono text-[0.55rem] font-black uppercase tracking-wider pt-0.5">
         <label className="flex items-center gap-2 cursor-pointer text-slate-400 hover:text-slate-300 transition-colors">
           <input
             type="checkbox"
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
-            className="rounded border-[#1A222C] bg-[#11151A] text-teal-500 focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5 cursor-pointer accent-teal-500"
+            className="rounded-[2px] border-[#4a2f0a] bg-[#1a1105] text-[#c8860a] focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5 cursor-pointer accent-[#c8860a]"
           />
           <span>Lembrar de mim</span>
         </label>
         <button
           type="button"
           onClick={handleForgotPassword}
-          className="text-teal-500 font-semibold hover:underline transition-all cursor-pointer bg-transparent border-0 p-0"
+          className="text-[#c8860a] font-mono font-black uppercase hover:text-[#f0d9a0] hover:underline transition-all cursor-pointer bg-transparent border-0 p-0"
           style={{ WebkitAppRegion: 'no-drag' } as any}
         >
           Esqueci minha senha
@@ -108,7 +108,7 @@ export const LoginForm = ({ viewModel, rememberMe, setRememberMe }: LoginFormPro
       <button
         type="submit"
         disabled={viewModel.authLoading}
-        className="w-full bg-[#03A696] hover:bg-[#028A7D] text-white font-bold tracking-wider text-xs rounded-lg py-3 flex items-center justify-center relative transition-all active:scale-[0.99] cursor-pointer"
+        className="w-full bg-gradient-to-r from-[#c8860a] to-[#e0a020] text-black shadow-[0_0_15px_rgba(200,134,10,0.4)] hover:scale-105 active:scale-95 text-white font-mono text-[0.65rem] font-black uppercase tracking-[0.1em] rounded-[2px] py-3 flex items-center justify-center relative transition-all active:scale-[0.99] cursor-pointer"
         style={{ WebkitAppRegion: 'no-drag' } as any}
       >
         {viewModel.authLoading ? (

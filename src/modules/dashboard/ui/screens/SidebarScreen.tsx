@@ -1,4 +1,5 @@
-import { Map, LogOut, Users, Settings, BarChart2, Info, Hammer } from 'lucide-react'
+import React from 'react'
+import { Map, LogOut, Users, Settings, BarChart2, Hammer } from 'lucide-react'
 
 type TabType = 'groups' | 'map' | 'stats' | 'details' | 'settings' | 'crafting'
 
@@ -6,6 +7,10 @@ interface SidebarScreenProps {
   activeTab: string | null
   onLogout: () => void
 }
+
+const NOISE_SVG = `url("./images/noise.svg")`
+
+import { SunagakureLogo } from '../../../app/ui/components/SunagakureLogo'
 
 export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
   const handleTabClick = (tabId: TabType) => {
@@ -20,102 +25,129 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
   }
 
   const menuItems = [
-    { id: 'details', icon: null, label: 'Detalhes' },
-    { id: 'groups', icon: Users, label: 'Grupos' },
-    { id: 'map', icon: Map, label: 'Mapa' },
-    { id: 'stats', icon: BarChart2, label: 'Estatísticas' },
-    { id: 'crafting', icon: Hammer, label: 'Crafting' },
+    { id: 'groups',   icon: Users,     label: 'Grupos'       },
+    { id: 'map',      icon: Map,       label: 'Mapa'         },
+    { id: 'stats',    icon: BarChart2, label: 'Estatísticas' },
+    { id: 'crafting', icon: Hammer,    label: 'Crafting'     },
   ] as const
 
   return (
-    <div className="w-full h-full bg-transparent p-0.5 select-none font-sans overflow-hidden">
-      
-      {/* Floating vertical sidebar column */}
-      <div 
-        className="w-full h-full flex flex-col justify-between items-center py-2 bg-[#0B0E12]/95 border border-[#1E2732]/60 rounded-2xl relative z-10"
-        style={{ 
-          WebkitAppRegion: 'drag'
-        } as any}
-      >
-        {/* Top Controls: Logo & Navigation */}
-        <div className="flex flex-col items-center w-full">
-          {menuItems.map((item, index) => {
+    <div
+      className="w-full h-full select-none"
+      style={{
+        background: 'linear-gradient(180deg, #0e0b05 0%, #090704 100%)',
+        border: '1px solid rgba(255,221,102,0.4)',
+        borderRadius: 8,
+        WebkitAppRegion: 'drag',
+        overflow: 'hidden',
+        position: 'relative',
+      } as React.CSSProperties}
+    >
+      <div style={{ position: 'absolute', inset: 0, backgroundImage: NOISE_SVG, pointerEvents: 'none', zIndex: 0, opacity: 0.04 }} />
+
+      <div className="relative flex flex-col items-center h-full" style={{ zIndex: 1 }}>
+
+        {/* Logo */}
+        <div className="w-full flex items-center justify-center" style={{ padding: '10px 0 8px', flexShrink: 0 }}>
+          <div
+            className="flex items-center justify-center cursor-pointer"
+            style={{ width: 38, height: 38, WebkitAppRegion: 'no-drag' } as any}
+            onClick={() => handleTabClick('details')}
+            title="Detalhes"
+          >
+            <SunagakureLogo active={activeTab === 'details'} />
+          </div>
+        </div>
+
+        {/* Divider logo → nav */}
+        <div style={{ width: 28, height: 1, background: 'linear-gradient(90deg, transparent, rgba(200,134,10,0.4), transparent)', margin: '4px 0', flexShrink: 0 }} />
+
+        {/* Main nav */}
+        <div className="flex flex-col items-center w-full" style={{ padding: '10px 0', gap: 2, flexShrink: 0 }}>
+          {menuItems.map((item) => {
             const Icon = item.icon
             const isActive = activeTab === item.id
-            
             return (
-              <div key={item.id} className="flex flex-col items-center w-full">
-                {index > 0 && <div className="h-[1px] w-6 bg-slate-800/50 my-0.5"></div>}
-                
-                <button
-                  onClick={() => handleTabClick(item.id)}
-                  style={{ WebkitAppRegion: 'no-drag' } as any}
-                  className={`relative w-9.5 h-9.5 rounded-lg flex items-center justify-center transition-all duration-300 group cursor-pointer
-                    ${isActive 
-                      ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 shadow-[0_0_10px_rgba(3,166,150,0.25)]' 
-                      : 'text-slate-400 hover:text-teal-400 hover:bg-white/5 border border-transparent'
-                    }
-                  `}
-                  title={item.label}
-                >
-                  {isActive && (
-                    <div className="absolute left-[-4px] top-1/2 -translate-y-1/2 w-1 h-3.5 rounded-r-md bg-teal-400" />
-                  )}
-                  
-                  {item.id === 'details' ? (
-                    <img 
-                      src="./images/logo_mini.webp" 
-                      alt="Logo" 
-                      className="w-7 h-7 group-hover:rotate-90 transition-transform duration-500 ease-out object-contain" 
-                      draggable={false}
-                    />
-                  ) : (
-                    Icon && <Icon 
-                      size={20} 
-                      className="transition-all duration-300 group-hover:scale-110" 
-                    />
-                  )}
-                </button>
-              </div>
+              <NavItem key={item.id} isActive={isActive} label={item.label} onClick={() => handleTabClick(item.id)}>
+                <Icon size={18} />
+              </NavItem>
             )
           })}
         </div>
 
-        {/* Bottom Controls: Settings & Logout */}
-        <div className="flex flex-col items-center w-full">
-          <button
-            onClick={() => handleTabClick('settings')}
-            style={{ WebkitAppRegion: 'no-drag' } as any}
-            className={`relative w-9.5 h-9.5 rounded-lg flex items-center justify-center transition-all duration-300 group cursor-pointer
-              ${activeTab === 'settings' 
-                ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 shadow-[0_0_10px_rgba(3,166,150,0.25)]' 
-                : 'text-slate-400 hover:text-teal-400 hover:bg-white/5 border border-transparent'
-              }
-            `}
-            title="Configurações"
-          >
-            {activeTab === 'settings' && (
-              <div className="absolute left-[-4px] top-1/2 -translate-y-1/2 w-1 h-3.5 rounded-r-md bg-teal-400" />
-            )}
-            <Settings size={20} className="transition-all duration-300 group-hover:scale-110" />
-          </button>
-
-          <div className="h-[1px] w-6 bg-slate-800/50 my-0.5"></div>
-
-          <button
-            onClick={handleLogout}
-            style={{ WebkitAppRegion: 'no-drag' } as any}
-            className="relative w-9.5 h-9.5 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-500/5 transition-all cursor-pointer group"
-            title="Fazer Logout"
-          >
-            <LogOut size={18} className="transition-transform group-hover:-translate-x-0.5" />
-          </button>
-
-          {/* Bottom Teal Indicator Line */}
-          <div className="w-3 h-0.5 bg-teal-500/50 rounded-full mt-1"></div>
+        {/* Bottom nav */}
+        <div className="flex flex-col items-center w-full" style={{ marginTop: 'auto', padding: '10px 0', gap: 2 }}>
+          <div style={{ width: 28, height: 1, background: 'linear-gradient(90deg, transparent, rgba(200,134,10,0.4), transparent)', margin: '0 0 6px', flexShrink: 0 }} />
+          <NavItem isActive={activeTab === 'settings'} label="Configurações" onClick={() => handleTabClick('settings')}>
+            <Settings size={18} />
+          </NavItem>
+          <NavItem isActive={false} label="Sair" isExit onClick={handleLogout}>
+            <LogOut size={18} />
+          </NavItem>
         </div>
+
       </div>
     </div>
   )
 }
 
+/* ── NavItem ──────────────────────────────────────────── */
+interface NavItemProps {
+  isActive: boolean
+  isExit?: boolean
+  label: string
+  onClick: () => void
+  children: React.ReactNode
+}
+
+const NavItem = ({ isActive, isExit = false, label, onClick, children }: NavItemProps) => {
+  const baseColor   = isExit ? '#7a3020'             : '#6a5028'
+  const hoverBg     = isExit ? 'rgba(120,48,32,0.2)' : 'rgba(74,47,10,0.35)'
+  const hoverBorder = isExit ? 'rgba(180,80,50,0.4)' : 'rgba(200,134,10,0.3)'
+  const hoverColor  = isExit ? '#e07060'             : '#c8a040'
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={onClick}
+        title={label}
+        style={{
+          width: 40, height: 40,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          borderRadius: 3, cursor: 'pointer', position: 'relative',
+          border: isActive ? '1px solid rgba(200,134,10,0.35)' : '1px solid transparent',
+          background: isActive ? 'rgba(74,47,10,0.4)' : 'transparent',
+          color: isActive ? '#e8b840' : baseColor,
+          transition: 'all .2s',
+          WebkitAppRegion: 'no-drag',
+        } as React.CSSProperties}
+        onMouseEnter={e => {
+          if (!isActive) {
+            const el = e.currentTarget
+            el.style.background = hoverBg
+            el.style.borderColor = hoverBorder
+            el.style.color = hoverColor
+          }
+        }}
+        onMouseLeave={e => {
+          if (!isActive) {
+            const el = e.currentTarget
+            el.style.background = 'transparent'
+            el.style.borderColor = 'transparent'
+            el.style.color = baseColor
+          }
+        }}
+      >
+        {isActive && (
+          <div style={{
+            position: 'absolute',
+            left: -1, top: '20%', bottom: '20%', width: 2,
+            background: 'linear-gradient(180deg, transparent, #ff6600, transparent)',
+            borderRadius: '0 1px 1px 0',
+          }} />
+        )}
+        {children}
+      </button>
+    </div>
+  )
+}

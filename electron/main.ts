@@ -12,6 +12,7 @@ app.commandLine.appendSwitch('disable-background-timer-throttling')
 process.env.DIST = path.join(__dirname, '../dist')
 process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(process.env.DIST, '../public')
 
+let splashWin: BrowserWindow | null = null
 let loginWin: BrowserWindow | null = null
 let sidebarWin: BrowserWindow | null = null
 let currentLayoutSide: 'left' | 'right' = 'right'
@@ -166,6 +167,43 @@ function isPositionOnSomeScreen(x: number, y: number, width: number, height: num
   })
 }
 
+function createSplashWindow() {
+  if (splashWin && !splashWin.isDestroyed()) {
+    splashWin.focus()
+    return
+  }
+
+  const preloadPath = path.join(process.env.DIST!, '../dist-electron/preload.js')
+
+  splashWin = new BrowserWindow({
+    icon: path.join(process.env.VITE_PUBLIC!, 'favicon.ico'),
+    width: 400,
+    height: 400,
+    resizable: false,
+    frame: false,
+    transparent: true,
+    hasShadow: false,
+    backgroundColor: '#00000000',
+    alwaysOnTop: true,
+    center: true,
+    webPreferences: {
+      preload: preloadPath,
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  })
+
+  if (process.env.VITE_DEV_SERVER_URL) {
+    splashWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}?windowType=splash`)
+  } else {
+    splashWin.loadFile(path.join(process.env.DIST!, 'index.html'), { query: { windowType: 'splash' } })
+  }
+
+  splashWin.on('closed', () => {
+    splashWin = null
+  })
+}
+
 function createLoginWindow() {
   if (loginWin && !loginWin.isDestroyed()) {
     loginWin.focus()
@@ -254,6 +292,21 @@ function setupMoveListeners(win: BrowserWindow) {
   })
 }
 
+function forcePanelToFront() {
+  if (panelWin && !panelWin.isDestroyed() && currentTabId) {
+    if (process.platform === 'win32') {
+      panelWin.hide()
+    }
+    if (appConfig.alwaysOnTop) {
+      panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
+    } else {
+      panelWin.setAlwaysOnTop(true)
+      panelWin.setAlwaysOnTop(false)
+    }
+    panelWin.showInactive()
+  }
+}
+
 function createSidebarWindow() {
   if (sidebarWin && !sidebarWin.isDestroyed()) {
     sidebarWin.focus()
@@ -264,8 +317,8 @@ function createSidebarWindow() {
   currentTabId = null
   const zoom = (appConfig.uiScale || 100) / 100
 
-  const width = Math.round(60 * zoom)
-  const height = Math.round(360 * zoom)
+  const width = Math.round(56 * zoom)
+  const height = Math.round(420 * zoom)
 
   let x: number | undefined
   let y: number | undefined
@@ -285,8 +338,9 @@ function createSidebarWindow() {
     transparent: true,
     hasShadow: false,
     backgroundColor: '#00000000',
+    minimizable: false,
     alwaysOnTop: appConfig.alwaysOnTop,
-    skipTaskbar: false, // User might want it in taskbar, but we'll see
+    skipTaskbar: false,
     focusable: true,
     webPreferences: {
       preload: preloadPath,
@@ -317,31 +371,30 @@ function createSidebarWindow() {
   sidebarWin.setFullScreenable(false)
   sidebarWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
   sidebarWin.setMenu(null)
+  sidebarWin.setOpacity(appConfig.sidebarOpacity / 100)
 
   if (appConfig.alwaysOnTop) {
     sidebarWin.setAlwaysOnTop(true, 'screen-saver', 1)
   }
 
-  // Prevent the window from being minimized by the system when losing focus to a fullscreen app
+  // Re-assert alwaysOnTop when the sidebar loses focus to prevent Windows from
+  // dropping it behind other windows (e.g. VS Code) after the user clicks it.
   sidebarWin.on('blur', () => {
-    if (appConfig.alwaysOnTop && sidebarWin) {
+    if (appConfig.alwaysOnTop && sidebarWin && !sidebarWin.isDestroyed()) {
       sidebarWin.setAlwaysOnTop(true, 'screen-saver', 1)
     }
   })
 
-  // Bring panel to front when sidebar is focused/restored
   sidebarWin.on('focus', () => {
-    if (panelWin && !panelWin.isDestroyed() && currentTabId) {
-      if (appConfig.alwaysOnTop) {
-        panelWin.setAlwaysOnTop(false)
-        panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
-      }
-      panelWin.showInactive()
+    if (!appConfig.alwaysOnTop) {
+      forcePanelToFront()
     }
   })
 
   sidebarWin.on('minimize' as any, () => {
-    // Let the window minimize naturally
+    if (panelWin && !panelWin.isDestroyed()) {
+      panelWin.hide()
+    }
   })
 
   sidebarWin.on('restore', () => {
@@ -352,19 +405,13 @@ function createSidebarWindow() {
     } else {
       sidebarWin?.show()
     }
-    
-    if (panelWin && !panelWin.isDestroyed() && currentTabId) {
-      if (panelWin.isMinimized()) panelWin.restore()
-      panelWin.showInactive()
-    }
+
+    forcePanelToFront()
   })
 
   sidebarWin.webContents.on('dom-ready', () => {
     sidebarWin?.webContents.setZoomFactor(zoom)
   })
-
-  // Open DevTools automatically to see errors - can be commented out later
-  //sidebarWin.webContents.openDevTools()
 
   if (process.env.VITE_DEV_SERVER_URL) {
     sidebarWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}?windowType=sidebar`)
@@ -375,10 +422,12 @@ function createSidebarWindow() {
   sidebarWin.on('closed', () => {
     sidebarWin = null
     if (panelWin && !panelWin.isDestroyed()) {
-      panelWin.close()
+      panelWin.destroy()
+      panelWin = null
     }
     if (!loginWin || loginWin.isDestroyed()) {
-      app.quit()
+      BrowserWindow.getAllWindows().forEach(w => { try { w.destroy() } catch (_) {} })
+      app.exit(0)
     }
   })
 
@@ -394,7 +443,6 @@ function createPanelWindow() {
   const zoom = (appConfig.uiScale || 100) / 100
 
   panelWin = new BrowserWindow({
-    parent: sidebarWin && !sidebarWin.isDestroyed() ? sidebarWin : undefined,
     icon: path.join(process.env.VITE_PUBLIC!, 'favicon.ico'),
     width: 0,
     height: 0,
@@ -405,7 +453,7 @@ function createPanelWindow() {
     hasShadow: false,
     backgroundColor: '#00000000',
     alwaysOnTop: appConfig.alwaysOnTop,
-    skipTaskbar: true, // Hide from taskbar, sidebar is the main anchor
+    skipTaskbar: true,
     focusable: true,
     webPreferences: {
       preload: preloadPath,
@@ -417,12 +465,13 @@ function createPanelWindow() {
 
   panelWin.setMenu(null)
 
+
   if (appConfig.alwaysOnTop) {
     panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
   }
 
   panelWin.on('blur', () => {
-    if (appConfig.alwaysOnTop && panelWin) {
+    if (appConfig.alwaysOnTop && panelWin && !panelWin.isDestroyed()) {
       panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
     }
   })
@@ -530,9 +579,6 @@ function openPanel(tabId: string, immediate = false) {
   if (tabId === 'map') {
     panelLogicalW = 1200
     panelLogicalH = 800
-  } else if (tabId === 'crafting') {
-    panelLogicalW = 800
-    panelLogicalH = 600
   }
 
   const physicalPanelW = Math.round(panelLogicalW * zoom)
@@ -591,6 +637,8 @@ function openPanel(tabId: string, immediate = false) {
   if (appConfig.alwaysOnTop) {
     panel.setAlwaysOnTop(false)
     panel.setAlwaysOnTop(true, 'screen-saver', 1)
+  } else {
+    panel.setAlwaysOnTop(false)
   }
 
   // Force show unconditionally
@@ -792,12 +840,23 @@ ipcMain.on('set-config', (_event, newConfig) => {
     updateShortcutSettings(newConfig.shortcutSettings)
   }
 
+  if ('sidebarOpacity' in newConfig && sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.setOpacity(newConfig.sidebarOpacity / 100)
+  }
+
   if ('alwaysOnTop' in newConfig) {
     if (sidebarWin && !sidebarWin.isDestroyed()) {
       if (newConfig.alwaysOnTop) {
         sidebarWin.setAlwaysOnTop(true, 'screen-saver', 1)
       } else {
         sidebarWin.setAlwaysOnTop(false)
+      }
+    }
+    if (panelWin && !panelWin.isDestroyed()) {
+      if (newConfig.alwaysOnTop) {
+        panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
+      } else {
+        panelWin.setAlwaysOnTop(false)
       }
     }
   }
@@ -812,10 +871,21 @@ ipcMain.on('set-config', (_event, newConfig) => {
     const zoom = newConfig.uiScale / 100
     if (sidebarWin && !sidebarWin.isDestroyed()) {
       sidebarWin.webContents.setZoomFactor(zoom)
-      if (currentTabId) openPanel(currentTabId)
+      const [curX, curY] = sidebarWin.getPosition()
+      const newW = Math.round(56 * zoom)
+      const newH = Math.round(420 * zoom)
+      sidebarWin.setBounds({ x: curX, y: curY, width: newW, height: newH })
+    }
+    if (panelWin && !panelWin.isDestroyed()) {
+      panelWin.webContents.setZoomFactor(zoom)
+    }
+    if (sidebarWin && !sidebarWin.isDestroyed() && currentTabId) {
+      openPanel(currentTabId)
     }
     if (loginWin && !loginWin.isDestroyed()) {
       loginWin.webContents.setZoomFactor(zoom)
+      const [lx, ly] = loginWin.getPosition()
+      loginWin.setBounds({ x: lx, y: ly, width: Math.round(800 * zoom), height: Math.round(600 * zoom) })
     }
   }
 })
@@ -834,6 +904,25 @@ ipcMain.on('panel-ready', (event) => {
   }
 })
 
+ipcMain.on('set-ignore-mouse-events', (_event, ignore: boolean) => {
+  if (sidebarWin && !sidebarWin.isDestroyed())
+    sidebarWin.setIgnoreMouseEvents(ignore, { forward: true })
+})
+
+ipcMain.on('sidebar-set-open', (_event, open: boolean) => {
+  if (!sidebarWin || sidebarWin.isDestroyed()) return
+  const zoom = (appConfig.uiScale || 100) / 100
+  const [, h] = sidebarWin.getSize()
+  const [x, y] = sidebarWin.getPosition()
+  if (open) {
+    const newW = Math.round(76 * zoom)
+    sidebarWin.setBounds({ x, y, width: newW, height: h })
+  } else {
+    const newW = Math.round(20 * zoom)
+    sidebarWin.setBounds({ x: x + Math.round(56 * zoom), y, width: newW, height: h })
+  }
+})
+
 // Toggle panel layout inside the main window
 ipcMain.on('toggle-panel-window', (_event, tabId) => {
   togglePanel(tabId)
@@ -846,9 +935,7 @@ ipcMain.on('close-panel-window', () => {
 
 // Minimize window
 ipcMain.on('minimize-panel-window', () => {
-  if (sidebarWin && !sidebarWin.isDestroyed()) {
-    sidebarWin.minimize()
-  }
+  closePanel()
 })
 
 // Clear all stats
@@ -892,6 +979,14 @@ ipcMain.on('window-control', (event, action) => {
   }
 })
 
+ipcMain.on('splash-finished', () => {
+  if (splashWin && !splashWin.isDestroyed()) {
+    splashWin.close()
+    splashWin = null
+  }
+  createLoginWindow()
+})
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
@@ -900,7 +995,7 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createLoginWindow()
+    createSplashWindow()
   }
 })
 
@@ -926,7 +1021,7 @@ if (!gotTheLock) {
   })
 
   app.whenReady().then(() => {
-    createLoginWindow()
+    createSplashWindow()
     if (appConfig.shortcutMap) {
       updateShortcutMap(appConfig.shortcutMap)
     }

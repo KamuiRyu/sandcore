@@ -1,6 +1,11 @@
 import { memo, type ReactNode } from "react";
 import { X, type LucideIcon } from "lucide-react";
-import { motion, AnimatePresence, LazyMotion, domAnimation } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  LazyMotion,
+  domAnimation,
+} from "framer-motion";
 import { cn } from "../../../../lib/utils";
 
 interface HudPanelProps {
@@ -17,6 +22,8 @@ interface HudPanelProps {
   height?: string;
   hideHeader?: boolean;
   showGrid?: boolean;
+  /** When true, fills its container instead of floating absolutely */
+  standalone?: boolean;
 }
 
 export const HudPanel = memo(function HudPanel({
@@ -32,77 +39,151 @@ export const HudPanel = memo(function HudPanel({
   width = "w-[440px]",
   height = "h-[600px]",
   hideHeader = false,
-  showGrid = true,
+  standalone = false,
 }: HudPanelProps) {
   return (
     <LazyMotion features={domAnimation}>
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 12, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.98 }}
+            initial={{
+              opacity: 0,
+              ...(standalone ? {} : { y: 12, scale: 0.98 }),
+            }}
+            animate={{ opacity: 1, ...(standalone ? {} : { y: 0, scale: 1 }) }}
+            exit={{ opacity: 0, ...(standalone ? {} : { y: 8, scale: 0.98 }) }}
             transition={{ duration: 0.18, ease: "easeOut" }}
             className={cn(
-              "pointer-events-auto absolute bottom-16 left-4 z-40 flex flex-col",
-              width,
-              height,
-              className
+              "flex flex-col",
+              standalone
+                ? "pointer-events-auto w-full h-full"
+                : cn(
+                    "pointer-events-auto absolute bottom-16 left-4 z-40",
+                    width,
+                    height,
+                  ),
+              className,
             )}
           >
-            {/* Container — Technical Glassmorphism */}
-            <div className="relative flex h-full w-full flex-col overflow-hidden bg-[#030a0d]/96 rounded-[12px] border border-white/[0.03] shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-              {/* Subtle technical grid background */}
-              {showGrid && (
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(0,214,163,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(0,214,163,0.015)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none rounded-[12px]" />
-              )}
+            {/* Container — Sunagakure */}
+            <div
+              className="relative flex h-full w-full flex-col overflow-hidden rounded-[2px] border border-[#4a2f0a]"
+              style={{
+                background: "linear-gradient(160deg,#0e0b05 0%,#090704 100%)",
+                border: "1px solid rgba(255, 221, 102, 0.4)",
+              }}
+            >
+              {/* Gold top accent line */}
+              <div
+                className="absolute top-0 left-0 right-0 h-[3px] pointer-events-none z-10"
+                style={{
+                  background:
+                    "linear-gradient(90deg, transparent 0%, #4a2f0a 15%, #c8860a 40%, #e8a820 50%, #c8860a 60%, #4a2f0a 85%, transparent 100%)",
+                }}
+              />
+
+              {/* Sand grain overlay */}
+              <div
+                className="absolute inset-0 pointer-events-none z-0 opacity-[0.04]"
+                style={{
+                  backgroundImage: `url("./images/noise.svg")`,
+                }}
+              />
 
               {/* Header */}
               {!hideHeader && (
-                <header className="relative flex items-center justify-between px-6 py-5 border-b border-white/[0.03] bg-white/[0.01] shrink-0 z-20">
-                  <div className="flex items-center gap-4 min-w-0 flex-1">
-                    {/* Icon Container */}
-                    <div className="relative shrink-0">
-                      <div className="relative grid h-10 w-10 place-items-center bg-black/50 border border-white/10 rounded-xl text-cyan-400">
-                        <Icon size={18} strokeWidth={2} />
-                      </div>
+                <header
+                  className="relative flex items-center justify-between px-4 py-[10px] border-b border-[#4a2f0a] shrink-0 z-20"
+                  style={{
+                    background: "transparent",
+                  }}
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    {/* Icon circle */}
+                    <div
+                      className="flex items-center justify-center w-[18px] h-[18px] rounded-full border flex-shrink-0"
+                      style={{ borderColor: "#c8860a", color: "#c8860a" }}
+                    >
+                      <Icon size={10} />
                     </div>
 
-                    <div className="min-w-0 flex-1">
-                      <h2 className="text-sm font-black uppercase tracking-[0.2em] bg-clip-text text-transparent bg-gradient-to-r from-white to-cyan-400">
+                    {/* Title row */}
+                    <div className="flex items-center gap-2" style={{ fontFamily: "'Cinzel', serif" }}>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "#c8860a" }}>
+                        SandCore
+                      </span>
+                      <span className="text-[10px] uppercase tracking-[0.12em]" style={{ color: "#9a9080" }}>
                         {title}
-                      </h2>
-                      {subtitle && (
-                        <p className="text-[8.5px] font-mono font-bold text-slate-500 uppercase tracking-widest mt-0.5 truncate">
-                          {subtitle}
-                        </p>
-                      )}
+                      </span>
                     </div>
+
+                    {subtitle && (
+                      <span className="text-[9px] tracking-wide" style={{ color: "#9a7a40" }}>
+                        {subtitle}
+                      </span>
+                    )}
                   </div>
 
                   <button
                     onClick={onClose}
-                    className="grid h-8 w-8 place-items-center rounded-lg border border-white/[0.03] bg-white/[0.02] text-slate-500 hover:bg-red-500/10 hover:text-red-400 transition cursor-pointer"
+                    className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#4a2f0a] transition-all cursor-pointer"
+                    style={{ background: "#2e1f08", color: "#9a7a40" }}
+                    onMouseEnter={(e) => {
+                      const el = e.currentTarget;
+                      el.style.borderColor = "#c8860a";
+                      el.style.color = "#c8860a";
+                      el.style.background = "#4a2f0a";
+                    }}
+                    onMouseLeave={(e) => {
+                      const el = e.currentTarget;
+                      el.style.borderColor = "#4a2f0a";
+                      el.style.color = "#9a7a40";
+                      el.style.background = "#2e1f08";
+                    }}
                   >
-                    <X size={15} />
+                    <X size={11} />
                   </button>
                 </header>
               )}
 
               {/* Content Area */}
-              <div className={cn(
-                "min-h-0 flex-1 overflow-y-auto custom-scrollbar relative z-10 rounded-b-[24px]",
-                contentClassName
-              )}>
+              <div
+                className={cn(
+                  "min-h-0 flex-1 overflow-y-auto custom-scrollbar relative z-10",
+                  contentClassName,
+                )}
+              >
                 {children}
               </div>
 
               {/* Footer */}
               {footer && (
-                <footer className="px-6 py-4 border-t border-white/[0.03] bg-white/[0.01] relative shrink-0 z-10 rounded-b-[24px]">
+                <footer
+                  className="px-5 py-3 border-t border-[#4a2f0a] relative shrink-0 z-10"
+                  style={{ background: "rgba(13,10,5,0.4)" }}
+                >
                   {footer}
                 </footer>
               )}
+
+              {/* Scroll kanji decoration */}
+              <div className="absolute bottom-0 right-0 w-20 h-20 overflow-hidden pointer-events-none opacity-[0.03] z-0">
+                <svg
+                  viewBox="0 0 100 100"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-20 h-20"
+                >
+                  <text
+                    x="10"
+                    y="80"
+                    fontSize="90"
+                    fontFamily="serif"
+                    fill="#f0d9a0"
+                  >
+                    砂
+                  </text>
+                </svg>
+              </div>
             </div>
           </motion.div>
         )}
@@ -110,6 +191,5 @@ export const HudPanel = memo(function HudPanel({
     </LazyMotion>
   );
 });
-
 
 export default HudPanel;
