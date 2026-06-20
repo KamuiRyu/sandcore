@@ -12,6 +12,9 @@ import {
   Map,
   X,
   Minus,
+  Scroll,
+  Shield,
+  Award,
 } from "lucide-react";
 import { GroupsScreen } from "../../../groups/ui/screens/GroupsScreen";
 import { MapScreen } from "../../../map/ui/screens/MapScreen";
@@ -19,6 +22,10 @@ import { SettingsScreen } from "../../../settings/ui/screens/SettingsScreen";
 import { StatsScreen } from "./StatsScreen";
 import { AppDetailsScreen } from "./AppDetailsScreen";
 import { CraftingScreen } from "./CraftingScreen";
+import { MissionBoardScreen } from "../../../village/ui/screens/MissionBoardScreen";
+import { MyMissionsScreen } from "../../../village/ui/screens/MyMissionsScreen";
+import { NinjaCardScreen } from "../../../village/ui/screens/NinjaCardScreen";
+import { AdminPanelScreen } from "../../../village/ui/screens/AdminPanelScreen";
 import { HudPanel } from "../../../app/ui/components/HudPanel";
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { SunagakureLogo } from "../../../app/ui/components/SunagakureLogo";
@@ -29,6 +36,10 @@ const TAB_META: Record<string, { label: string; icon: LucideIcon }> = {
   stats: { label: "Estatísticas", icon: BarChart2 },
   details: { label: "Detalhes", icon: Info },
   crafting: { label: "Crafting", icon: Hammer },
+  missions: { label: "Missões", icon: Scroll },
+  "my-missions": { label: "Minhas Missões", icon: Award },
+  "ninja-card": { label: "Carteirinha", icon: Shield },
+  admin: { label: "Admin", icon: Settings },
 };
 
 interface ContentPanelScreenProps {
@@ -205,6 +216,10 @@ export const ContentPanelScreen = ({
         {!isMapTab && lastActiveTab === "stats" && <StatsScreen />}
         {!isMapTab && lastActiveTab === "details" && <AppDetailsScreen />}
         {!isMapTab && lastActiveTab === "crafting" && <CraftingScreen />}
+        {!isMapTab && lastActiveTab === "missions" && <MissionBoardScreen />}
+        {!isMapTab && lastActiveTab === "my-missions" && <MyMissionsScreen />}
+        {!isMapTab && lastActiveTab === "ninja-card" && <NinjaCardScreen />}
+        {!isMapTab && lastActiveTab === "admin" && <AdminPanelScreen />}
       </HudPanel>
     </div>
   );

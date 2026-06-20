@@ -1,7 +1,8 @@
 import React from 'react'
-import { Map, LogOut, Users, Settings, BarChart2, Hammer } from 'lucide-react'
+import { Map, LogOut, Users, Settings, BarChart2, Hammer, Scroll, Shield, Award } from 'lucide-react'
+import { pb } from '../../../../lib/pocketbase'
 
-type TabType = 'groups' | 'map' | 'stats' | 'details' | 'settings' | 'crafting'
+type TabType = 'groups' | 'map' | 'stats' | 'details' | 'settings' | 'crafting' | 'missions' | 'my-missions' | 'ninja-card' | 'admin'
 
 interface SidebarScreenProps {
   activeTab: string | null
@@ -14,6 +15,11 @@ import { SunagakureLogo } from '../../../app/ui/components/SunagakureLogo'
 import { appStorage } from '../../../../lib/storage';
 
 export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
+  const user = pb.authStore.model
+  const role = user?.role || 'ninja'
+  const isAdmin = role === 'admin'
+  const isManager = role === 'manager' || role === 'admin'
+
   const handleTabClick = (tabId: TabType) => {
     const nextTab = activeTab === tabId ? null : tabId
     window.ipcRenderer?.send('toggle-panel-window', nextTab)
@@ -25,12 +31,19 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
     onLogout()
   }
 
-  const menuItems = [
-    { id: 'groups',   icon: Users,     label: 'Grupos'       },
-    { id: 'map',      icon: Map,       label: 'Mapa'         },
-    { id: 'stats',    icon: BarChart2, label: 'Estatísticas' },
-    { id: 'crafting', icon: Hammer,    label: 'Crafting'     },
+  const mainMenuItems = [
+    { id: 'map', icon: Map, label: 'Mapa' },
+    { id: 'missions', icon: Scroll, label: 'Missões' },
+    { id: 'my-missions', icon: Award, label: 'Minhas Missões' },
+    { id: 'ninja-card', icon: Shield, label: 'Carteirinha' },
+    { id: 'groups', icon: Users, label: 'Grupos' },
+    { id: 'stats', icon: BarChart2, label: 'Estatísticas' },
+    { id: 'crafting', icon: Hammer, label: 'Crafting' },
   ] as const
+
+  const adminItems = [
+    ...(isAdmin ? [{ id: 'admin' as const, icon: Settings, label: 'Admin' }] : []),
+  ]
 
   return (
     <div
@@ -60,12 +73,12 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
           </div>
         </div>
 
-        {/* Divider logo → nav */}
+        {/* Divider */}
         <div style={{ width: 28, height: 1, background: 'linear-gradient(90deg, transparent, rgba(200,134,10,0.4), transparent)', margin: '4px 0', flexShrink: 0 }} />
 
         {/* Main nav */}
-        <div className="flex flex-col items-center w-full" style={{ padding: '10px 0', gap: 2, flexShrink: 0 }}>
-          {menuItems.map((item) => {
+        <div className="flex flex-col items-center w-full overflow-y-auto flex-1 py-2" style={{ gap: 2 }}>
+          {mainMenuItems.map((item) => {
             const Icon = item.icon
             const isActive = activeTab === item.id
             return (
@@ -77,8 +90,16 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
         </div>
 
         {/* Bottom nav */}
-        <div className="flex flex-col items-center w-full" style={{ marginTop: 'auto', padding: '10px 0', gap: 2 }}>
+        <div className="flex flex-col items-center w-full" style={{ padding: '10px 0', gap: 2 }}>
           <div style={{ width: 28, height: 1, background: 'linear-gradient(90deg, transparent, rgba(200,134,10,0.4), transparent)', margin: '0 0 6px', flexShrink: 0 }} />
+          {adminItems.map(item => {
+            const Icon = item.icon
+            return (
+              <NavItem key={item.id} isActive={activeTab === item.id} label={item.label} onClick={() => handleTabClick(item.id)}>
+                <Icon size={18} />
+              </NavItem>
+            )
+          })}
           <NavItem isActive={activeTab === 'settings'} label="Configurações" onClick={() => handleTabClick('settings')}>
             <Settings size={18} />
           </NavItem>

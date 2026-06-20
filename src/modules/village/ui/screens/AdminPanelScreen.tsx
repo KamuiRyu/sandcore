@@ -90,8 +90,8 @@ const MembersTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
 }
 
 const EditUserModal = ({ user, vm, onClose }: { user: User; vm: ReturnType<typeof useAdminViewModel>; onClose: () => void }) => {
-  const [role, setRole] = useState(user.role)
-  const [ninja_rank, setNinjaRank] = useState(user.ninja_rank || '')
+  const [role, setRole] = useState<string>(user.role)
+  const [ninja_rank, setNinjaRank] = useState<string>(user.ninja_rank || '')
   const [level, setLevel] = useState(String(user.level || 0))
   const [saving, setSaving] = useState(false)
 
@@ -402,7 +402,7 @@ const SettingsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
     max_daily_missions: String(vm.settings?.max_daily_missions || 5),
     daily_points_per_ninja: String(vm.settings?.daily_points_per_ninja || 20),
     min_donation_amount: String(vm.settings?.min_donation_amount || 0),
-    donation_period: vm.settings?.donation_period || 'weekly',
+    donation_period: (vm.settings?.donation_period || 'weekly') as string,
   })
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
