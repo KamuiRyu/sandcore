@@ -1,8 +1,8 @@
 import React from 'react'
-import { Map, LogOut, Users, Settings, BarChart2, Hammer, Scroll, Shield, Award } from 'lucide-react'
+import { Map, LogOut, Users, Settings, BarChart2, Hammer, Scroll, Shield, Award, Building2 } from 'lucide-react'
 import { pb } from '../../../../lib/pocketbase'
 
-type TabType = 'groups' | 'map' | 'stats' | 'details' | 'settings' | 'crafting' | 'missions' | 'my-missions' | 'ninja-card' | 'admin'
+type TabType = 'groups' | 'map' | 'stats' | 'details' | 'settings' | 'crafting' | 'missions' | 'my-missions' | 'ninja-card' | 'admin' | 'manager'
 
 interface SidebarScreenProps {
   activeTab: string | null
@@ -42,6 +42,7 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
   ] as const
 
   const adminItems = [
+    ...(isManager ? [{ id: 'manager' as const, icon: Building2, label: 'Organização' }] : []),
     ...(isAdmin ? [{ id: 'admin' as const, icon: Settings, label: 'Admin' }] : []),
   ]
 

@@ -26,6 +26,7 @@ import { MissionBoardScreen } from "../../../village/ui/screens/MissionBoardScre
 import { MyMissionsScreen } from "../../../village/ui/screens/MyMissionsScreen";
 import { NinjaCardScreen } from "../../../village/ui/screens/NinjaCardScreen";
 import { AdminPanelScreen } from "../../../village/ui/screens/AdminPanelScreen";
+import { ManagerScreen } from "../../../village/ui/screens/ManagerScreen";
 import { HudPanel } from "../../../app/ui/components/HudPanel";
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { SunagakureLogo } from "../../../app/ui/components/SunagakureLogo";
@@ -40,6 +41,7 @@ const TAB_META: Record<string, { label: string; icon: LucideIcon }> = {
   "my-missions": { label: "Minhas Missões", icon: Award },
   "ninja-card": { label: "Carteirinha", icon: Shield },
   admin: { label: "Admin", icon: Settings },
+  manager: { label: "Organização", icon: Users },
 };
 
 interface ContentPanelScreenProps {
@@ -220,6 +222,7 @@ export const ContentPanelScreen = ({
         {!isMapTab && lastActiveTab === "my-missions" && <MyMissionsScreen />}
         {!isMapTab && lastActiveTab === "ninja-card" && <NinjaCardScreen />}
         {!isMapTab && lastActiveTab === "admin" && <AdminPanelScreen />}
+        {!isMapTab && lastActiveTab === "manager" && <ManagerScreen />}
       </HudPanel>
     </div>
   );
