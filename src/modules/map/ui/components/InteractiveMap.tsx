@@ -145,7 +145,7 @@ const PinTimer = memo(function PinTimer({
   if (timeLeft <= 0) return null;
 
   return (
-    <span className="absolute z-10 rounded bg-slate-950/90 border border-green-500/40 px-1 py-0.5 font-mono text-[8px] font-bold text-green-400 shadow-md">
+    <span className="absolute z-10 rounded bg-[#0f0b04]/90 border border-green-500/40 px-1 py-0.5 font-mono text-[8px] font-bold text-green-400 shadow-md">
       {formatRemainingTime(timeLeft)}
     </span>
   );
@@ -259,7 +259,7 @@ const PinBadge = memo(function PinBadge({
           isSelected
             ? "ring-2 ring-white/85 ring-offset-2 ring-offset-[rgba(6,14,22,0.7)]"
             : "",
-          isCluster ? "ring-1 ring-cyan-400/50 bg-cyan-950/40" : "",
+          isCluster ? "ring-1 ring-[#c8860a]/50 bg-[#4a2f0a]/40" : "",
         )}
         style={{
           boxShadow: isMoving
@@ -267,7 +267,7 @@ const PinBadge = memo(function PinBadge({
             : isSelected
               ? `0 0 22px ${accentColor}`
               : isCluster
-                ? "0 0 15px rgba(0,214,163,0.3)"
+                ? "0 0 15px rgba(200,134,10,0.3)"
                 : undefined,
         }}
       />
@@ -282,7 +282,7 @@ const PinBadge = memo(function PinBadge({
       />
 
       {isCluster && (
-        <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-cyan-500 font-mono text-[10px] font-black text-black shadow-lg ring-1 ring-white/20">
+        <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#c8860a] font-mono text-[10px] font-black text-white shadow-lg ring-1 ring-white/20">
           {clusterCount}
         </span>
       )}
@@ -307,8 +307,8 @@ const FocusBeacon = memo(function FocusBeacon({
   screenY: number;
   color?: string;
 }) {
-  const accent = color ?? "rgba(0,214,163,1)";
-  const accentFaded = "rgba(0,214,163,0.15)";
+  const accent = color ?? "rgba(255,102,0,1)";
+  const accentFaded = "rgba(255,102,0,0.15)";
   return (
     <>
       <style>{`
@@ -424,7 +424,7 @@ const RouteCheckpointBadge = memo(function RouteCheckpointBadge({
         className={cn(
           "absolute grid place-items-center rounded-full border border-white font-mono font-black text-white shadow-[0_4px_15px_rgba(0,0,0,0.4)] pointer-events-none z-40",
           isPin ? "h-5 w-5 text-[0.6rem]" : "h-7 w-7 text-[0.7rem]",
-          isCurrent === true ? "bg-amber-500 ring-2 ring-amber-400" : isCurrent === false ? "bg-slate-600 ring-1 ring-slate-800 opacity-80 text-slate-300" : "bg-orange-500 ring-2 ring-orange-950/50"
+          isCurrent === true ? "bg-amber-500 ring-2 ring-amber-400" : isCurrent === false ? "bg-[#1a1007] ring-1 ring-[#4a2f0a] opacity-80 text-[#9a7a40]" : "bg-orange-500 ring-2 ring-orange-950/50"
         )}
         style={{
           left: `${screenX}px`,
@@ -1336,7 +1336,7 @@ export function InteractiveMap({
             className={cn(
               "flex items-center gap-4 px-6 py-3 rounded-2xl border shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl",
               mode === "pin" || editingCustomPinId !== null
-                ? "border-cyan-500/50 bg-cyan-950/90 shadow-cyan-500/10"
+                ? "border-amber-500/50 bg-amber-950/90 shadow-amber-500/10"
                 : mode === "feedback"
                   ? "border-purple-500/50 bg-purple-950/90 shadow-purple-500/10"
                   : "border-orange-500/50 bg-orange-950/90 shadow-orange-500/10",
@@ -1347,7 +1347,7 @@ export function InteractiveMap({
                 className={cn(
                   "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
                   mode === "pin" || editingCustomPinId !== null
-                    ? "bg-cyan-400"
+                    ? "bg-amber-400"
                     : mode === "feedback"
                       ? "bg-purple-400"
                       : "bg-orange-400",
@@ -1357,7 +1357,7 @@ export function InteractiveMap({
                 className={cn(
                   "relative inline-flex rounded-full h-3.5 w-3.5",
                   mode === "pin" || editingCustomPinId !== null
-                    ? "bg-cyan-500"
+                    ? "bg-amber-500"
                     : mode === "feedback"
                       ? "bg-purple-500"
                       : "bg-orange-500",
@@ -1385,7 +1385,7 @@ export function InteractiveMap({
               </p>
             </div>
             <span className="h-8 w-px bg-white/10 mx-2" />
-            <p className="text-xs font-medium text-slate-300 max-w-[200px] leading-tight">
+            <p className="text-xs font-medium text-[#f0d9a0] max-w-[200px] leading-tight">
               {mode === "feedback"
                 ? "Clique em qualquer lugar do mapa para sugerir um novo ponto ou reportar algo."
                 : mode === "pin"
@@ -1419,7 +1419,7 @@ export function InteractiveMap({
       )}
 
       <section
-        className="relative h-full min-h-0 overflow-hidden bg-[#1f636f] selection:bg-cyan-500/30"
+        className="relative h-full min-h-0 overflow-hidden bg-[#1f636f] selection:bg-amber-500/30"
         style={{ contain: "layout size" }}
       >
         <div className="absolute inset-0 overflow-hidden">
@@ -1557,7 +1557,7 @@ export function InteractiveMap({
                       <span className="font-black uppercase tracking-[0.3em] text-white/90 text-[clamp(9px,1.2vw,12px)] [text-shadow:0_2px_4px_rgba(0,0,0,0.9),0_0_10px_rgba(0,0,0,0.6)]">
                         {boundary.subRegionId}
                       </span>
-                      <div className="h-[1px] w-10 bg-[linear-gradient(90deg,transparent,rgba(0,214,163,0.3),transparent)] mt-1 shadow-[0_0_10px_rgba(0,214,163,0.15)]" />
+                      <div className="h-[1px] w-10 bg-[linear-gradient(90deg,transparent,rgba(200,134,10,0.3),transparent)] mt-1 shadow-[0_0_10px_rgba(255,102,0,0.15)]" />
                     </div>
                   );
                 })}
@@ -1685,7 +1685,7 @@ export function InteractiveMap({
         </div>
 
         {/* Painel Flutuante de Atalhos Rápidos (Canto Superior Direito) */}
-        <div className="absolute top-3 right-3 sm:top-5 sm:right-5 z-[60] flex flex-col gap-2 rounded-full border border-[#00d6a3]/15 bg-[#041418]/28 p-2 shadow-none backdrop-blur-[20px]">
+        <div className="absolute top-3 right-3 sm:top-5 sm:right-5 z-[60] flex flex-col gap-1.5 rounded-2xl border border-white/8 bg-[#030c10]/70 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl">
           {/* Adicionar Pin */}
           <button
             onClick={() => {
@@ -1699,8 +1699,8 @@ export function InteractiveMap({
             className={cn(
               "grid h-10 w-10 place-items-center rounded-full border transition-all duration-200 cursor-pointer group relative",
               mode === "pin"
-                ? "border-cyan-500 bg-cyan-500/20 text-white shadow-[0_0_15px_rgba(0,214,163,0.4)]"
-                : "border-white/10 bg-black/30 text-slate-300 hover:text-white hover:bg-white/10 active:scale-95",
+                ? "border-amber-500 bg-amber-500/20 text-white shadow-[0_0_15px_rgba(200,134,10,0.4)]"
+                : "border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95",
             )}
             title={
               mode === "pin" ? "Cancelar Adição" : "Adicionar Pin Customizado"
@@ -1713,7 +1713,7 @@ export function InteractiveMap({
             />
             {mode !== "pin" && (
               <span className="absolute right-1 top-1 flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
                 <Plus
                   size={8}
                   strokeWidth={4}
@@ -1736,7 +1736,7 @@ export function InteractiveMap({
               "grid h-10 w-10 place-items-center rounded-full border transition-all duration-200 cursor-pointer group relative",
               mode === "feedback"
                 ? "border-purple-500 bg-purple-500/20 text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]"
-                : "border-white/10 bg-black/30 text-slate-300 hover:text-white hover:bg-white/10 active:scale-95",
+                : "border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95",
             )}
             title={
               mode === "feedback"
@@ -1775,7 +1775,7 @@ export function InteractiveMap({
               "grid h-10 w-10 place-items-center rounded-full border transition-all duration-200 cursor-pointer group relative",
               mode === "route"
                 ? "border-orange-500 bg-orange-500/20 text-white shadow-[0_0_15px_rgba(249,115,22,0.4)]"
-                : "border-white/10 bg-black/30 text-slate-300 hover:text-white hover:bg-white/10 active:scale-95",
+                : "border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95",
             )}
             title={mode === "route" ? "Sair do Modo Rota" : "Criar Nova Rota"}
             type="button"
@@ -1798,7 +1798,7 @@ export function InteractiveMap({
           {/* Auto Rota */}
           <button
             onClick={() => setIsAutoRouteModalOpen(true)}
-            className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group relative"
+            className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group relative"
             title="Auto Rota Otimizada"
             type="button"
           >
@@ -1810,10 +1810,13 @@ export function InteractiveMap({
               <Plus
                 size={8}
                 strokeWidth={4}
-                className="relative inline-flex text-cyan-400"
+                className="relative inline-flex text-amber-400"
               />
             </span>
           </button>
+
+          {/* Divider */}
+          <span className="block h-px mx-1 bg-gradient-to-r from-transparent via-white/10 to-transparent my-0.5" />
 
           {/* Biblioteca de Rotas */}
           <button
@@ -1821,7 +1824,7 @@ export function InteractiveMap({
               setSidebarSection("routes");
               setIsSidebarOpen(true);
             }}
-            className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group"
+            className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group"
             title="Biblioteca de Rotas"
             type="button"
           >
@@ -1838,7 +1841,7 @@ export function InteractiveMap({
               selectCustomPin(null);
               setIsSidebarOpen(true);
             }}
-            className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group"
+            className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group"
             title="Meus Pinos Customizados"
             type="button"
           >
@@ -1849,11 +1852,11 @@ export function InteractiveMap({
           </button>
         </div>
 
-        <div className="absolute bottom-3 right-3 sm:bottom-5 sm:right-5 z-[60] rounded-full border border-[#00d6a3]/15 bg-[#041418]/28 px-2 py-3 shadow-none backdrop-blur-[20px]">
+        <div className="absolute bottom-3 right-3 sm:bottom-5 sm:right-5 z-[60] rounded-2xl border border-white/8 bg-[#030c10]/70 px-2 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl">
           <div className="grid justify-items-center gap-2">
             <button
               aria-label="Aproximar mapa"
-              className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/30 text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer"
+              className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer"
               onClick={zoomIn}
               title="Aproximar"
               type="button"
@@ -1871,18 +1874,18 @@ export function InteractiveMap({
               title={`${Math.round(displayedZoomScale * 100)}%`}
               type="button"
             >
-              <span className="absolute left-1/2 top-1 h-[calc(100%-8px)] w-1 -translate-x-1/2 rounded-full bg-black/40 border border-white/5" />
+              <span className="absolute left-1/2 top-1 h-[calc(100%-8px)] w-px -translate-x-1/2 rounded-full bg-gradient-to-b from-white/5 via-white/10 to-white/5" />
               <span
-                className="absolute left-1/2 grid h-4 w-4 -translate-x-1/2 place-items-center rounded-full border border-white/80 bg-slate-300 shadow-[0_2px_6px_rgba(0,0,0,0.4)]"
+                className="absolute left-1/2 grid h-4 w-4 -translate-x-1/2 place-items-center rounded-full border border-[#c8860a]/80 bg-[#4a2f0a] shadow-[0_0_8px_rgba(200,134,10,0.4),0_2px_6px_rgba(0,0,0,0.5)]"
                 style={{ bottom: `${zoomThumbBottom}px` }}
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-slate-800" />
+                <span className="h-1.5 w-1.5 rounded-full bg-[#ffdd66]" />
               </span>
             </button>
 
             <button
               aria-label="Afastar mapa"
-              className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/30 text-slate-300 hover:text-white disabled:cursor-not-allowed disabled:opacity-45 active:scale-95 transition-all duration-200 cursor-pointer"
+              className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white disabled:cursor-not-allowed disabled:opacity-45 active:scale-95 transition-all duration-200 cursor-pointer"
               disabled={displayedZoomScale <= minMapZoom}
               onClick={zoomOut}
               title="Afastar"
@@ -1991,7 +1994,7 @@ export function InteractiveMap({
         !editingCustomPinId && (
           <ViewportPortal>
             <div
-              className="fixed w-[260px] rounded-[18px] border border-white/8 bg-[linear-gradient(180deg,rgba(3,10,13,0.95),rgba(1,5,7,0.92))] p-3 shadow-[0_20px_48px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-2xl text-left select-text animate-[fade-in_150ms_ease-out] before:pointer-events-none before:absolute before:inset-[1px] before:rounded-[17px] before:border before:border-white/[0.03] before:content-[''] flex flex-col"
+              className="fixed w-[280px] rounded-[20px] border border-white/10 bg-[linear-gradient(160deg,rgba(6,16,20,0.97),rgba(2,8,10,0.94))] p-4 shadow-[0_24px_56px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.03),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-2xl text-left select-text animate-[fade-in_150ms_ease-out] flex flex-col"
               style={{
                 zIndex: 80,
                 position: "fixed",
@@ -2000,28 +2003,44 @@ export function InteractiveMap({
                 transform: `translate(${popupCoords.isNearRight ? "-100%" : popupCoords.isNearLeft ? "0%" : "-50%"}, ${popupCoords.isNearTop ? "0%" : "-100%"}) translateY(${popupCoords.isNearTop ? "52px" : "-52px"}) translateX(${popupCoords.isNearRight ? "-16px" : popupCoords.isNearLeft ? "16px" : "0px"})`,
                 transformOrigin: "0 0",
                 cursor: "default",
-                height: "250px",
+                minHeight: "120px",
+                maxHeight: "320px",
               }}
               onPointerDown={(e) => e.stopPropagation()}
               onPointerUp={(e) => e.stopPropagation()}
               onClick={(e) => e.stopPropagation()}
               onWheel={(e) => e.stopPropagation()}
             >
-              {/* Tech Corner Accent inside card */}
-              <div className="absolute inset-0 tech-corner-accent opacity-20 pointer-events-none" />
+              {/* Subtle corner accent */}
+              <div className="absolute inset-0 tech-corner-accent opacity-15 pointer-events-none rounded-[20px]" />
+              {/* Top accent line */}
+              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-[#c8860a]/30 to-transparent" />
 
-              {/* Compact header: name + badge + actions all in one row */}
-              <div className="flex items-start justify-between gap-2 mb-1.5 shrink-0">
+              {/* Header: icon + name + badge + actions */}
+              <div className="flex items-start gap-3 mb-3 shrink-0">
+                <div className="relative shrink-0">
+                  <div className="grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-black/40 shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
+                    <IconImage
+                      className="h-8 w-8 object-contain"
+                      iconId={activePopupPin.iconId}
+                      label={activePopupPin.name}
+                    />
+                  </div>
+                  {activePopupPin.isCompleted && (
+                    <div className="absolute -bottom-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-[#1a2a1a] border border-green-500/50">
+                      <CircleCheck size={10} className="text-green-400" />
+                    </div>
+                  )}
+                </div>
                 <div className="min-w-0 flex-1">
                   <h3 className="text-[13px] font-black text-white truncate tracking-tight leading-none">
                     {activePopupPin.name}
                   </h3>
-                  <div className="mt-1 flex items-center gap-1.5">
-                    <span className="rounded-md bg-white/5 px-1.5 py-0.5 text-[8px] font-mono font-bold uppercase tracking-wider text-cyan-400/90 border border-cyan-500/10">
+                  <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                    <span className="rounded-md bg-[#c8860a]/15 px-1.5 py-0.5 text-[8px] font-mono font-bold uppercase tracking-wider text-[#c8860a] border border-[#c8860a]/20">
                       {activePopupPin.typeLabel}
                     </span>
-                    {/* Contributor inline */}
-                    <span className="text-[8px] font-mono text-slate-500 truncate">
+                    <span className="text-[8px] font-mono text-[#9a7a40] truncate">
                       {activePopupPin.isCustom
                         ? activePopupPin.creator
                         : "Shinobi Legends"}
@@ -2040,7 +2059,7 @@ export function InteractiveMap({
                       });
                       setIsFeedbackModalOpen(true);
                     }}
-                    className="grid h-6 w-6 place-items-center rounded-full border border-white/5 bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition cursor-pointer"
+                    className="grid h-6 w-6 place-items-center rounded-full border border-white/5 bg-white/5 text-[#9a7a40] hover:text-purple-400 hover:bg-purple-500/10 transition cursor-pointer"
                     title="Reportar problema"
                   >
                     <MessageSquare size={11} />
@@ -2054,7 +2073,7 @@ export function InteractiveMap({
                         setSelectedOfficialPointId(null);
                       }
                     }}
-                    className="grid h-6 w-6 place-items-center rounded-full border border-white/5 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                    className="grid h-6 w-6 place-items-center rounded-full border border-white/5 bg-white/5 text-[#9a7a40] hover:text-white hover:bg-white/10 transition cursor-pointer"
                     aria-label="Fechar popup"
                   >
                     <X size={12} />
@@ -2062,7 +2081,10 @@ export function InteractiveMap({
                 </div>
               </div>
 
-              {/* Scrollable content area — scroll only for description-only pins */}
+              {/* Divider */}
+              <div className="h-px bg-gradient-to-r from-transparent via-white/8 to-transparent mb-3 shrink-0" />
+
+              {/* Scrollable content area */}
               {(() => {
                 const hasActionButtons =
                   !activePopupPin.type ||
@@ -2074,14 +2096,14 @@ export function InteractiveMap({
                     <div className="flex-1 overflow-y-auto custom-scrollbar pr-0.5 min-h-0">
                       {/* Description — full text, no truncation */}
                       {activePopupPin.description && (
-                        <p className="text-[9.5px] text-slate-400 leading-snug mb-1.5 whitespace-pre-line">
+                        <p className="text-[9.5px] text-[#9a7a40] leading-snug mb-1.5 whitespace-pre-line">
                           {activePopupPin.description.replace(/\\n/g, "\n")}
                         </p>
                       )}
 
                       {/* Image Section */}
                       {activePopupPin.imageUrl && (
-                        <div className="w-full h-16 rounded-[8px] overflow-hidden border border-white/8 mb-1.5 bg-slate-950 shrink-0">
+                        <div className="w-full h-16 rounded-[8px] overflow-hidden border border-white/8 mb-1.5 bg-[#0f0b04] shrink-0">
                           <img
                             src={activePopupPin.imageUrl}
                             alt={activePopupPin.name}
@@ -2119,7 +2141,7 @@ export function InteractiveMap({
 
                               {!isAuthenticated ? (
                                 <div className="py-2.5 px-1 text-center bg-black/20 rounded-xl border border-white/[0.02]">
-                                  <p className="text-[10px] text-slate-500 italic leading-tight">
+                                  <p className="text-[10px] text-[#9a7a40] italic leading-tight">
                                     Faça login para identificar recursos e
                                     sincronizar timers com seu grupo.
                                   </p>
@@ -2181,7 +2203,7 @@ export function InteractiveMap({
                                           }}
                                           className={cn(
                                             "group relative overflow-hidden flex w-full items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-[9px] font-black uppercase tracking-wide transition-all duration-300 cursor-pointer shadow-md active:scale-[0.97]",
-                                            "bg-gradient-to-r from-[var(--cyan)] to-[#00b894] text-slate-950 hover:brightness-110 shadow-[0_3px_10px_rgba(0,214,163,0.25)] before:absolute before:inset-0 before:-skew-x-12 before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent before:-translate-x-full hover:before:translate-x-full before:transition-transform before:duration-700",
+                                            "bg-gradient-to-r from-[#c8860a] to-[#e0a020] text-slate-950 hover:brightness-110 shadow-[0_3px_10px_rgba(200,134,10,0.25)] before:absolute before:inset-0 before:-skew-x-12 before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent before:-translate-x-full hover:before:translate-x-full before:transition-transform before:duration-700",
                                           )}
                                         >
                                           {isDefault ? (
@@ -2286,7 +2308,7 @@ export function InteractiveMap({
                                             className={cn(
                                               "relative flex-shrink-0 group flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-gradient-to-b from-slate-900/60 to-slate-950/80 transition-all duration-200 hover:border-[var(--cyan)]/50 hover:bg-[var(--cyan)]/10 hover:scale-105 cursor-pointer",
                                               isLastUsed &&
-                                                "border-[var(--cyan)] bg-gradient-to-b from-cyan-950/40 to-cyan-900/60 shadow-[0_0_15px_rgba(0,214,163,0.3)] scale-105",
+                                                "border-[var(--cyan)] bg-gradient-to-b from-amber-950/40 to-amber-900/60 shadow-[0_0_15px_rgba(200,134,10,0.3)] scale-105",
                                             )}
                                             title={getMarkerIconLabel(iconId)}
                                           >
@@ -2319,7 +2341,7 @@ export function InteractiveMap({
                                   "flex flex-1 items-center justify-center gap-1.5 rounded-md py-1 text-[9px] font-black uppercase tracking-wider transition-all pointer-events-auto",
                                   pinVisibility === "private"
                                     ? "bg-white/10 text-white shadow-sm"
-                                    : "text-slate-500 hover:text-slate-300",
+                                    : "text-[#9a7a40] hover:text-[#f0d9a0]",
                                 )}
                               >
                                 <Lock size={12} />
@@ -2331,7 +2353,7 @@ export function InteractiveMap({
                                   "flex flex-1 items-center justify-center gap-1.5 rounded-md py-1 text-[9px] font-black uppercase tracking-wider transition-all pointer-events-auto",
                                   pinVisibility === "group"
                                     ? "bg-[var(--cyan)]/20 text-[var(--cyan)] shadow-sm"
-                                    : "text-slate-500 hover:text-slate-300",
+                                    : "text-[#9a7a40] hover:text-[#f0d9a0]",
                                 )}
                               >
                                 <Shield size={12} />
@@ -2378,7 +2400,7 @@ export function InteractiveMap({
                               <div className="grid gap-2">
                                 {/* Timer status badge */}
                                 <div className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-white/5 bg-[#161c26]/60 shadow-inner">
-                                  <span className="flex items-center gap-2 text-slate-400 font-mono text-[9.5px] font-bold uppercase tracking-widest">
+                                  <span className="flex items-center gap-2 text-[#9a7a40] font-mono text-[9.5px] font-bold uppercase tracking-widest">
                                     <Clock
                                       size={13}
                                       className="text-[var(--cyan)] animate-pulse"
@@ -2487,7 +2509,7 @@ export function InteractiveMap({
                                 disabled={!isAuthenticated}
                                 className={cn(
                                   "relative overflow-hidden w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-black uppercase tracking-widest transition active:scale-[0.98] cursor-pointer pointer-events-auto disabled:opacity-50 disabled:grayscale disabled:pointer-events-none",
-                                  "bg-gradient-to-r from-[var(--cyan)] to-[#00b894] text-slate-950 hover:brightness-110 shadow-[0_4px_16px_rgba(0,214,163,0.25)] hover:shadow-[0_6px_20px_rgba(0,214,163,0.45)] before:absolute before:inset-0 before:-skew-x-12 before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent before:-translate-x-full hover:before:translate-x-full before:transition-transform before:duration-700",
+                                  "bg-gradient-to-r from-[#c8860a] to-[#e0a020] text-slate-950 hover:brightness-110 shadow-[0_4px_16px_rgba(200,134,10,0.25)] hover:shadow-[0_6px_20px_rgba(200,134,10,0.45)] before:absolute before:inset-0 before:-skew-x-12 before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent before:-translate-x-full hover:before:translate-x-full before:transition-transform before:duration-700",
                                   // Escondemos o botão genérico apenas para Ore e Mushroom, pois estes exigem identificação
                                   (activePopupPin.type === "ore" ||
                                     activePopupPin.type === "mushroom") &&
@@ -2561,7 +2583,7 @@ export function InteractiveMap({
             </p>
 
             {hoveredPin.description && (
-              <p className="mt-1.5 text-[11px] text-slate-300 line-clamp-3 leading-normal border-t border-white/5 pt-1.5 whitespace-pre-line">
+              <p className="mt-1.5 text-[11px] text-[#f0d9a0] line-clamp-3 leading-normal border-t border-white/5 pt-1.5 whitespace-pre-line">
                 {hoveredPin.description.replace(/\\n/g, "\n")}
               </p>
             )}
@@ -2571,7 +2593,7 @@ export function InteractiveMap({
                 {hoveredPin.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-md bg-white/5 border border-white/8 px-1 py-0.5 text-[8.5px] font-mono text-slate-400"
+                    className="rounded-md bg-white/5 border border-white/8 px-1 py-0.5 text-[8.5px] font-mono text-[#9a7a40]"
                   >
                     #{tag}
                   </span>
@@ -2580,8 +2602,8 @@ export function InteractiveMap({
             )}
 
             {hoveredPin.timer ? (
-              <div className="mt-2 flex items-center justify-between border-t border-cyan-500/20 pt-2">
-                <span className="text-[9px] font-mono text-cyan-400">
+              <div className="mt-2 flex items-center justify-between border-t border-amber-500/20 pt-2">
+                <span className="text-[9px] font-mono text-amber-400">
                   {hoveredPin.type === "merchant"
                     ? "Timer Despawn"
                     : "Timer Respawn"}
@@ -2591,7 +2613,7 @@ export function InteractiveMap({
                     {formatRemainingTime(hoveredPin.completedTimerLeft || 0)}
                   </span>
                 ) : (
-                  <span className="text-[10px] font-mono text-slate-400">
+                  <span className="text-[10px] font-mono text-[#9a7a40]">
                     Pronto
                   </span>
                 )}

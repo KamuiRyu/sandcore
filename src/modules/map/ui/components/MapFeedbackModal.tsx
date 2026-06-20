@@ -84,7 +84,7 @@ export function MapFeedbackModal({ isOpen, onClose, target, onSubmit }: MapFeedb
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl border border-white/10 text-slate-400 hover:bg-white/5 transition active:scale-95"
+            className="px-4 py-2 rounded-lg border border-white/10 text-[#9a7a40] hover:bg-white/5 transition active:scale-95"
           >
             Cancelar
           </button>
@@ -92,7 +92,7 @@ export function MapFeedbackModal({ isOpen, onClose, target, onSubmit }: MapFeedb
             type="submit"
             form="feedback-form"
             disabled={isSubmitting || !isFormValid()}
-            className="flex items-center gap-2 px-6 py-2 rounded-xl bg-cyan-600 text-white font-bold hover:bg-cyan-500 transition active:scale-95 disabled:opacity-50 disabled:scale-100"
+            className="flex items-center gap-2 px-6 py-2 rounded-lg bg-[#c8860a] hover:bg-[#ffdd66] hover:text-[#0f0b04] text-white font-bold transition active:scale-95 disabled:opacity-50 disabled:scale-100"
           >
             {isSubmitting ? (
               <Loader2 className="animate-spin" size={18} />
@@ -105,13 +105,13 @@ export function MapFeedbackModal({ isOpen, onClose, target, onSubmit }: MapFeedb
       }
     >
       <form id="feedback-form" onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-2 gap-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+        <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-white/5 border border-white/10">
           <div>
-            <Label className="text-[0.65rem] text-slate-400 uppercase tracking-wider">Coordenada X</Label>
+            <Label className="text-[0.65rem] text-[#9a7a40] uppercase tracking-wider">Coordenada X</Label>
             <p className="text-lg font-mono font-bold text-white">{displayX}</p>
           </div>
           <div>
-            <Label className="text-[0.65rem] text-slate-400 uppercase tracking-wider">Coordenada Y</Label>
+            <Label className="text-[0.65rem] text-[#9a7a40] uppercase tracking-wider">Coordenada Y</Label>
             <p className="text-lg font-mono font-bold text-white">{displayY}</p>
           </div>
         </div>
@@ -151,7 +151,7 @@ export function MapFeedbackModal({ isOpen, onClose, target, onSubmit }: MapFeedb
 
           {target.pointId && (
             <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-slate-400 text-[0.65rem] font-mono font-bold uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 text-[#9a7a40] text-[0.65rem] font-mono font-bold uppercase tracking-wider">
                 <AlertTriangle size={14} className="shrink-0" />
                 <span>Motivo da Alteração</span>
               </div>
@@ -160,7 +160,7 @@ export function MapFeedbackModal({ isOpen, onClose, target, onSubmit }: MapFeedb
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Explique por que este ponto precisa ser alterado..."
-                className="w-full min-h-[80px] rounded-xl bg-white/5 border border-white/10 p-3 text-sm text-white focus:outline-none focus:border-cyan-500/50"
+                className="w-full min-h-[80px] rounded-lg bg-white/5 border border-white/10 p-3 text-sm text-white focus:outline-none focus:border-[#c8860a]/50"
               />
             </div>
           )}
@@ -171,7 +171,7 @@ export function MapFeedbackModal({ isOpen, onClose, target, onSubmit }: MapFeedb
               value={observation}
               onChange={(e) => setObservation(e.target.value)}
               placeholder="Mais detalhes que ajudem a equipe..."
-              className="w-full min-h-[100px] rounded-xl bg-white/5 border border-white/10 p-3 text-sm text-white focus:outline-none focus:border-cyan-500/50"
+              className="w-full min-h-[100px] rounded-lg bg-white/5 border border-white/10 p-3 text-sm text-white focus:outline-none focus:border-[#c8860a]/50"
             />
           </div>
 
@@ -179,8 +179,8 @@ export function MapFeedbackModal({ isOpen, onClose, target, onSubmit }: MapFeedb
             <Label>Imagem / Print do Jogo (Opcional)</Label>
             <div 
               className={cn(
-                "relative group cursor-pointer border-2 border-dashed border-white/10 rounded-2xl p-4 transition hover:bg-white/5",
-                imagePreview ? "border-cyan-500/30 bg-cyan-500/5" : ""
+                "relative group cursor-pointer border-2 border-dashed border-white/10 rounded-lg p-4 transition hover:bg-white/5",
+                imagePreview ? "border-[#c8860a]/30 bg-[#c8860a]/5" : ""
               )}
               onClick={() => document.getElementById('feedback-image')?.click()}
             >
@@ -200,7 +200,7 @@ export function MapFeedbackModal({ isOpen, onClose, target, onSubmit }: MapFeedb
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-4 text-slate-400 gap-2">
+                <div className="flex flex-col items-center justify-center py-4 text-[#9a7a40] gap-2">
                   <ImageIcon size={32} className="opacity-20" />
                   <span className="text-xs font-medium">Clique para selecionar imagem</span>
                 </div>

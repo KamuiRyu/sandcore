@@ -69,7 +69,7 @@ export const HudPanel = memo(function HudPanel({
             <div
               className="relative flex h-full w-full flex-col overflow-hidden rounded-[2px] border border-[#4a2f0a]"
               style={{
-                background: "linear-gradient(160deg,#161008 0%,#0f0b04 100%)",
+                background: "linear-gradient(160deg,#0e0b05 0%,#090704 100%)",
                 border: "1px solid rgba(255, 221, 102, 0.4)",
               }}
             >
@@ -95,40 +95,30 @@ export const HudPanel = memo(function HudPanel({
                 <header
                   className="relative flex items-center justify-between px-4 py-[10px] border-b border-[#4a2f0a] shrink-0 z-20"
                   style={{
-                    background:
-                      "linear-gradient(90deg, #2e1f08 0%, #1a1007 100%)",
+                    background: "transparent",
                   }}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    {/* Shrine icon */}
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    {/* Icon circle */}
                     <div
-                      className="text-[18px] leading-none"
-                      style={{
-                        color: "#c8860a",
-                        filter: "drop-shadow(0 0 6px rgba(200,134,10,0.6))",
-                      }}
+                      className="flex items-center justify-center w-[18px] h-[18px] rounded-full border flex-shrink-0"
+                      style={{ borderColor: "#c8860a", color: "#c8860a" }}
                     >
-                      <Icon size={16} />
+                      <Icon size={10} />
                     </div>
 
-                    {/* Breadcrumb */}
-                    <div
-                      className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em]"
-                      style={{
-                        fontFamily: "'Cinzel', serif",
-                        color: "#9a7a40",
-                      }}
-                    >
-                      <span style={{ color: "#c8860a" }}>Shinobi Map</span>
-                      <span style={{ color: "#4a2f0a" }}>›</span>
-                      <span>{title}</span>
+                    {/* Title row */}
+                    <div className="flex items-center gap-2" style={{ fontFamily: "'Cinzel', serif" }}>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "#c8860a" }}>
+                        Shinobi Map
+                      </span>
+                      <span className="text-[10px] uppercase tracking-[0.12em]" style={{ color: "#9a9080" }}>
+                        {title}
+                      </span>
                     </div>
 
                     {subtitle && (
-                      <span
-                        className="ml-2 text-[9px] tracking-wide"
-                        style={{ color: "#9a7a40" }}
-                      >
+                      <span className="text-[9px] tracking-wide" style={{ color: "#9a7a40" }}>
                         {subtitle}
                       </span>
                     )}
