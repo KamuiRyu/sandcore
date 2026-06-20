@@ -66,7 +66,7 @@ export const ContentPanelScreen = ({
       className={`flex flex-col relative overflow-hidden transition-[opacity,transform,filter] duration-300 ease-out
         ${isMounted && !isClosing ? "opacity-100 scale-100 blur-none" : "opacity-0 scale-95 blur-sm"}
         ${isMapTab 
-            ? "w-[1200px] h-[800px] bg-[#080A0C] text-slate-200 font-sans rounded-xl border border-[#1A222C]" 
+            ? "w-[1200px] h-[800px] bg-[#0f0b04] text-slate-200 font-sans rounded-xl border border-[#4a2f0a]" 
             : "w-[450px] h-[550px]"}
       `}
     >
@@ -90,7 +90,7 @@ export const ContentPanelScreen = ({
 
       {/* Map panel: keep original header */}
       {isMapTab && (
-        <div className="h-14 bg-[#080c10] border-b border-[#131b24] px-4 flex items-center justify-between gap-4 select-none z-50 flex-none">
+        <div className="h-14 bg-[#0a0703] border-b border-[#2e1f08] px-4 flex items-center justify-between gap-4 select-none z-50 flex-none">
           {/* Logo */}
           <div className="flex items-center gap-2 flex-none">
             <img

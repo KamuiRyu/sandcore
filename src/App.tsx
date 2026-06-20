@@ -5,10 +5,15 @@ import { LoginScreen } from './modules/authentication/ui/screens/LoginScreen'
 import { SidebarScreen } from './modules/dashboard/ui/screens/SidebarScreen'
 import { ContentPanelScreen } from './modules/dashboard/ui/screens/ContentPanelScreen'
 
+import { SplashScreen } from './modules/app/ui/screens/SplashScreen'
+
 function App() {
   const viewModel = useAuthViewModel()
   const [loading, setLoading] = useState(true)
-  const [windowType, setWindowType] = useState<string | null>(null)
+  const [windowType, setWindowType] = useState<string | null>(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    return urlParams.get('windowType')
+  })
   const [activeTab, setActiveTab] = useState<string | null>(null)
   const [layoutSide, setLayoutSide] = useState<'left' | 'right'>('right')
   const [alignSide, setAlignSide] = useState<'top' | 'bottom'>('top')
@@ -81,13 +86,18 @@ function App() {
     }
   }, [activeTab, layoutSide, alignSide])
 
-  if (loading) {
+  if (loading && windowType !== 'splash' && windowType !== 'login') {
     return (
-      <div className="h-screen w-screen bg-[#080A0C] text-slate-200 flex flex-col items-center justify-center font-sans">
+      <div className="h-screen w-screen bg-[#0f0b04] text-slate-200 flex flex-col items-center justify-center font-sans">
         <Loader2 className="animate-spin text-teal-500 w-8 h-8 mb-3" />
         <span className="text-sm tracking-wider font-semibold">Carregando...</span>
       </div>
     )
+  }
+
+  // If windowType is explicitly set to splash
+  if (windowType === 'splash') {
+    return <SplashScreen />
   }
 
   // If windowType is explicitly set to login

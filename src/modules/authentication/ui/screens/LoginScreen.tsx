@@ -35,7 +35,7 @@ export const LoginScreen = () => {
   }
 
   return (
-    <div className={`h-screen w-screen bg-[#080A0C] flex relative rounded-xl border border-[#1A222C] overflow-hidden text-slate-300 transition-all duration-300 ease-out font-sans select-none ${isMounted && !isClosing ? 'opacity-100 scale-100 blur-none' : 'opacity-0 scale-95 blur-sm'}`}>
+    <div className={`h-screen w-screen bg-[#0f0b04] flex relative rounded-xl border border-[#4a2f0a] overflow-hidden text-slate-300 transition-all duration-300 ease-out font-sans select-none ${isMounted && !isClosing ? 'opacity-100 scale-100 blur-none' : 'opacity-0 scale-95 blur-sm'}`}>
       
       {/* Absolute Titlebar Overlay */}
       <div className="absolute top-0 left-0 right-0 h-8 flex items-center justify-end select-none z-50" style={{ WebkitAppRegion: 'drag' } as any}>
@@ -64,7 +64,7 @@ export const LoginScreen = () => {
       </div>
 
       {/* Left Form Column */}
-      <div className="w-[360px] flex-none bg-[#080A0C] flex flex-col px-8 pt-7 pb-4 justify-between border-r border-[#101419] h-full relative">
+      <div className="w-[360px] flex-none bg-[#0f0b04] flex flex-col px-8 pt-7 pb-4 justify-between border-r border-[#2e1f08] h-full relative">
         
         {/* Main Content Area (Logo + Form) centered together */}
         <div className="flex-1 flex flex-col justify-center gap-7 my-auto w-full">
@@ -200,7 +200,7 @@ export const LoginScreen = () => {
 
       {/* Right Image/Banner Column */}
       <div className="flex-1 bg-cover bg-[85%_center] select-none relative max-[500px]:hidden h-full" style={{ backgroundImage: "url('./images/background.webp')" }}>
-        <div className="absolute inset-0 bg-gradient-to-r from-[#080A0C] via-transparent to-transparent w-24"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0f0b04] via-transparent to-transparent w-24"></div>
       </div>
 
     </div>

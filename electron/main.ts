@@ -12,6 +12,7 @@ app.commandLine.appendSwitch('disable-background-timer-throttling')
 process.env.DIST = path.join(__dirname, '../dist')
 process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(process.env.DIST, '../public')
 
+let splashWin: BrowserWindow | null = null
 let loginWin: BrowserWindow | null = null
 let sidebarWin: BrowserWindow | null = null
 let currentLayoutSide: 'left' | 'right' = 'right'
@@ -166,6 +167,43 @@ function isPositionOnSomeScreen(x: number, y: number, width: number, height: num
   })
 }
 
+function createSplashWindow() {
+  if (splashWin && !splashWin.isDestroyed()) {
+    splashWin.focus()
+    return
+  }
+
+  const preloadPath = path.join(process.env.DIST!, '../dist-electron/preload.js')
+
+  splashWin = new BrowserWindow({
+    icon: path.join(process.env.VITE_PUBLIC!, 'favicon.ico'),
+    width: 400,
+    height: 400,
+    resizable: false,
+    frame: false,
+    transparent: true,
+    hasShadow: false,
+    backgroundColor: '#00000000',
+    alwaysOnTop: true,
+    center: true,
+    webPreferences: {
+      preload: preloadPath,
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  })
+
+  if (process.env.VITE_DEV_SERVER_URL) {
+    splashWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}?windowType=splash`)
+  } else {
+    splashWin.loadFile(path.join(process.env.DIST!, 'index.html'), { query: { windowType: 'splash' } })
+  }
+
+  splashWin.on('closed', () => {
+    splashWin = null
+  })
+}
+
 function createLoginWindow() {
   if (loginWin && !loginWin.isDestroyed()) {
     loginWin.focus()
@@ -287,7 +325,7 @@ function createSidebarWindow() {
     backgroundColor: '#00000000',
     minimizable: false,
     alwaysOnTop: appConfig.alwaysOnTop,
-    skipTaskbar: false, // User might want it in taskbar, but we'll see
+    skipTaskbar: false,
     focusable: true,
     webPreferences: {
       preload: preloadPath,
@@ -324,12 +362,17 @@ function createSidebarWindow() {
     sidebarWin.setAlwaysOnTop(true, 'screen-saver', 1)
   }
 
-  // Removed blur and focus hacks that were causing flickers and click blocks.
-  // The OS will properly keep the parent and child together in Z-order.
+  // Re-assert alwaysOnTop when the sidebar loses focus to prevent Windows from
+  // dropping it behind other windows (e.g. VS Code) after the user clicks it.
+  sidebarWin.on('blur', () => {
+    if (appConfig.alwaysOnTop && sidebarWin && !sidebarWin.isDestroyed()) {
+      sidebarWin.setAlwaysOnTop(true, 'screen-saver', 1)
+    }
+  })
 
   sidebarWin.on('minimize' as any, () => {
     if (panelWin && !panelWin.isDestroyed()) {
-      panelWin.minimize()
+      panelWin.hide()
     }
   })
 
@@ -343,7 +386,6 @@ function createSidebarWindow() {
     }
 
     if (panelWin && !panelWin.isDestroyed() && currentTabId) {
-      if (panelWin.isMinimized()) panelWin.restore()
       panelWin.showInactive()
     }
   })
@@ -351,9 +393,6 @@ function createSidebarWindow() {
   sidebarWin.webContents.on('dom-ready', () => {
     sidebarWin?.webContents.setZoomFactor(zoom)
   })
-
-  // Open DevTools automatically to see errors - can be commented out later
-  sidebarWin.webContents.openDevTools()
 
   if (process.env.VITE_DEV_SERVER_URL) {
     sidebarWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}?windowType=sidebar`)
@@ -364,10 +403,12 @@ function createSidebarWindow() {
   sidebarWin.on('closed', () => {
     sidebarWin = null
     if (panelWin && !panelWin.isDestroyed()) {
-      panelWin.close()
+      panelWin.destroy()
+      panelWin = null
     }
     if (!loginWin || loginWin.isDestroyed()) {
-      app.quit()
+      BrowserWindow.getAllWindows().forEach(w => { try { w.destroy() } catch (_) {} })
+      app.exit(0)
     }
   })
 
@@ -383,7 +424,6 @@ function createPanelWindow() {
   const zoom = (appConfig.uiScale || 100) / 100
 
   panelWin = new BrowserWindow({
-    parent: sidebarWin && !sidebarWin.isDestroyed() ? sidebarWin : undefined,
     icon: path.join(process.env.VITE_PUBLIC!, 'favicon.ico'),
     width: 0,
     height: 0,
@@ -394,7 +434,7 @@ function createPanelWindow() {
     hasShadow: false,
     backgroundColor: '#00000000',
     alwaysOnTop: appConfig.alwaysOnTop,
-    skipTaskbar: true, // Hide from taskbar, sidebar is the main anchor
+    skipTaskbar: true,
     focusable: true,
     webPreferences: {
       preload: preloadPath,
@@ -405,15 +445,17 @@ function createPanelWindow() {
   })
 
   panelWin.setMenu(null)
-  
-  // Open DevTools for the panel so the user can inspect its components
-  panelWin.webContents.openDevTools({ mode: 'detach' })
+
 
   if (appConfig.alwaysOnTop) {
     panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
   }
 
-  // Removed blur hack for panelWin as well
+  panelWin.on('blur', () => {
+    if (appConfig.alwaysOnTop && panelWin && !panelWin.isDestroyed()) {
+      panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
+    }
+  })
 
   panelWin.on('minimize' as any, () => {
     // Let it minimize naturally with its parent
@@ -920,6 +962,14 @@ ipcMain.on('window-control', (event, action) => {
   }
 })
 
+ipcMain.on('splash-finished', () => {
+  if (splashWin && !splashWin.isDestroyed()) {
+    splashWin.close()
+    splashWin = null
+  }
+  createLoginWindow()
+})
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
@@ -928,7 +978,7 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createLoginWindow()
+    createSplashWindow()
   }
 })
 
@@ -954,7 +1004,7 @@ if (!gotTheLock) {
   })
 
   app.whenReady().then(() => {
-    createLoginWindow()
+    createSplashWindow()
     if (appConfig.shortcutMap) {
       updateShortcutMap(appConfig.shortcutMap)
     }
