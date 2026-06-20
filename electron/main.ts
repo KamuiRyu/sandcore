@@ -246,7 +246,7 @@ function createLoginWindow() {
   })
 
   // Open DevTools automatically to see errors - can be commented out later
-  //loginWin.webContents.openDevTools()
+  //loginWin.webContents.openDevTools({ mode: 'detach' })
 
   if (process.env.VITE_DEV_SERVER_URL) {
     loginWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}?windowType=login`)
@@ -376,6 +376,7 @@ function createSidebarWindow() {
   if (appConfig.alwaysOnTop) {
     sidebarWin.setAlwaysOnTop(true, 'screen-saver', 1)
   }
+  //sidebarWin.webContents.openDevTools({ mode: 'detach' })
 
   // Re-assert alwaysOnTop when the sidebar loses focus to prevent Windows from
   // dropping it behind other windows (e.g. VS Code) after the user clicks it.
@@ -426,7 +427,7 @@ function createSidebarWindow() {
       panelWin = null
     }
     if (!loginWin || loginWin.isDestroyed()) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       BrowserWindow.getAllWindows().forEach(w => { try { w.destroy() } catch (_) { /* empty */ } })
       app.exit(0)
     }
@@ -493,6 +494,8 @@ function createPanelWindow() {
   panelWin.webContents.on('dom-ready', () => {
     panelWin?.webContents.setZoomFactor(zoom)
   })
+
+  //panelWin.webContents.openDevTools({ mode: 'detach' })
 
   if (process.env.VITE_DEV_SERVER_URL) {
     panelWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}?windowType=panel`)
@@ -718,6 +721,33 @@ ipcMain.on('set-auth', (event, authData) => {
   appAuth = authData
   saveAuth(appAuth)
 })
+
+ipcMain.on('get-storage-sync', (event, key) => {
+  const filePath = path.join(app.getPath('userData'), `storage_${key}.json`)
+  try {
+    if (fs.existsSync(filePath)) {
+      event.returnValue = fs.readFileSync(filePath, 'utf-8')
+      return
+    }
+  } catch (e) {
+    console.error('Failed to read storage', key, e)
+  }
+  event.returnValue = null
+})
+
+ipcMain.on('set-storage', (event, key, value) => {
+  const filePath = path.join(app.getPath('userData'), `storage_${key}.json`)
+  try {
+    if (value === null) {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+    } else {
+      fs.writeFileSync(filePath, value)
+    }
+  } catch (e) {
+    console.error('Failed to write storage', key, e)
+  }
+})
+
 
 // Auto Updater IPC / Logic
 ipcMain.on('check-for-updates', (event) => {

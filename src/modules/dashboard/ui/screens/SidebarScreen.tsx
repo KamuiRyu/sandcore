@@ -11,6 +11,7 @@ interface SidebarScreenProps {
 const NOISE_SVG = `url("./images/noise.svg")`
 
 import { SunagakureLogo } from '../../../app/ui/components/SunagakureLogo'
+import { appStorage } from '../../../../lib/storage';
 
 export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
   const handleTabClick = (tabId: TabType) => {
@@ -19,8 +20,8 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('shinobi-map-notification-settings')
-    localStorage.removeItem('shinobi-map-completed-pins')
+    appStorage.removeItem('shinobi-map-notification-settings')
+    appStorage.removeItem('shinobi-map-completed-pins')
     onLogout()
   }
 

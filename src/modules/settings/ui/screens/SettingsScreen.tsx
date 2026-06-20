@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Volume2, Keyboard, Trash2 } from 'lucide-react'
 
 const SL = ({ children }: { children: React.ReactNode }) => (
@@ -104,7 +105,24 @@ export const SettingsScreen = () => {
   const [layoutSide, setLayoutSide] = useState<'left' | 'right'>('right')
   const [sidebarOpacity, setSidebarOpacity] = useState(95)
   const [uiScale, setUiScale] = useState(100)
-  const [isScaleDropdownOpen, setIsScaleDropdownOpen] = useState(false)
+  const [isScaleDropdownOpen, setIsScaleDropdownOpen] = useState(false);
+  const scaleDropdownRef = useRef<HTMLDivElement>(null);
+  const [scaleDropdownCoords, setScaleDropdownCoords] = useState<{ bottom: number, right: number } | null>(null);
+
+  const toggleScaleDropdown = () => {
+    if (isScaleDropdownOpen) {
+      setIsScaleDropdownOpen(false);
+    } else {
+      if (scaleDropdownRef.current) {
+        const rect = scaleDropdownRef.current.getBoundingClientRect();
+        setScaleDropdownCoords({
+          bottom: window.innerHeight - rect.top + 6,
+          right: window.innerWidth - rect.right,
+        });
+      }
+      setIsScaleDropdownOpen(true);
+    }
+  };
 
   const [shortcutMap, setShortcutMap] = useState('CommandOrControl+Alt+M')
   const [shortcutSettings, setShortcutSettings] = useState('CommandOrControl+Alt+S')
@@ -279,21 +297,25 @@ export const SettingsScreen = () => {
                     <span className="text-xs font-semibold" style={{ color: '#e8d5a0' }}>Escala do HUD</span>
                     <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Ajusta o tamanho da interface</span>
                   </div>
-                  <div className="relative" style={{ WebkitAppRegion: 'no-drag' } as any}>
-                    <SecondaryButton onClick={() => setIsScaleDropdownOpen(!isScaleDropdownOpen)}>
-                      <span>{uiScale === 50 ? '0.5x' : uiScale === 75 ? '0.75x' : uiScale === 100 ? '1x' : '1.3x'}</span>
+                  <div className="relative" style={{ WebkitAppRegion: 'no-drag' } as any} ref={scaleDropdownRef}>
+                    <SecondaryButton onClick={toggleScaleDropdown}>
+                      <span>{uiScale === 75 ? '0.75x' : uiScale === 100 ? '1x' : '1.3x'}</span>
                       <svg className={`w-2 h-2 transition-transform duration-200 ${isScaleDropdownOpen ? 'rotate-180' : ''}`} viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.8">
                         <path d="M1 1L5 5L9 1" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </SecondaryButton>
-                    {isScaleDropdownOpen && (
+                    {isScaleDropdownOpen && scaleDropdownCoords && createPortal(
                       <>
                         <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsScaleDropdownOpen(false)} />
-                        <div
-                          className="absolute right-0 bottom-full mb-1.5 w-24 rounded-[3px] z-50 overflow-hidden"
-                          style={{ background: '#0f0b04', border: '1px solid #3a2508', boxShadow: '0 8px 24px rgba(0,0,0,0.8)' }}
-                        >
-                          {[50, 75, 100, 130].map((scale) => (
+                          <div
+                            className="fixed w-24 rounded-[3px] z-50 overflow-hidden"
+                            style={{ 
+                              background: '#0f0b04', border: '1px solid #3a2508', boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
+                              bottom: scaleDropdownCoords.bottom,
+                              right: scaleDropdownCoords.right
+                            }}
+                          >
+                          {[75, 100, 130].map((scale) => (
                             <button
                               key={scale}
                               onClick={() => { setUiScale(scale); window.ipcRenderer?.send('set-config', { uiScale: scale }); setIsScaleDropdownOpen(false) }}
@@ -305,12 +327,12 @@ export const SettingsScreen = () => {
                                 background: uiScale === scale ? 'rgba(74,47,10,0.4)' : 'transparent',
                               }}
                             >
-                              <span>{scale === 50 ? '0.5x' : scale === 75 ? '0.75x' : scale === 100 ? '1x' : '1.3x'}</span>
+                              <span>{scale === 75 ? '0.75x' : scale === 100 ? '1x' : '1.3x'}</span>
                               {uiScale === scale && <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#c8860a' }} />}
                             </button>
                           ))}
                         </div>
-                      </>
+                      </>, document.body
                     )}
                   </div>
                 </ListItem>

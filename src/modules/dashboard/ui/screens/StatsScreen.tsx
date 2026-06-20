@@ -37,6 +37,7 @@ import {
 
 import { readSavedMapRoutes } from "../../../map/shared/utils/localMapRoutes";
 import type { SavedMapRoute } from "../../../map/core/entities/MapRoute.entity";
+import { appStorage } from "../../../../lib/storage";
 
 const SL = ({ children }: { children: React.ReactNode }) => (
   <div className="flex items-center gap-2 mb-2">
@@ -112,7 +113,7 @@ export const StatsScreen = () => {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("shinobi-map-stats-history");
+      const stored = appStorage.getItem("shinobi-map-stats-history");
       if (stored) {
         setDailyStats(JSON.parse(stored));
       }
@@ -150,7 +151,7 @@ export const StatsScreen = () => {
         today[targetKey] = { ...targetObj, [itemId]: newVal };
       }
       next[todayIdx] = today
-      localStorage.setItem('shinobi-map-stats-history', JSON.stringify(next))
+      appStorage.setItem('shinobi-map-stats-history', JSON.stringify(next))
       window.dispatchEvent(new CustomEvent('map-stats-updated', { detail: next }))
       return next
     })
@@ -182,7 +183,7 @@ export const StatsScreen = () => {
         today[targetKey] = { ...targetObj, [itemId]: newVal };
       }
       next[todayIdx] = today
-      localStorage.setItem('shinobi-map-stats-history', JSON.stringify(next))
+      appStorage.setItem('shinobi-map-stats-history', JSON.stringify(next))
       window.dispatchEvent(new CustomEvent('map-stats-updated', { detail: next }))
       return next
     })

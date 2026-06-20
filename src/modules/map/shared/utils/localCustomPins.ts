@@ -1,11 +1,8 @@
 import type { CustomPin, SavedCustomPin } from '../../core/entities/MapRoute.entity'
 import { logger } from '../../../../lib/utils'
+import { appStorage } from '../../../../lib/storage'
 
-const STORAGE_KEY = 'shinobi-builder:saved-custom-pins'
-
-function canUseStorage(): boolean {
-  return typeof window !== 'undefined' && Boolean(window.localStorage)
-}
+const STORAGE_KEY = 'shinobi-builder:custom-pins'
 
 function createSavedPinId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -16,11 +13,7 @@ function createSavedPinId(): string {
 }
 
 export function readSavedCustomPins(): SavedCustomPin[] {
-  if (!canUseStorage()) {
-    return []
-  }
-
-  const rawPins = window.localStorage.getItem(STORAGE_KEY)
+  const rawPins = appStorage.getItem(STORAGE_KEY)
 
   if (!rawPins) {
     return []
@@ -64,11 +57,7 @@ export function readSavedCustomPins(): SavedCustomPin[] {
 }
 
 export function writeSavedCustomPins(savedPins: SavedCustomPin[]): void {
-  if (!canUseStorage()) {
-    return
-  }
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(savedPins))
+  appStorage.setItem(STORAGE_KEY, JSON.stringify(savedPins))
 }
 
 export function createSavedCustomPin(pin: CustomPin): SavedCustomPin {

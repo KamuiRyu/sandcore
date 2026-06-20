@@ -3,11 +3,9 @@ import { normalizeMapRoute } from '../../core/usecases/NormalizeMapRoute.usecase
 import { mapRouteSchema } from '../../core/usecases/ValidateMapRoute.usecase'
 import { logger } from '../../../../lib/utils'
 
-const STORAGE_KEY = 'shinobi-builder:saved-map-routes'
+import { appStorage } from '../../../../lib/storage'
 
-function canUseStorage(): boolean {
-  return typeof window !== 'undefined' && Boolean(window.localStorage)
-}
+const STORAGE_KEY = 'shinobi-builder:saved-map-routes'
 
 function createSavedRouteId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -18,11 +16,7 @@ function createSavedRouteId(): string {
 }
 
 export function readSavedMapRoutes(): SavedMapRoute[] {
-  if (!canUseStorage()) {
-    return []
-  }
-
-  const rawRoutes = window.localStorage.getItem(STORAGE_KEY)
+  const rawRoutes = appStorage.getItem(STORAGE_KEY)
 
   if (!rawRoutes) {
     return []
@@ -63,11 +57,7 @@ export function readSavedMapRoutes(): SavedMapRoute[] {
 }
 
 export function writeSavedMapRoutes(savedRoutes: SavedMapRoute[]): void {
-  if (!canUseStorage()) {
-    return
-  }
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(savedRoutes))
+  appStorage.setItem(STORAGE_KEY, JSON.stringify(savedRoutes))
 }
 
 export function createSavedMapRoute(route: CustomRoute): SavedMapRoute {
