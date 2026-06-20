@@ -85,7 +85,9 @@ export const ContentPanelScreen = ({
       key={lastActiveTab}
       className={`flex flex-col relative overflow-hidden transition-[opacity,transform,filter] duration-300 ease-out
         ${isMounted && !isClosing ? "opacity-100 scale-100 blur-none" : "opacity-0 scale-95 blur-sm"}
-        w-[1200px] h-[800px]
+        ${['map','missions','my-missions','ninja-card','admin','manager'].includes(lastActiveTab)
+            ? 'w-[1200px] h-[800px]'
+            : 'w-[450px] h-[550px]'}
       `}
     >
       <HudPanel
@@ -95,7 +97,7 @@ export const ContentPanelScreen = ({
         icon={TAB_META[lastActiveTab!]?.icon || FileText}
         standalone={true}
         hideHeader={isMapTab}
-        contentClassName={isMapTab ? "flex flex-col overflow-hidden p-0" : "p-6"}
+        contentClassName={isMapTab ? "flex flex-col overflow-hidden p-0" : "p-5"}
       >
         {isMapTab && (
           <div className="h-14 bg-transparent border-b border-[#4a2f0a] px-4 flex items-center justify-between gap-4 select-none z-50 flex-none relative">

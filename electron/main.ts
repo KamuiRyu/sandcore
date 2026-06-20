@@ -578,8 +578,10 @@ function openPanel(tabId: string, immediate = false) {
   const physicalSidebarW = Math.round(60 * zoom)
   const physicalSidebarH = Math.round(580 * zoom)
 
-  let panelLogicalW = 1200
-  let panelLogicalH = 800
+  const largeTabs = ['map', 'missions', 'my-missions', 'ninja-card', 'admin', 'manager']
+  const isLargeTab = largeTabs.includes(tabId)
+  let panelLogicalW = isLargeTab ? 1200 : 450
+  let panelLogicalH = isLargeTab ? 800 : 550
 
   const physicalPanelW = Math.round(panelLogicalW * zoom)
   const physicalPanelH = Math.round(panelLogicalH * zoom)
