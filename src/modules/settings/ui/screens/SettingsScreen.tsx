@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { Volume2, Keyboard, Trash2 } from 'lucide-react'
 
 const SL = ({ children }: { children: React.ReactNode }) => (
-  <div className="flex items-center gap-2.5 mb-3">
-    <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, #4a2f0a)' }} />
-    <span style={{ fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#9a7a40' }}>
+  <div className="flex items-center gap-2 mb-2">
+    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>[</span>
+    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#c8a030', whiteSpace: 'nowrap' }}>
       {children}
     </span>
-    <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, #4a2f0a, transparent)' }} />
+    <div className="flex-1" style={{ borderTop: '1px dashed rgba(200,160,48,0.25)' }} />
+    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>]</span>
   </div>
 )
 
@@ -30,10 +31,25 @@ const Toggle = ({ active, onClick }: { active: boolean; onClick: () => void }) =
   </button>
 )
 
-const Card = ({ children }: { children: React.ReactNode }) => (
+const ListContainer = ({ children }: { children: React.ReactNode }) => (
+  <div style={{ borderRadius: 3, overflow: 'hidden', border: '1px solid #2e1e06' }}>
+    {children}
+  </div>
+)
+
+const ListItem = ({ children, isLast = false, vertical = false }: { children: React.ReactNode, isLast?: boolean, vertical?: boolean }) => (
   <div
-    className="flex items-center justify-between p-3 rounded-[2px]"
-    style={{ background: 'rgba(13,10,5,0.5)', border: '1px solid #4a2f0a' }}
+    style={{
+      display: 'flex',
+      flexDirection: vertical ? 'column' : 'row',
+      alignItems: vertical ? 'stretch' : 'center',
+      justifyContent: vertical ? 'flex-start' : 'space-between',
+      padding: '8px 12px',
+      fontSize: 10,
+      background: 'rgba(13,10,4,0.8)',
+      borderBottom: isLast ? 'none' : '1px solid rgba(46,30,6,0.7)',
+      gap: vertical ? 8 : 12
+    }}
   >
     {children}
   </div>
@@ -135,10 +151,43 @@ export const SettingsScreen = () => {
   const KbdKey = ({ k }: { k: string }) => (
     <span
       className="inline-flex items-center px-1.5 py-0.5 font-mono text-[9px] rounded-[2px]"
-      style={{ background: '#2e1f08', border: '1px solid #c8860a', borderBottomWidth: 2, color: '#d4a85a', letterSpacing: '0.04em' }}
+      style={{ background: '#1c1508', border: '1px solid #c8860a', borderBottomWidth: 2, color: '#e8b840', letterSpacing: '0.04em' }}
     >
       {k === 'CommandOrControl' || k === 'CmdOrCtrl' ? 'Ctrl' : k}
     </span>
+  )
+
+  const SecondaryButton = ({ children, onClick, disabled = false, padding = '4px 10px' }: { children: React.ReactNode, onClick?: () => void, disabled?: boolean, padding?: string }) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding,
+        borderRadius: 3, background: 'transparent', border: '1px solid #2e1e06', color: '#c8a840',
+        fontSize: 9, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, letterSpacing: '0.08em',
+        cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.15s', opacity: disabled ? 0.5 : 1,
+        whiteSpace: 'nowrap'
+      }}
+      onMouseEnter={e => { if(!disabled) { e.currentTarget.style.background = 'rgba(74,47,10,0.25)'; e.currentTarget.style.borderColor = '#6a4e18'; e.currentTarget.style.color = '#e8c860'; } }}
+      onMouseLeave={e => { if(!disabled) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#2e1e06'; e.currentTarget.style.color = '#c8a840'; } }}
+    >
+      {children}
+    </button>
+  )
+
+  const PrimaryButton = ({ children, onClick, disabled = false }: { children: React.ReactNode, onClick?: () => void, disabled?: boolean }) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 3,
+        background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none',
+        fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em',
+        cursor: disabled ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1
+      }}
+    >
+      {children}
+    </button>
   )
 
   return (
@@ -146,7 +195,7 @@ export const SettingsScreen = () => {
       {/* Sub-tab nav */}
       <div
         className="flex rounded-[2px] p-0.5 mb-4 flex-none"
-        style={{ background: 'rgba(13,10,5,0.5)', border: '1px solid #4a2f0a', WebkitAppRegion: 'no-drag' } as any}
+        style={{ border: '1px solid #2e1e06', WebkitAppRegion: 'no-drag' } as any}
       >
         {(['general', 'keybinds'] as const).map((tab) => (
           <button
@@ -154,11 +203,11 @@ export const SettingsScreen = () => {
             onClick={() => setActiveSubTab(tab)}
             className="flex-1 py-1.5 rounded-[2px] text-[10px] font-bold cursor-pointer transition-all text-center"
             style={activeSubTab === tab
-              ? { background: 'rgba(200,134,10,0.15)', color: '#c8860a', border: '1px solid rgba(200,134,10,0.3)' }
-              : { color: '#9a7a40', border: '1px solid transparent' }
+              ? { background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em' }
+              : { background: 'transparent', color: '#c8a840', border: '1px solid transparent', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em' }
             }
           >
-            {tab === 'general' ? 'Geral' : 'Atalhos'}
+            {tab === 'general' ? 'GERAL' : 'ATALHOS'}
           </button>
         ))}
       </div>
@@ -166,211 +215,201 @@ export const SettingsScreen = () => {
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto pr-3 custom-scrollbar space-y-3 pb-1">
         {activeSubTab === 'general' ? (
-          <div className="space-y-3">
-            <SL>Exibição</SL>
-
-            <Card>
-              <div className="flex flex-col">
-                <span className="text-xs font-semibold" style={{ color: '#e8d5a0' }}>Sempre no Topo</span>
-                <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Exibe o HUD acima do jogo</span>
-              </div>
-              <Toggle active={alwaysOnTop} onClick={toggleAlwaysOnTop} />
-            </Card>
-
-            <Card>
-              <div className="flex flex-col">
-                <span className="text-xs font-semibold" style={{ color: '#e8d5a0' }}>Lado do Painel</span>
-                <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Calculado automaticamente</span>
-              </div>
-              <div
-                className="px-3 py-1 rounded-[2px] text-[10px] font-bold select-none"
-                style={{ background: 'rgba(200,134,10,0.12)', border: '1px solid rgba(200,134,10,0.3)', color: '#c8860a' }}
-              >
-                {layoutSide === 'left' ? 'Auto (Esq.)' : 'Auto (Dir.)'}
-              </div>
-            </Card>
-
-            <Card>
-              <div className="flex flex-col">
-                <span className="text-xs font-semibold" style={{ color: '#e8d5a0' }}>Aviso In-game</span>
-                <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Alerta sonoro ao ver recurso</span>
-              </div>
-              <Toggle active={inGameNotifs} onClick={toggleInGameNotifs} />
-            </Card>
-
-            <SL>Áudio & Interface</SL>
-
-            <div className="p-3 rounded-[2px] space-y-2" style={{ background: 'rgba(13,10,5,0.5)', border: '1px solid #4a2f0a' }}>
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <span className="flex items-center gap-1.5" style={{ color: '#c8a060' }}>
-                  <Volume2 size={13} style={{ color: '#9a7a40' }} /> Volume de Avisos
-                </span>
-                <span style={{ color: '#c8860a' }}>{volume}%</span>
-              </div>
-              <input
-                type="range" min="0" max="100" value={volume} onChange={handleVolumeChange}
-                className="w-full cursor-pointer h-0.5 rounded-full appearance-none"
-                style={{ accentColor: '#c8860a', background: '#4a2f0a' }}
-              />
+          <div className="space-y-4">
+            <div>
+              <SL>Exibição</SL>
+              <ListContainer>
+                <ListItem>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold" style={{ color: '#e8d5a0' }}>Sempre no Topo</span>
+                    <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Exibe o HUD acima do jogo</span>
+                  </div>
+                  <Toggle active={alwaysOnTop} onClick={toggleAlwaysOnTop} />
+                </ListItem>
+                <ListItem>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold" style={{ color: '#e8d5a0' }}>Lado do Painel</span>
+                    <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Calculado automaticamente</span>
+                  </div>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 3, background: '#0d0e0a', border: '1px solid #2e3020', color: '#f0e8c0' }}>
+                    {layoutSide === 'left' ? 'AUTO (ESQ)' : 'AUTO (DIR)'}
+                  </span>
+                </ListItem>
+                <ListItem isLast>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold" style={{ color: '#e8d5a0' }}>Aviso In-game</span>
+                    <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Alerta sonoro ao ver recurso</span>
+                  </div>
+                  <Toggle active={inGameNotifs} onClick={toggleInGameNotifs} />
+                </ListItem>
+              </ListContainer>
             </div>
 
-            <div className="p-3 rounded-[2px] space-y-2" style={{ background: 'rgba(13,10,5,0.5)', border: '1px solid #4a2f0a' }}>
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <span style={{ color: '#c8a060' }}>Opacidade da Sidebar</span>
-                <span style={{ color: '#c8860a' }}>{sidebarOpacity}%</span>
-              </div>
-              <input
-                type="range" min="20" max="100" value={sidebarOpacity}
-                onChange={(e) => { const v = parseInt(e.target.value); setSidebarOpacity(v); window.ipcRenderer?.send('set-config', { sidebarOpacity: v }) }}
-                className="w-full cursor-pointer h-0.5 rounded-full appearance-none"
-                style={{ accentColor: '#c8860a', background: '#4a2f0a' }}
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-[2px]" style={{ background: 'rgba(13,10,5,0.5)', border: '1px solid #4a2f0a' }}>
-              <div className="flex flex-col">
-                <span className="text-xs font-semibold" style={{ color: '#e8d5a0' }}>Escala do HUD</span>
-                <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Ajusta o tamanho da interface</span>
-              </div>
-              <div className="relative" style={{ WebkitAppRegion: 'no-drag' } as any}>
-                <button
-                  onClick={() => setIsScaleDropdownOpen(!isScaleDropdownOpen)}
-                  className="rounded-[2px] px-3 py-1.5 text-xs font-bold cursor-pointer flex items-center gap-1.5 transition-all"
-                  style={{ background: 'rgba(13,10,5,0.8)', border: '1px solid #4a2f0a', color: '#c8860a' }}
-                >
-                  <span>{uiScale === 50 ? '0.5x' : uiScale === 75 ? '0.75x' : uiScale === 100 ? '1x' : '1.3x'}</span>
-                  <svg className={`w-2.5 h-2.5 transition-transform duration-200 ${isScaleDropdownOpen ? 'rotate-180' : ''}`} viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.8">
-                    <path d="M1 1L5 5L9 1" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-                {isScaleDropdownOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsScaleDropdownOpen(false)} />
-                    <div
-                      className="absolute right-0 bottom-full mb-1.5 w-24 rounded-[2px] z-50 overflow-hidden"
-                      style={{ background: '#0f0b04', border: '1px solid #4a2f0a', boxShadow: '0 8px 24px rgba(0,0,0,0.8)' }}
-                    >
-                      {[50, 75, 100, 130].map((scale) => (
-                        <button
-                          key={scale}
-                          onClick={() => { setUiScale(scale); window.ipcRenderer?.send('set-config', { uiScale: scale }); setIsScaleDropdownOpen(false) }}
-                          className="w-full text-left px-3 py-2 text-xs font-semibold transition-all cursor-pointer flex items-center justify-between"
-                          style={{
-                            borderBottom: '1px solid rgba(74,47,10,0.4)',
-                            color: uiScale === scale ? '#c8860a' : '#9a7a40',
-                            background: uiScale === scale ? 'rgba(200,134,10,0.08)' : 'transparent',
-                          }}
+            <div>
+              <SL>Áudio & Interface</SL>
+              <ListContainer>
+                <ListItem vertical>
+                  <div className="flex items-center justify-between text-xs font-semibold w-full">
+                    <span className="flex items-center gap-1.5" style={{ color: '#c8a060' }}>
+                      <Volume2 size={13} style={{ color: '#9a7a40' }} /> Volume de Avisos
+                    </span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#c8860a' }}>{volume}%</span>
+                  </div>
+                  <input
+                    type="range" min="0" max="100" value={volume} onChange={handleVolumeChange}
+                    className="w-full cursor-pointer h-1 rounded-full appearance-none"
+                    style={{ accentColor: '#c8860a', background: '#2e1e06' }}
+                  />
+                </ListItem>
+                <ListItem vertical>
+                  <div className="flex items-center justify-between text-xs font-semibold w-full">
+                    <span style={{ color: '#c8a060' }}>Opacidade da Sidebar</span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#c8860a' }}>{sidebarOpacity}%</span>
+                  </div>
+                  <input
+                    type="range" min="20" max="100" value={sidebarOpacity}
+                    onChange={(e) => { const v = parseInt(e.target.value); setSidebarOpacity(v); window.ipcRenderer?.send('set-config', { sidebarOpacity: v }) }}
+                    className="w-full cursor-pointer h-1 rounded-full appearance-none"
+                    style={{ accentColor: '#c8860a', background: '#2e1e06' }}
+                  />
+                </ListItem>
+                <ListItem isLast>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold" style={{ color: '#e8d5a0' }}>Escala do HUD</span>
+                    <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Ajusta o tamanho da interface</span>
+                  </div>
+                  <div className="relative" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                    <SecondaryButton onClick={() => setIsScaleDropdownOpen(!isScaleDropdownOpen)}>
+                      <span>{uiScale === 50 ? '0.5x' : uiScale === 75 ? '0.75x' : uiScale === 100 ? '1x' : '1.3x'}</span>
+                      <svg className={`w-2 h-2 transition-transform duration-200 ${isScaleDropdownOpen ? 'rotate-180' : ''}`} viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.8">
+                        <path d="M1 1L5 5L9 1" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </SecondaryButton>
+                    {isScaleDropdownOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsScaleDropdownOpen(false)} />
+                        <div
+                          className="absolute right-0 bottom-full mb-1.5 w-24 rounded-[3px] z-50 overflow-hidden"
+                          style={{ background: '#0f0b04', border: '1px solid #3a2508', boxShadow: '0 8px 24px rgba(0,0,0,0.8)' }}
                         >
-                          <span>{scale === 50 ? '0.5x' : scale === 75 ? '0.75x' : scale === 100 ? '1x' : '1.3x'}</span>
-                          {uiScale === scale && <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#c8860a' }} />}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
+                          {[50, 75, 100, 130].map((scale) => (
+                            <button
+                              key={scale}
+                              onClick={() => { setUiScale(scale); window.ipcRenderer?.send('set-config', { uiScale: scale }); setIsScaleDropdownOpen(false) }}
+                              className="w-full text-left px-3 py-2 text-[10px] font-bold transition-all cursor-pointer flex items-center justify-between"
+                              style={{
+                                fontFamily: "'JetBrains Mono', monospace",
+                                borderBottom: '1px solid rgba(46,30,6,0.7)',
+                                color: uiScale === scale ? '#e8b840' : '#c8a030',
+                                background: uiScale === scale ? 'rgba(74,47,10,0.4)' : 'transparent',
+                              }}
+                            >
+                              <span>{scale === 50 ? '0.5x' : scale === 75 ? '0.75x' : scale === 100 ? '1x' : '1.3x'}</span>
+                              {uiScale === scale && <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#c8860a' }} />}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </ListItem>
+              </ListContainer>
             </div>
           </div>
         ) : (
-          <div className="space-y-3">
-            <SL>Atalhos de Teclado</SL>
+          <div className="space-y-4">
+            <div>
+              <SL>Atalhos de Teclado</SL>
 
-            {/* Map shortcut */}
-            <div className="p-3 rounded-[2px] space-y-2" style={{ background: 'rgba(13,10,5,0.5)', border: '1px solid #4a2f0a' }}>
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold flex items-center gap-1.5" style={{ color: '#e8d5a0' }}>
-                    <Keyboard size={13} style={{ color: '#9a7a40' }} /> Abrir Mapa
-                  </span>
-                  <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Exibe e foca a tela de Mapa</span>
-                </div>
-                <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
-                  {shortcutMap && (
-                    <button
-                      onClick={() => { window.ipcRenderer?.invoke('register-shortcut', { type: 'map', shortcut: '' }).then((res: any) => { if (res?.success) { setShortcutMap(''); window.ipcRenderer?.send('set-config', { shortcutMap: '' }); setErrorMessage('') } }) }}
-                      className="p-1.5 rounded-[2px] transition-all cursor-pointer"
-                      style={{ color: '#9a7a40' }}
-                      onMouseEnter={e => { e.currentTarget.style.color = '#c0392b'; e.currentTarget.style.background = 'rgba(139,26,26,0.15)' }}
-                      onMouseLeave={e => { e.currentTarget.style.color = '#9a7a40'; e.currentTarget.style.background = 'transparent' }}
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => { setRecordingType(recordingType === 'map' ? null : 'map'); setErrorMessage('') }}
-                    className="px-3 py-1.5 rounded-[2px] text-[10px] font-bold transition-all cursor-pointer border"
-                    style={recordingType === 'map'
-                      ? { background: 'rgba(200,134,10,0.15)', color: '#e8a820', borderColor: 'rgba(200,134,10,0.4)' }
-                      : { background: 'rgba(13,10,5,0.5)', color: '#c8860a', borderColor: '#4a2f0a' }
-                    }
-                  >
-                    {recordingType === 'map' ? 'Pressione...' : 'Gravar novo'}
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center justify-between pt-1">
-                <div className="flex items-center gap-1">
-                  {shortcutMap
-                    ? shortcutMap.split('+').map((p, i) => <KbdKey key={i} k={p} />)
-                    : <span className="text-[10px] italic" style={{ color: '#9a7a40' }}>Nenhum atalho configurado</span>
-                  }
-                </div>
-                {recordingType === 'map' && (
-                  <span className="text-[8.5px] italic animate-pulse" style={{ color: '#9a7a40' }}>Esc cancelar · Backspace limpar</span>
-                )}
-              </div>
-            </div>
+              <ListContainer>
+                {/* Map shortcut */}
+                <ListItem vertical>
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-semibold flex items-center gap-1.5" style={{ color: '#e8d5a0' }}>
+                        <Keyboard size={13} style={{ color: '#9a7a40' }} /> Abrir Mapa
+                      </span>
+                      <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Exibe e foca a tela de Mapa</span>
+                    </div>
+                    <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                      {shortcutMap && (
+                        <button
+                          onClick={() => { window.ipcRenderer?.invoke('register-shortcut', { type: 'map', shortcut: '' }).then((res: any) => { if (res?.success) { setShortcutMap(''); window.ipcRenderer?.send('set-config', { shortcutMap: '' }); setErrorMessage('') } }) }}
+                          className="p-1.5 rounded-[3px] transition-all cursor-pointer border"
+                          style={{ color: '#e07070', background: 'rgba(120,20,20,0.1)', borderColor: '#7a1414' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.3)' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.1)' }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                      {recordingType === 'map' ? (
+                        <PrimaryButton>PRESSIONE...</PrimaryButton>
+                      ) : (
+                        <SecondaryButton onClick={() => { setRecordingType('map'); setErrorMessage('') }}>GRAVAR NOVO</SecondaryButton>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 w-full">
+                    <div className="flex items-center gap-1">
+                      {shortcutMap
+                        ? shortcutMap.split('+').map((p, i) => <KbdKey key={i} k={p} />)
+                        : <span className="text-[10px] italic" style={{ color: '#9a7a40', fontFamily: "'JetBrains Mono', monospace" }}>Nenhum atalho</span>
+                      }
+                    </div>
+                    {recordingType === 'map' && (
+                      <span className="text-[8.5px] italic animate-pulse" style={{ color: '#c8a030' }}>Esc cancelar · Backspace limpar</span>
+                    )}
+                  </div>
+                </ListItem>
 
-            {/* Settings shortcut */}
-            <div className="p-3 rounded-[2px] space-y-2" style={{ background: 'rgba(13,10,5,0.5)', border: '1px solid #4a2f0a' }}>
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold flex items-center gap-1.5" style={{ color: '#e8d5a0' }}>
-                    <Keyboard size={13} style={{ color: '#9a7a40' }} /> Abrir Configurações
-                  </span>
-                  <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Exibe e foca a tela de Configurações</span>
-                </div>
-                <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
-                  {shortcutSettings && (
-                    <button
-                      onClick={() => { window.ipcRenderer?.invoke('register-shortcut', { type: 'settings', shortcut: '' }).then((res: any) => { if (res?.success) { setShortcutSettings(''); window.ipcRenderer?.send('set-config', { shortcutSettings: '' }); setErrorMessage('') } }) }}
-                      className="p-1.5 rounded-[2px] transition-all cursor-pointer"
-                      style={{ color: '#9a7a40' }}
-                      onMouseEnter={e => { e.currentTarget.style.color = '#c0392b'; e.currentTarget.style.background = 'rgba(139,26,26,0.15)' }}
-                      onMouseLeave={e => { e.currentTarget.style.color = '#9a7a40'; e.currentTarget.style.background = 'transparent' }}
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => { setRecordingType(recordingType === 'settings' ? null : 'settings'); setErrorMessage('') }}
-                    className="px-3 py-1.5 rounded-[2px] text-[10px] font-bold transition-all cursor-pointer border"
-                    style={recordingType === 'settings'
-                      ? { background: 'rgba(200,134,10,0.15)', color: '#e8a820', borderColor: 'rgba(200,134,10,0.4)' }
-                      : { background: 'rgba(13,10,5,0.5)', color: '#c8860a', borderColor: '#4a2f0a' }
-                    }
-                  >
-                    {recordingType === 'settings' ? 'Pressione...' : 'Gravar novo'}
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center justify-between pt-1">
-                <div className="flex items-center gap-1">
-                  {shortcutSettings
-                    ? shortcutSettings.split('+').map((p, i) => <KbdKey key={i} k={p} />)
-                    : <span className="text-[10px] italic" style={{ color: '#9a7a40' }}>Nenhum atalho configurado</span>
-                  }
-                </div>
-                {recordingType === 'settings' && (
-                  <span className="text-[8.5px] italic animate-pulse" style={{ color: '#9a7a40' }}>Esc cancelar · Backspace limpar</span>
-                )}
-              </div>
+                {/* Settings shortcut */}
+                <ListItem vertical isLast>
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-semibold flex items-center gap-1.5" style={{ color: '#e8d5a0' }}>
+                        <Keyboard size={13} style={{ color: '#9a7a40' }} /> Abrir Configurações
+                      </span>
+                      <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Exibe e foca a tela de Configurações</span>
+                    </div>
+                    <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                      {shortcutSettings && (
+                        <button
+                          onClick={() => { window.ipcRenderer?.invoke('register-shortcut', { type: 'settings', shortcut: '' }).then((res: any) => { if (res?.success) { setShortcutSettings(''); window.ipcRenderer?.send('set-config', { shortcutSettings: '' }); setErrorMessage('') } }) }}
+                          className="p-1.5 rounded-[3px] transition-all cursor-pointer border"
+                          style={{ color: '#e07070', background: 'rgba(120,20,20,0.1)', borderColor: '#7a1414' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.3)' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.1)' }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                      {recordingType === 'settings' ? (
+                        <PrimaryButton>PRESSIONE...</PrimaryButton>
+                      ) : (
+                        <SecondaryButton onClick={() => { setRecordingType('settings'); setErrorMessage('') }}>GRAVAR NOVO</SecondaryButton>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 w-full">
+                    <div className="flex items-center gap-1">
+                      {shortcutSettings
+                        ? shortcutSettings.split('+').map((p, i) => <KbdKey key={i} k={p} />)
+                        : <span className="text-[10px] italic" style={{ color: '#9a7a40', fontFamily: "'JetBrains Mono', monospace" }}>Nenhum atalho</span>
+                      }
+                    </div>
+                    {recordingType === 'settings' && (
+                      <span className="text-[8.5px] italic animate-pulse" style={{ color: '#c8a030' }}>Esc cancelar · Backspace limpar</span>
+                    )}
+                  </div>
+                </ListItem>
+              </ListContainer>
             </div>
 
             {errorMessage && (
               <div
-                className="text-[9.5px] font-semibold px-2.5 py-1 rounded-[2px] border"
-                style={{ background: 'rgba(139,26,26,0.15)', borderColor: '#8b1a1a', color: '#c0392b' }}
+                className="text-[9.5px] font-semibold px-2.5 py-1.5 rounded-[3px] border"
+                style={{ background: 'rgba(120,20,20,0.2)', border: '1px solid #7a1414', color: '#e07070', fontFamily: "'JetBrains Mono', monospace" }}
               >
                 {errorMessage}
               </div>
@@ -379,7 +418,7 @@ export const SettingsScreen = () => {
         )}
       </div>
 
-      <span className="text-[9.5px] block text-right mt-2 flex-none" style={{ color: '#4a2f0a' }}>
+      <span className="text-[9.5px] block text-right mt-2 flex-none" style={{ color: '#4a2f0a', fontFamily: "'JetBrains Mono', monospace" }}>
         Configurações salvas localmente.
       </span>
     </div>
