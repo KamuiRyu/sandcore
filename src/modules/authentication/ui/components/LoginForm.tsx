@@ -108,7 +108,7 @@ export const LoginForm = ({ viewModel, rememberMe, setRememberMe }: LoginFormPro
       <button
         type="submit"
         disabled={viewModel.authLoading}
-        className="w-full bg-gradient-to-r from-[#c8860a] to-[#e0a020] text-black shadow-[0_0_15px_rgba(200,134,10,0.4)] hover:scale-105 active:scale-95 text-white font-mono text-[0.65rem] font-black uppercase tracking-[0.1em] rounded-[2px] py-3 flex items-center justify-center relative transition-all active:scale-[0.99] cursor-pointer"
+        className="w-full bg-gradient-to-r from-[#b87a08] to-[#e8a820] text-[#0a0800] font-mono text-[0.65rem] font-black uppercase tracking-[0.1em] rounded-[2px] py-3 flex items-center justify-center relative transition-all hover:brightness-110 active:scale-[0.99] cursor-pointer disabled:opacity-50"
         style={{ WebkitAppRegion: 'no-drag' } as any}
       >
         {viewModel.authLoading ? (
