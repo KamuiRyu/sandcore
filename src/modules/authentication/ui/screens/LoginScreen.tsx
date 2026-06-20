@@ -145,9 +145,9 @@ export const LoginScreen = () => {
 
             {/* Divider */}
             <div className="flex items-center gap-2.5 my-3.5">
-              <div className="h-[1px] flex-1 bg-slate-800/85"></div>
-              <span className="text-[#9a7a40] text-[0.55rem] font-black font-mono uppercase tracking-[0.15em]">ou continue com</span>
-              <div className="h-[1px] flex-1 bg-slate-800/85"></div>
+              <div className="h-[1px] flex-1" style={{ background: 'linear-gradient(90deg, transparent, #2e1e06)' }}></div>
+              <span className="text-[#6a5028] text-[0.55rem] font-black font-mono uppercase tracking-[0.15em]">ou continue com</span>
+              <div className="h-[1px] flex-1" style={{ background: 'linear-gradient(90deg, #2e1e06, transparent)' }}></div>
             </div>
 
             {/* OAuth Buttons */}

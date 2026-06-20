@@ -49,7 +49,7 @@ export const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer p-0.5"
+                className="text-[#6a5028] hover:text-[#c8860a] transition-colors cursor-pointer p-0.5"
                 title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
               >
                 {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
