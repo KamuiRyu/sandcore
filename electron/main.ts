@@ -578,12 +578,8 @@ function openPanel(tabId: string, immediate = false) {
   const physicalSidebarW = Math.round(60 * zoom)
   const physicalSidebarH = Math.round(360 * zoom)
 
-  let panelLogicalW = 450
-  let panelLogicalH = 550
-  if (tabId === 'map') {
-    panelLogicalW = 1200
-    panelLogicalH = 800
-  }
+  let panelLogicalW = 1200
+  let panelLogicalH = 800
 
   const physicalPanelW = Math.round(panelLogicalW * zoom)
   const physicalPanelH = Math.round(panelLogicalH * zoom)
