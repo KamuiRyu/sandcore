@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { motion } from "framer-motion";
 import {
   Calendar,
@@ -102,6 +103,7 @@ const SecondaryButton = ({ children, onClick, disabled = false, padding = '4px 1
 )
 
 export const StatsScreen = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const [dailyStats, setDailyStats] = useState<MapCollectionStats[]>([]);
   const [period, setPeriod] = useState<"today" | "monthly" | "total" | "routes">("today");
@@ -449,7 +451,8 @@ export const StatsScreen = () => {
                     </SL>
                     <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
                       <ListContainer>
-                        {Object.entries(flatCounts).filter(([_, count]) => count > 0).sort((a, b) => b[1] - a[1]).map(([type, count], idx, arr) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                        {Object.entries(flatCounts).filter(([, count]) => count > 0).sort((a, b) => b[1] - a[1]).map(([type, count], idx, arr) => {
                           const def = ORE_DEFINITIONS[type] || MUSHROOM_DEFINITIONS[type] || PLANT_DEFINITIONS[type] || STICK_DEFINITIONS[type];
                           return (
                             <ListItem key={type} isLast={idx === arr.length - 1}>

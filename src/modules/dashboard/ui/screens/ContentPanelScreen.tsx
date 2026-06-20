@@ -20,6 +20,7 @@ import { StatsScreen } from "./StatsScreen";
 import { AppDetailsScreen } from "./AppDetailsScreen";
 import { CraftingScreen } from "./CraftingScreen";
 import { HudPanel } from "../../../app/ui/components/HudPanel";
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { SunagakureLogo } from "../../../app/ui/components/SunagakureLogo";
 
 const TAB_META: Record<string, { label: string; icon: LucideIcon }> = {
@@ -60,8 +61,10 @@ export const ContentPanelScreen = ({
   };
 
   const isMapTab = lastActiveTab === "map";
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const isCraftingTab = lastActiveTab === "crafting";
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const tabMeta = TAB_META[lastActiveTab] ?? TAB_META["settings"];
 
   return (

@@ -55,6 +55,48 @@ const ListItem = ({ children, isLast = false, vertical = false }: { children: Re
   </div>
 )
 
+const KbdKey = ({ k }: { k: string }) => (
+  <span
+    className="inline-flex items-center px-1.5 py-0.5 font-mono text-[9px] rounded-[2px]"
+    style={{ background: '#1c1508', border: '1px solid #c8860a', borderBottomWidth: 2, color: '#e8b840', letterSpacing: '0.04em' }}
+  >
+    {k === 'CommandOrControl' || k === 'CmdOrCtrl' ? 'Ctrl' : k}
+  </span>
+)
+
+const SecondaryButton = ({ children, onClick, disabled = false, padding = '4px 10px' }: { children: React.ReactNode, onClick?: () => void, disabled?: boolean, padding?: string }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding,
+      borderRadius: 3, background: 'transparent', border: '1px solid #2e1e06', color: '#c8a840',
+      fontSize: 9, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, letterSpacing: '0.08em',
+      cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.15s', opacity: disabled ? 0.5 : 1,
+      whiteSpace: 'nowrap'
+    }}
+    onMouseEnter={e => { if(!disabled) { e.currentTarget.style.background = 'rgba(74,47,10,0.25)'; e.currentTarget.style.borderColor = '#6a4e18'; e.currentTarget.style.color = '#e8c860'; } }}
+    onMouseLeave={e => { if(!disabled) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#2e1e06'; e.currentTarget.style.color = '#c8a840'; } }}
+  >
+    {children}
+  </button>
+)
+
+const PrimaryButton = ({ children, onClick, disabled = false }: { children: React.ReactNode, onClick?: () => void, disabled?: boolean }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    style={{
+      display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 3,
+      background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none',
+      fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em',
+      cursor: disabled ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1
+    }}
+  >
+    {children}
+  </button>
+)
+
 export const SettingsScreen = () => {
   const [alwaysOnTop, setAlwaysOnTop] = useState(true)
   const [inGameNotifs, setInGameNotifs] = useState(true)
@@ -148,47 +190,6 @@ export const SettingsScreen = () => {
   const toggleInGameNotifs = () => { const v = !inGameNotifs; setInGameNotifs(v); window.ipcRenderer?.send('set-config', { inGameNotifs: v }) }
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => { const v = parseInt(e.target.value); setVolume(v); window.ipcRenderer?.send('set-config', { volume: v }) }
 
-  const KbdKey = ({ k }: { k: string }) => (
-    <span
-      className="inline-flex items-center px-1.5 py-0.5 font-mono text-[9px] rounded-[2px]"
-      style={{ background: '#1c1508', border: '1px solid #c8860a', borderBottomWidth: 2, color: '#e8b840', letterSpacing: '0.04em' }}
-    >
-      {k === 'CommandOrControl' || k === 'CmdOrCtrl' ? 'Ctrl' : k}
-    </span>
-  )
-
-  const SecondaryButton = ({ children, onClick, disabled = false, padding = '4px 10px' }: { children: React.ReactNode, onClick?: () => void, disabled?: boolean, padding?: string }) => (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding,
-        borderRadius: 3, background: 'transparent', border: '1px solid #2e1e06', color: '#c8a840',
-        fontSize: 9, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, letterSpacing: '0.08em',
-        cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.15s', opacity: disabled ? 0.5 : 1,
-        whiteSpace: 'nowrap'
-      }}
-      onMouseEnter={e => { if(!disabled) { e.currentTarget.style.background = 'rgba(74,47,10,0.25)'; e.currentTarget.style.borderColor = '#6a4e18'; e.currentTarget.style.color = '#e8c860'; } }}
-      onMouseLeave={e => { if(!disabled) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#2e1e06'; e.currentTarget.style.color = '#c8a840'; } }}
-    >
-      {children}
-    </button>
-  )
-
-  const PrimaryButton = ({ children, onClick, disabled = false }: { children: React.ReactNode, onClick?: () => void, disabled?: boolean }) => (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 3,
-        background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none',
-        fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em',
-        cursor: disabled ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1
-      }}
-    >
-      {children}
-    </button>
-  )
 
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ color: '#e8d5a0' }}>

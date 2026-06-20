@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { MapPin, Star, Compass, BarChart2, Settings, LogOut, ShieldAlert, CheckCircle, Volume2, UserCheck } from 'lucide-react'
 import { useAuthViewModel } from '../../../authentication/ui/viewModels/useAuth.viewModel'
 

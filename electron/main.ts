@@ -265,7 +265,7 @@ function createLoginWindow() {
 }
 
 let currentTabId: string | null = null
-let moveTimeout: NodeJS.Timeout | null = null
+const moveTimeout: NodeJS.Timeout | null = null
 let isProgrammaticMove = false
 
 function safeSetBounds(win: BrowserWindow, bounds: { x: number; y: number; width: number; height: number }) {
@@ -426,7 +426,8 @@ function createSidebarWindow() {
       panelWin = null
     }
     if (!loginWin || loginWin.isDestroyed()) {
-      BrowserWindow.getAllWindows().forEach(w => { try { w.destroy() } catch (_) {} })
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      BrowserWindow.getAllWindows().forEach(w => { try { w.destroy() } catch (_) { /* empty */ } })
       app.exit(0)
     }
   })

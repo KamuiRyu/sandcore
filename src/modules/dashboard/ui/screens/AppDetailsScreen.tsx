@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ShieldCheck, Zap, RefreshCw, Trash2, RotateCcw, FileText } from "lucide-react";
 import { pb } from "../../../../lib/pocketbase";
 
@@ -89,7 +90,7 @@ export const AppDetailsScreen = () => {
       try {
         localStorage.removeItem("shinobi-map-stats-history");
         let userId = pb.authStore.model?.id;
-        if (!userId) { const pbAuth = localStorage.getItem("pocketbase_auth"); if (pbAuth) { try { const d = JSON.parse(pbAuth); userId = d.model?.id; if (d.token) pb.authStore.save(d.token, d.model); } catch {} } }
+        if (!userId) { const pbAuth = localStorage.getItem("pocketbase_auth"); if (pbAuth) { try { const d = JSON.parse(pbAuth); userId = d.model?.id; if (d.token) pb.authStore.save(d.token, d.model); } catch { /* empty */ } } }
         if (userId) {
           try {
             const records = await pb.collection("user_map_stats").getFullList({ filter: `owner = "${userId}"` });

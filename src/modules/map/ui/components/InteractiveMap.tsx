@@ -581,6 +581,7 @@ export function InteractiveMap({
     publicRoutesLoading,
     publicRoutesQuery,
     routesView,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
     searchQuery,
     selectCustomPin,
     startEditingCustomPin,
@@ -662,9 +663,13 @@ export function InteractiveMap({
     searchPage,
     setSearchPage,
     totalSearchPages,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
     searchHistory,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
     addToHistory,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
     removeFromHistory,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
     clearHistory,
     searchResults,
     mapStats,

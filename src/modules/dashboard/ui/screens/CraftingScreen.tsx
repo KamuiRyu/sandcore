@@ -3,6 +3,7 @@ import {
   Hammer,
   Plus,
   Minus,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Calculator,
   RefreshCw,
   ChevronRight,
@@ -19,6 +20,7 @@ import { RESOURCE_DEFINITIONS } from "../../../map/core/entities/ResourceDefinit
 import {
   Select,
   SelectContent,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   SelectGroup,
   SelectItem,
   SelectTrigger,

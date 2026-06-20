@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Route, CheckCircle, PackageSearch } from 'lucide-react'
+import { CheckCircle, PackageSearch } from 'lucide-react'
 import { AppModal } from '../../../app/ui/components/AppModal'
 import { ORE_DEFINITIONS, MUSHROOM_DEFINITIONS, PLANT_DEFINITIONS } from '../../core/entities/ResourceDefinitions.entity'
 
@@ -37,6 +37,7 @@ export function RouteCompletionModal({
         initial['ore_1'] = 0;
       }
       
+       
       setCollected(initial);
     }
   }, [isOpen, expectedCounts])

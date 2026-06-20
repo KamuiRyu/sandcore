@@ -199,7 +199,6 @@ export function useMapViewModel() {
   const [totalPublicRoutesPages, setTotalPublicRoutesPages] = useState(1);
 
   const [customPinsPage, setCustomPinsPage] = useState(1);
-  const [totalCustomPinsPages, setTotalCustomPinsPages] = useState(1);
   const [notificationSettings, _setNotificationSettings] =
     useState<NotificationSettings>(() =>
       mapDependencies.localNotificationSettingsStorage.read(),
@@ -299,7 +298,7 @@ export function useMapViewModel() {
       setDailyStats((prev) => {
         const todayStr = new Date().toISOString().split("T")[0];
         const next = [...prev];
-        let todayIdx = next.findIndex((s) => s.date === todayStr);
+        const todayIdx = next.findIndex((s) => s.date === todayStr);
         if (todayIdx === -1) return next;
         const today = { ...next[todayIdx] };
 
@@ -564,7 +563,7 @@ export function useMapViewModel() {
             for (const r of records) {
               try {
                 await pb.collection("user_map_stats").delete(r.id);
-              } catch (delErr) {
+              } catch {
                 await pb.collection("user_map_stats").update(r.id, {
                   ore_count: {},
                   mushroom_count: {},
@@ -750,6 +749,7 @@ export function useMapViewModel() {
           matchesLayer && matchesRegion && matchesSearchQuery && matchesType
         );
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     officialPoints,
     debouncedSearchQuery,
@@ -803,6 +803,7 @@ export function useMapViewModel() {
       if (isSearched) return true;
       return selectedLayers.includes("customPins") && matchesSearchQuery;
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     customPins,
     debouncedSearchQuery,
@@ -1023,6 +1024,10 @@ export function useMapViewModel() {
     triggerAlert,
     notificationSettings,
     getLastGlobalResetTime,
+    isAuthenticated,
+    user,
+    pinVisibility,
+    group,
   ]);
 
   // Cleanup de Rotas Descartáveis
@@ -1212,7 +1217,7 @@ export function useMapViewModel() {
       },
     );
     return () => unsubscribe();
-  }, [isAuthenticated, user?.id, group?.id]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (isAuthenticated && user?.id) {
@@ -1493,6 +1498,7 @@ export function useMapViewModel() {
       pinVisibility,
       group,
       incrementResourceStat,
+      decrementResourceStat,
     ],
   );
 
@@ -1940,7 +1946,7 @@ export function useMapViewModel() {
 
       const { optimizeRoute } =
         await import("../../core/usecases/OptimizeRoute.usecase");
-      const checkpoints: RouteCheckpoint[] = pointsToRoute.map((p, i) => ({
+      const checkpoints: RouteCheckpoint[] = pointsToRoute.map((p) => ({
         id: createId("checkpoint"),
         pointId: p.pointId,
         customPinId: p.customPinId,
@@ -2008,11 +2014,12 @@ export function useMapViewModel() {
         showToast("Erro", "Falha ao criar rota otimizada.", "error");
       }
     },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
     [visibleOfficialPoints, visibleCustomPins, showToast, user?.id, completedPins, officialPoints],
   );
 
   useEffect(() => {
-    // Atualiza dinamicamente as estatísticas de TODAS as Rotas Temporárias quando os minérios são marcados
+     
     setSavedRoutes((prev) => {
       let hasChanges = false;
       const next = [...prev];
@@ -2128,11 +2135,9 @@ export function useMapViewModel() {
 
           // Merge old and new stats (sum them)
           const currentCollected = route.route.routeStats.collectedCounts || {};
-          const expectedCounts = route.route.routeStats.resourceCounts || {};
           
           Object.entries(collectedData).forEach(([type, count]) => {
             const current = currentCollected[type] || 0;
-            const expected = expectedCounts[type] || 0;
             // Add new count to current (no upper bound to allow multiple runs of the same route)
             currentCollected[type] = Math.max(0, current + count);
           });
@@ -2543,7 +2548,7 @@ export function useMapViewModel() {
           return prev.includes(t) ? prev.filter((i) => i !== t) : [...prev, t];
         });
       },
-      [markerTypes],
+      [],
     ),
     toggleCustomPinVisibility: useCallback((id: string) => {
       setCustomPins((prev) =>

@@ -29,6 +29,7 @@ export const LoginScreen = () => {
       }, 6000)
       return () => clearTimeout(timer)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewModel.resetSuccess])
 
   const handleOAuth = (provider: 'google' | 'discord') => {

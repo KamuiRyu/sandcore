@@ -285,6 +285,7 @@ export const MapCanvasLayer = memo(function MapCanvasLayer({
     customPins.forEach((p) => drawPin(p, true))
 
     ctx.restore()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     officialPoints,
     customPins,

@@ -17,11 +17,13 @@ import {
   Image as ImageIcon,
   Share2,
   Shield,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Settings,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Users,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   UserPlus,
   LogOut,
-  Copy,
   Code2,
   X,
 } from "lucide-react";
@@ -335,7 +337,6 @@ export const MapSidebar = memo(function MapSidebar({
   deleteSavedRoute,
   duplicateSavedRoute,
   updateRouteCollectedStats,
-  markRoutePinsCompleted,
   addRouteResourcesToDailyStats,
   publishSelectedRoute,
   unpublishSelectedRoute,
@@ -355,26 +356,13 @@ export const MapSidebar = memo(function MapSidebar({
   updateCheckpointLabel,
   mode,
   setMode,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   mapStats,
-  worldStats,
-  statsPeriod,
-  setStatsPeriod,
-  resetAllActiveRespawns,
-  group,
-  members,
-  isGroupLoading,
-  createGroup,
-  joinGroup,
-  leaveGroup,
-  copyInviteCode,
   isAuthenticated,
   openLoginModal,
-  setIsSettingsModalOpen,
   savedRoutes,
   publicRoutes,
 }: MapSidebarProps) {
-  const [newGroupName, setNewGroupName] = useState("");
-  const [joinCode, setJoinCode] = useState("");
   const [routeToComplete, setRouteToComplete] = useState<SavedMapRoute | null>(null);
 
   useEffect(() => {
@@ -391,26 +379,8 @@ export const MapSidebar = memo(function MapSidebar({
     };
     window.addEventListener('open-route-completion', handleOpenRouteCompletion as EventListener);
     return () => window.removeEventListener('open-route-completion', handleOpenRouteCompletion as EventListener);
-  }, [savedRoutes, publicRoutes]);
+  }, [savedRoutes, publicRoutes, setIsSidebarOpen, setSidebarSection]);
 
-  const [deleteConfirmationId, setDeleteConfirmationId] = useState<string | null>(null);
-
-  const safeMapStats = {
-    ore_count: mapStats?.ore_count || {},
-    mushroom_count: mapStats?.mushroom_count || {},
-    plant_count: mapStats?.plant_count || {},
-    stick_count: mapStats?.stick_count || 0,
-  };
-  const safeWorldStats = {
-    total_ores: worldStats?.total_ores || 0,
-    marked_ores: worldStats?.marked_ores || 0,
-    total_mushrooms: worldStats?.total_mushrooms || 0,
-    marked_mushrooms: worldStats?.marked_mushrooms || 0,
-    total_plants: worldStats?.total_plants || 0,
-    marked_plants: worldStats?.marked_plants || 0,
-    total_sticks: worldStats?.total_sticks || 0,
-    marked_sticks: worldStats?.marked_sticks || 0,
-  };
 
   return (
     <div className="pointer-events-none absolute left-0 top-0 bottom-0 z-[60] flex items-center">
