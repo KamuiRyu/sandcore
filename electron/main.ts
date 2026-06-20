@@ -338,7 +338,7 @@ function createSidebarWindow() {
     transparent: true,
     hasShadow: false,
     backgroundColor: '#00000000',
-    minimizable: false,
+    minimizable: !appConfig.alwaysOnTop,
     alwaysOnTop: appConfig.alwaysOnTop,
     skipTaskbar: false,
     focusable: true,
@@ -877,6 +877,7 @@ ipcMain.on('set-config', (_event, newConfig) => {
 
   if ('alwaysOnTop' in newConfig) {
     if (sidebarWin && !sidebarWin.isDestroyed()) {
+      sidebarWin.setMinimizable(!newConfig.alwaysOnTop)
       if (newConfig.alwaysOnTop) {
         sidebarWin.setAlwaysOnTop(true, 'screen-saver', 1)
       } else {
