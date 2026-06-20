@@ -87,12 +87,7 @@ function App() {
   }, [activeTab, layoutSide, alignSide])
 
   if (loading && windowType !== 'splash' && windowType !== 'login') {
-    return (
-      <div className="h-screen w-screen bg-[#0f0b04] text-slate-200 flex flex-col items-center justify-center font-sans">
-        <Loader2 className="animate-spin text-teal-500 w-8 h-8 mb-3" />
-        <span className="text-sm tracking-wider font-semibold">Carregando...</span>
-      </div>
-    )
+    return null
   }
 
   // If windowType is explicitly set to splash
