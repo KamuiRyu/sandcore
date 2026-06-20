@@ -324,26 +324,13 @@ function createSidebarWindow() {
     sidebarWin.setAlwaysOnTop(true, 'screen-saver', 1)
   }
 
-  // Prevent the window from being minimized by the system when losing focus to a fullscreen app
-  sidebarWin.on('blur', () => {
-    if (appConfig.alwaysOnTop && sidebarWin) {
-      sidebarWin.setAlwaysOnTop(true, 'screen-saver', 1)
-    }
-  })
-
-  // Bring panel to front when sidebar is focused/restored
-  sidebarWin.on('focus', () => {
-    if (panelWin && !panelWin.isDestroyed() && currentTabId) {
-      if (appConfig.alwaysOnTop) {
-        panelWin.setAlwaysOnTop(false)
-        panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
-      }
-      panelWin.showInactive()
-    }
-  })
+  // Removed blur and focus hacks that were causing flickers and click blocks.
+  // The OS will properly keep the parent and child together in Z-order.
 
   sidebarWin.on('minimize' as any, () => {
-    // Let the window minimize naturally
+    if (panelWin && !panelWin.isDestroyed()) {
+      panelWin.minimize()
+    }
   })
 
   sidebarWin.on('restore', () => {
@@ -418,16 +405,15 @@ function createPanelWindow() {
   })
 
   panelWin.setMenu(null)
+  
+  // Open DevTools for the panel so the user can inspect its components
+  panelWin.webContents.openDevTools({ mode: 'detach' })
 
   if (appConfig.alwaysOnTop) {
     panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
   }
 
-  panelWin.on('blur', () => {
-    if (appConfig.alwaysOnTop && panelWin) {
-      panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
-    }
-  })
+  // Removed blur hack for panelWin as well
 
   panelWin.on('minimize' as any, () => {
     // Let it minimize naturally with its parent
@@ -532,9 +518,6 @@ function openPanel(tabId: string, immediate = false) {
   if (tabId === 'map') {
     panelLogicalW = 1200
     panelLogicalH = 800
-  } else if (tabId === 'crafting') {
-    panelLogicalW = 800
-    panelLogicalH = 600
   }
 
   const physicalPanelW = Math.round(panelLogicalW * zoom)
@@ -593,6 +576,8 @@ function openPanel(tabId: string, immediate = false) {
   if (appConfig.alwaysOnTop) {
     panel.setAlwaysOnTop(false)
     panel.setAlwaysOnTop(true, 'screen-saver', 1)
+  } else {
+    panel.setAlwaysOnTop(false)
   }
 
   // Force show unconditionally
@@ -806,6 +791,13 @@ ipcMain.on('set-config', (_event, newConfig) => {
         sidebarWin.setAlwaysOnTop(false)
       }
     }
+    if (panelWin && !panelWin.isDestroyed()) {
+      if (newConfig.alwaysOnTop) {
+        panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
+      } else {
+        panelWin.setAlwaysOnTop(false)
+      }
+    }
   }
 
   if ('layoutSide' in newConfig) {
@@ -818,10 +810,21 @@ ipcMain.on('set-config', (_event, newConfig) => {
     const zoom = newConfig.uiScale / 100
     if (sidebarWin && !sidebarWin.isDestroyed()) {
       sidebarWin.webContents.setZoomFactor(zoom)
-      if (currentTabId) openPanel(currentTabId)
+      const [curX, curY] = sidebarWin.getPosition()
+      const newW = Math.round(56 * zoom)
+      const newH = Math.round(420 * zoom)
+      sidebarWin.setBounds({ x: curX, y: curY, width: newW, height: newH })
+    }
+    if (panelWin && !panelWin.isDestroyed()) {
+      panelWin.webContents.setZoomFactor(zoom)
+    }
+    if (sidebarWin && !sidebarWin.isDestroyed() && currentTabId) {
+      openPanel(currentTabId)
     }
     if (loginWin && !loginWin.isDestroyed()) {
       loginWin.webContents.setZoomFactor(zoom)
+      const [lx, ly] = loginWin.getPosition()
+      loginWin.setBounds({ x: lx, y: ly, width: Math.round(800 * zoom), height: Math.round(600 * zoom) })
     }
   }
 })

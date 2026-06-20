@@ -38,45 +38,91 @@ export const SidebarPanel = memo(function SidebarPanel({
         className
       )}
     >
-      <aside className="flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#030a0d]/96 backdrop-blur-3xl shadow-[0_32px_80px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.05)] relative group/panel">
-        {/* Decorative Background Elements */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,214,163,0.012)_1px,transparent_1px),linear-gradient(90deg,rgba(0,214,163,0.012)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none opacity-40" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(0,214,163,0.05),transparent_40%)] pointer-events-none" />
-        
-        {/* Sci-Fi Corners */}
-        <div className="absolute inset-0 tech-corner-accent opacity-20 pointer-events-none" />
+      <aside 
+        className="relative flex h-full w-full flex-col overflow-hidden rounded-[2px] border border-[#4a2f0a] shadow-[0_32px_80px_rgba(0,0,0,0.6)] group/panel"
+        style={{
+          background: "linear-gradient(160deg,#161008 0%,#0f0b04 100%)",
+          border: "1px solid rgba(255, 221, 102, 0.4)",
+        }}
+      >
+        {/* Gold top accent line */}
+        <div
+          className="absolute top-0 left-0 right-0 h-[3px] pointer-events-none z-10"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent 0%, #4a2f0a 15%, #c8860a 40%, #e8a820 50%, #c8860a 60%, #4a2f0a 85%, transparent 100%)",
+          }}
+        />
+
+        {/* Sand grain overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none z-0 opacity-[0.04]"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+          }}
+        />
 
         <div className="flex h-full flex-col relative z-10">
           {/* Header */}
-          <div className="flex items-center justify-between px-7 py-5.5 border-b border-white/5 bg-white/[0.015]">
-            <div className="flex items-center gap-4 min-w-0 flex-1">
-              <div className="relative flex-shrink-0">
-                <div className="absolute inset-0 bg-gradient-to-r from-[var(--cyan)] to-emerald-500 blur-md opacity-25 rounded-2xl group-hover/panel:opacity-40 transition-opacity" />
-                <div className="relative grid h-11 w-11 place-items-center rounded-2xl bg-black/60 border border-white/15 text-[var(--cyan)] shadow-[0_8px_16px_rgba(0,0,0,0.4)] ring-1 ring-white/5">
-                  <Icon size={20} strokeWidth={2.5} />
-                </div>
+          <div 
+            className="flex items-center justify-between px-4 py-[10px] border-b border-[#4a2f0a] shrink-0"
+            style={{
+              background: "linear-gradient(90deg, #2e1f08 0%, #1a1007 100%)",
+            }}
+          >
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              {/* Shrine icon */}
+              <div
+                className="text-[18px] leading-none"
+                style={{
+                  color: "#c8860a",
+                  filter: "drop-shadow(0 0 6px rgba(200,134,10,0.6))",
+                }}
+              >
+                <Icon size={16} />
               </div>
-              <div className="min-w-0 flex-1">
-                <h2 className="text-sm font-black uppercase tracking-[0.25em] bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-cyan-400 drop-shadow-sm">
-                  {title}
-                </h2>
-                {subtitle && (
-                  <div className="flex items-start gap-2 mt-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#00d6a3] shadow-[0_0_8px_#00d6a3] animate-pulse mt-1 flex-shrink-0" />
-                    <p className="text-[9px] font-mono font-bold text-slate-400/90 uppercase tracking-[0.05em] leading-relaxed line-clamp-2">
-                      {subtitle}
-                    </p>
-                  </div>
-                )}
+
+              {/* Breadcrumb */}
+              <div
+                className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em]"
+                style={{
+                  fontFamily: "'Cinzel', serif",
+                  color: "#9a7a40",
+                }}
+              >
+                <span style={{ color: "#c8860a" }}>Shinobi Map</span>
+                <span style={{ color: "#4a2f0a" }}>›</span>
+                <span>{title}</span>
               </div>
+
+              {subtitle && (
+                <span
+                  className="ml-2 text-[9px] tracking-wide"
+                  style={{ color: "#9a7a40" }}
+                >
+                  {subtitle}
+                </span>
+              )}
             </div>
             
             <button
               onClick={onClose}
-              className="grid h-9 w-9 place-items-center rounded-xl border border-white/5 bg-white/[0.03] text-slate-400 hover:border-red-500/30 hover:bg-red-500/15 hover:text-red-400 transition-all duration-300 active:scale-90 cursor-pointer shadow-sm ml-4 group/close"
-              title="Fechar Menu"
+              className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#4a2f0a] transition-all cursor-pointer"
+              style={{ background: "#2e1f08", color: "#9a7a40" }}
+              onMouseEnter={(e) => {
+                const el = e.currentTarget;
+                el.style.borderColor = "#c8860a";
+                el.style.color = "#c8860a";
+                el.style.background = "#4a2f0a";
+              }}
+              onMouseLeave={(e) => {
+                const el = e.currentTarget;
+                el.style.borderColor = "#4a2f0a";
+                el.style.color = "#9a7a40";
+                el.style.background = "#2e1f08";
+              }}
             >
-              <X size={16} className="transition-transform group-hover/close:rotate-90" />
+              <X size={11} />
             </button>
           </div>
 
@@ -90,10 +136,32 @@ export const SidebarPanel = memo(function SidebarPanel({
 
           {/* Footer if provided */}
           {footer && (
-            <div className="px-6 py-4 border-t border-white/5 bg-black/20 backdrop-blur-md">
+            <div 
+              className="px-5 py-3 border-t border-[#4a2f0a] relative shrink-0 z-10"
+              style={{ background: "rgba(13,10,5,0.4)" }}
+            >
               {footer}
             </div>
           )}
+        </div>
+        
+        {/* Scroll kanji decoration */}
+        <div className="absolute bottom-0 right-0 w-20 h-20 overflow-hidden pointer-events-none opacity-[0.03] z-0">
+          <svg
+            viewBox="0 0 100 100"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-20 h-20"
+          >
+            <text
+              x="10"
+              y="80"
+              fontSize="90"
+              fontFamily="serif"
+              fill="#f0d9a0"
+            >
+              砂
+            </text>
+          </svg>
         </div>
       </aside>
     </div>
