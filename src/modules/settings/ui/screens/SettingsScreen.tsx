@@ -1,10 +1,102 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Volume2, Keyboard, Trash2 } from 'lucide-react'
-import {
-  ParchSection, ParchRowList, ParchRow,
-  ParchPrimaryBtn, ParchSecondaryBtn, ParchToggle, ParchKbd, GoldenBox, P,
-} from '../../../../components/ui/ParchmentUI'
+
+const SL = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex items-center gap-2 mb-2">
+    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>[</span>
+    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#c8a030', whiteSpace: 'nowrap' }}>
+      {children}
+    </span>
+    <div className="flex-1" style={{ borderTop: '1px dashed rgba(200,160,48,0.25)' }} />
+    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>]</span>
+  </div>
+)
+
+const Toggle = ({ active, onClick }: { active: boolean; onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    className="w-10 h-5 rounded-full relative cursor-pointer transition-all duration-300 border"
+    style={{
+      background: active ? 'rgba(200,134,10,0.2)' : 'rgba(13,10,5,0.6)',
+      borderColor: active ? '#c8860a' : '#4a2f0a',
+    }}
+  >
+    <div
+      className="w-3.5 h-3.5 rounded-full absolute top-1/2 -translate-y-1/2 transition-all duration-300"
+      style={{
+        left: active ? 'calc(100% - 18px)' : '2px',
+        background: active ? '#c8860a' : '#4a2f0a',
+      }}
+    />
+  </button>
+)
+
+const ListContainer = ({ children }: { children: React.ReactNode }) => (
+  <div style={{ borderRadius: 3, overflow: 'hidden', border: '1px solid #2e1e06' }}>
+    {children}
+  </div>
+)
+
+const ListItem = ({ children, isLast = false, vertical = false }: { children: React.ReactNode, isLast?: boolean, vertical?: boolean }) => (
+  <div
+    style={{
+      display: 'flex',
+      flexDirection: vertical ? 'column' : 'row',
+      alignItems: vertical ? 'stretch' : 'center',
+      justifyContent: vertical ? 'flex-start' : 'space-between',
+      padding: '8px 12px',
+      fontSize: 10,
+      background: 'rgba(13,10,4,0.8)',
+      borderBottom: isLast ? 'none' : '1px solid rgba(46,30,6,0.7)',
+      gap: vertical ? 8 : 12
+    }}
+  >
+    {children}
+  </div>
+)
+
+const KbdKey = ({ k }: { k: string }) => (
+  <span
+    className="inline-flex items-center px-1.5 py-0.5 font-mono text-[9px] rounded-[2px]"
+    style={{ background: '#1c1508', border: '1px solid #c8860a', borderBottomWidth: 2, color: '#e8b840', letterSpacing: '0.04em' }}
+  >
+    {k === 'CommandOrControl' || k === 'CmdOrCtrl' ? 'Ctrl' : k}
+  </span>
+)
+
+const SecondaryButton = ({ children, onClick, disabled = false, padding = '4px 10px' }: { children: React.ReactNode, onClick?: () => void, disabled?: boolean, padding?: string }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding,
+      borderRadius: 3, background: 'transparent', border: '1px solid #2e1e06', color: '#c8a840',
+      fontSize: 9, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, letterSpacing: '0.08em',
+      cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.15s', opacity: disabled ? 0.5 : 1,
+      whiteSpace: 'nowrap'
+    }}
+    onMouseEnter={e => { if(!disabled) { e.currentTarget.style.background = 'rgba(74,47,10,0.25)'; e.currentTarget.style.borderColor = '#6a4e18'; e.currentTarget.style.color = '#e8c860'; } }}
+    onMouseLeave={e => { if(!disabled) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#2e1e06'; e.currentTarget.style.color = '#c8a840'; } }}
+  >
+    {children}
+  </button>
+)
+
+const PrimaryButton = ({ children, onClick, disabled = false }: { children: React.ReactNode, onClick?: () => void, disabled?: boolean }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    style={{
+      display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 3,
+      background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none',
+      fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em',
+      cursor: disabled ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1
+    }}
+  >
+    {children}
+  </button>
+)
 
 export const SettingsScreen = () => {
   const [alwaysOnTop, setAlwaysOnTop] = useState(true)
@@ -23,7 +115,10 @@ export const SettingsScreen = () => {
     } else {
       if (scaleDropdownRef.current) {
         const rect = scaleDropdownRef.current.getBoundingClientRect();
-        setScaleDropdownCoords({ bottom: window.innerHeight - rect.top + 6, right: window.innerWidth - rect.right });
+        setScaleDropdownCoords({
+          bottom: window.innerHeight - rect.top + 6,
+          right: window.innerWidth - rect.right,
+        });
       }
       setIsScaleDropdownOpen(true);
     }
@@ -113,230 +208,232 @@ export const SettingsScreen = () => {
   const toggleInGameNotifs = () => { const v = !inGameNotifs; setInGameNotifs(v); window.ipcRenderer?.send('set-config', { inGameNotifs: v }) }
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => { const v = parseInt(e.target.value); setVolume(v); window.ipcRenderer?.send('set-config', { volume: v }) }
 
+
   return (
-    <div className="flex flex-col h-full overflow-hidden" style={{ color: P.darkBrown }}>
+    <div className="flex flex-col h-full overflow-hidden" style={{ color: '#e8d5a0' }}>
       {/* Sub-tab nav */}
-      <div style={{
-        display: 'flex', gap: 4, marginBottom: 12, flexShrink: 0,
-        padding: 4, borderRadius: 6,
-        background: P.subtleBg, boxShadow: `inset 0 0 0 1px ${P.border}`,
-      }}>
-        {(['general', 'keybinds'] as const).map(tab => (
+      <div
+        className="flex rounded-[2px] p-0.5 mb-4 flex-none"
+        style={{ border: '1px solid #2e1e06', WebkitAppRegion: 'no-drag' } as any}
+      >
+        {(['general', 'keybinds'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveSubTab(tab)}
-            style={{
-              flex: 1, padding: '5px 4px', borderRadius: 4, border: 'none',
-              fontFamily: P.fontLabel, fontWeight: 700, fontSize: 9, letterSpacing: '0.1em',
-              cursor: 'pointer', transition: 'all .15s',
-              background: activeSubTab === tab ? P.gold : 'transparent',
-              boxShadow: activeSubTab === tab ? P.goldShadow : 'none',
-              color: activeSubTab === tab ? P.teal : P.darkBrown,
-            }}
+            className="flex-1 py-1.5 rounded-[2px] text-[10px] font-bold cursor-pointer transition-all text-center"
+            style={activeSubTab === tab
+              ? { background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em' }
+              : { background: 'transparent', color: '#c8a840', border: '1px solid transparent', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em' }
+            }
           >
             {tab === 'general' ? 'GERAL' : 'ATALHOS'}
           </button>
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-3 pb-1">
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto pr-3 custom-scrollbar space-y-3 pb-1">
         {activeSubTab === 'general' ? (
           <div className="space-y-4">
             <div>
-              <ParchSection>Exibição</ParchSection>
-              <ParchRowList>
-                <ParchRow>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontFamily: P.fontValue, fontSize: 11, fontWeight: 600, color: P.darkBrown }}>Sempre no Topo</span>
-                    <span style={{ fontFamily: P.fontValue, fontSize: 9, color: '#7a5030', marginTop: 2 }}>Exibe o HUD acima do jogo</span>
+              <SL>Exibição</SL>
+              <ListContainer>
+                <ListItem>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold" style={{ color: '#e8d5a0' }}>Sempre no Topo</span>
+                    <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Exibe o HUD acima do jogo</span>
                   </div>
-                  <ParchToggle active={alwaysOnTop} onClick={toggleAlwaysOnTop} />
-                </ParchRow>
-                <ParchRow>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontFamily: P.fontValue, fontSize: 11, fontWeight: 600, color: P.darkBrown }}>Lado do Painel</span>
-                    <span style={{ fontFamily: P.fontValue, fontSize: 9, color: '#7a5030', marginTop: 2 }}>Calculado automaticamente</span>
+                  <Toggle active={alwaysOnTop} onClick={toggleAlwaysOnTop} />
+                </ListItem>
+                <ListItem>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold" style={{ color: '#e8d5a0' }}>Lado do Painel</span>
+                    <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Calculado automaticamente</span>
                   </div>
-                  <GoldenBox style={{ fontSize: 9, padding: '3px 8px' }}>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 3, background: '#0d0e0a', border: '1px solid #2e3020', color: '#f0e8c0' }}>
                     {layoutSide === 'left' ? 'AUTO (ESQ)' : 'AUTO (DIR)'}
-                  </GoldenBox>
-                </ParchRow>
-                <ParchRow isLast>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontFamily: P.fontValue, fontSize: 11, fontWeight: 600, color: P.darkBrown }}>Aviso In-game</span>
-                    <span style={{ fontFamily: P.fontValue, fontSize: 9, color: '#7a5030', marginTop: 2 }}>Alerta sonoro ao ver recurso</span>
+                  </span>
+                </ListItem>
+                <ListItem isLast>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold" style={{ color: '#e8d5a0' }}>Aviso In-game</span>
+                    <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Alerta sonoro ao ver recurso</span>
                   </div>
-                  <ParchToggle active={inGameNotifs} onClick={toggleInGameNotifs} />
-                </ParchRow>
-              </ParchRowList>
+                  <Toggle active={inGameNotifs} onClick={toggleInGameNotifs} />
+                </ListItem>
+              </ListContainer>
             </div>
 
             <div>
-              <ParchSection>Áudio & Interface</ParchSection>
-              <ParchRowList>
-                <ParchRow vertical>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                    <span style={{ fontFamily: P.fontValue, fontSize: 11, fontWeight: 600, color: P.darkBrown, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Volume2 size={13} style={{ color: '#7a5030' }} /> Volume de Avisos
+              <SL>Áudio & Interface</SL>
+              <ListContainer>
+                <ListItem vertical>
+                  <div className="flex items-center justify-between text-xs font-semibold w-full">
+                    <span className="flex items-center gap-1.5" style={{ color: '#c8a060' }}>
+                      <Volume2 size={13} style={{ color: '#9a7a40' }} /> Volume de Avisos
                     </span>
-                    <GoldenBox style={{ fontSize: 10, padding: '2px 8px' }}>{volume}%</GoldenBox>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#c8860a' }}>{volume}%</span>
                   </div>
                   <input
                     type="range" min="0" max="100" value={volume} onChange={handleVolumeChange}
                     className="w-full cursor-pointer h-1 rounded-full appearance-none"
-                    style={{ accentColor: '#5a341a', background: P.border }}
+                    style={{ accentColor: '#c8860a', background: '#2e1e06' }}
                   />
-                </ParchRow>
-                <ParchRow vertical>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                    <span style={{ fontFamily: P.fontValue, fontSize: 11, fontWeight: 600, color: P.darkBrown }}>Opacidade da Sidebar</span>
-                    <GoldenBox style={{ fontSize: 10, padding: '2px 8px' }}>{sidebarOpacity}%</GoldenBox>
+                </ListItem>
+                <ListItem vertical>
+                  <div className="flex items-center justify-between text-xs font-semibold w-full">
+                    <span style={{ color: '#c8a060' }}>Opacidade da Sidebar</span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#c8860a' }}>{sidebarOpacity}%</span>
                   </div>
                   <input
                     type="range" min="20" max="100" value={sidebarOpacity}
                     onChange={(e) => { const v = parseInt(e.target.value); setSidebarOpacity(v); window.ipcRenderer?.send('set-config', { sidebarOpacity: v }) }}
                     className="w-full cursor-pointer h-1 rounded-full appearance-none"
-                    style={{ accentColor: '#5a341a', background: P.border }}
+                    style={{ accentColor: '#c8860a', background: '#2e1e06' }}
                   />
-                </ParchRow>
-                <ParchRow isLast>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontFamily: P.fontValue, fontSize: 11, fontWeight: 600, color: P.darkBrown }}>Escala do HUD</span>
-                    <span style={{ fontFamily: P.fontValue, fontSize: 9, color: '#7a5030', marginTop: 2 }}>Ajusta o tamanho da interface</span>
+                </ListItem>
+                <ListItem isLast>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold" style={{ color: '#e8d5a0' }}>Escala do HUD</span>
+                    <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Ajusta o tamanho da interface</span>
                   </div>
-                  <div style={{ position: 'relative' }} ref={scaleDropdownRef}>
-                    <ParchSecondaryBtn onClick={toggleScaleDropdown}>
+                  <div className="relative" style={{ WebkitAppRegion: 'no-drag' } as any} ref={scaleDropdownRef}>
+                    <SecondaryButton onClick={toggleScaleDropdown}>
                       <span>{uiScale === 75 ? '0.75x' : uiScale === 100 ? '1x' : '1.3x'}</span>
                       <svg className={`w-2 h-2 transition-transform duration-200 ${isScaleDropdownOpen ? 'rotate-180' : ''}`} viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.8">
                         <path d="M1 1L5 5L9 1" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
-                    </ParchSecondaryBtn>
+                    </SecondaryButton>
                     {isScaleDropdownOpen && scaleDropdownCoords && createPortal(
                       <>
                         <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsScaleDropdownOpen(false)} />
-                        <div style={{
-                          position: 'fixed', width: 96, borderRadius: 5, zIndex: 50, overflow: 'hidden',
-                          background: '#e3cd9e', boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
-                          border: `1.5px solid ${P.border}`,
-                          bottom: scaleDropdownCoords.bottom, right: scaleDropdownCoords.right,
-                        }}>
+                          <div
+                            className="fixed w-24 rounded-[3px] z-50 overflow-hidden"
+                            style={{ 
+                              background: '#0f0b04', border: '1px solid #3a2508', boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
+                              bottom: scaleDropdownCoords.bottom,
+                              right: scaleDropdownCoords.right
+                            }}
+                          >
                           {[75, 100, 130].map((scale) => (
                             <button
                               key={scale}
                               onClick={() => { setUiScale(scale); window.ipcRenderer?.send('set-config', { uiScale: scale }); setIsScaleDropdownOpen(false) }}
+                              className="w-full text-left px-3 py-2 text-[10px] font-bold transition-all cursor-pointer flex items-center justify-between"
                               style={{
-                                width: '100%', textAlign: 'left', padding: '8px 12px', fontSize: 10,
-                                fontFamily: P.fontLabel, fontWeight: 700,
-                                borderBottom: `1px dashed ${P.dashed}`,
-                                color: uiScale === scale ? P.teal : P.darkBrown,
-                                background: uiScale === scale ? P.gold : 'transparent',
-                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                fontFamily: "'JetBrains Mono', monospace",
+                                borderBottom: '1px solid rgba(46,30,6,0.7)',
+                                color: uiScale === scale ? '#e8b840' : '#c8a030',
+                                background: uiScale === scale ? 'rgba(74,47,10,0.4)' : 'transparent',
                               }}
                             >
                               <span>{scale === 75 ? '0.75x' : scale === 100 ? '1x' : '1.3x'}</span>
-                              {uiScale === scale && <span style={{ width: 6, height: 6, borderRadius: '50%', background: P.teal, display: 'inline-block' }} />}
+                              {uiScale === scale && <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#c8860a' }} />}
                             </button>
                           ))}
                         </div>
                       </>, document.body
                     )}
                   </div>
-                </ParchRow>
-              </ParchRowList>
+                </ListItem>
+              </ListContainer>
             </div>
           </div>
         ) : (
           <div className="space-y-4">
             <div>
-              <ParchSection>Atalhos de Teclado</ParchSection>
-              <ParchRowList>
+              <SL>Atalhos de Teclado</SL>
+
+              <ListContainer>
                 {/* Map shortcut */}
-                <ParchRow vertical>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontFamily: P.fontValue, fontSize: 11, fontWeight: 600, color: P.darkBrown, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Keyboard size={13} style={{ color: '#7a5030' }} /> Abrir Mapa
+                <ListItem vertical>
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-semibold flex items-center gap-1.5" style={{ color: '#e8d5a0' }}>
+                        <Keyboard size={13} style={{ color: '#9a7a40' }} /> Abrir Mapa
                       </span>
-                      <span style={{ fontFamily: P.fontValue, fontSize: 9, color: '#7a5030', marginTop: 2 }}>Exibe e foca a tela de Mapa</span>
+                      <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Exibe e foca a tela de Mapa</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
                       {shortcutMap && (
                         <button
                           onClick={() => { window.ipcRenderer?.invoke('register-shortcut', { type: 'map', shortcut: '' }).then((res: any) => { if (res?.success) { setShortcutMap(''); window.ipcRenderer?.send('set-config', { shortcutMap: '' }); setErrorMessage('') } }) }}
-                          style={{ padding: 6, borderRadius: 4, cursor: 'pointer', background: 'rgba(120,20,20,.08)', border: '1px solid rgba(160,40,40,.3)', color: '#c05050' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(120,20,20,.25)' }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(120,20,20,.08)' }}
+                          className="p-1.5 rounded-[3px] transition-all cursor-pointer border"
+                          style={{ color: '#e07070', background: 'rgba(120,20,20,0.1)', borderColor: '#7a1414' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.3)' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.1)' }}
                         >
                           <Trash2 size={12} />
                         </button>
                       )}
                       {recordingType === 'map' ? (
-                        <ParchPrimaryBtn>PRESSIONE...</ParchPrimaryBtn>
+                        <PrimaryButton>PRESSIONE...</PrimaryButton>
                       ) : (
-                        <ParchSecondaryBtn onClick={() => { setRecordingType('map'); setErrorMessage('') }}>GRAVAR NOVO</ParchSecondaryBtn>
+                        <SecondaryButton onClick={() => { setRecordingType('map'); setErrorMessage('') }}>GRAVAR NOVO</SecondaryButton>
                       )}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4, width: '100%' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div className="flex items-center justify-between pt-1 w-full">
+                    <div className="flex items-center gap-1">
                       {shortcutMap
-                        ? shortcutMap.split('+').map((p, i) => <ParchKbd key={i} k={p} />)
-                        : <span style={{ fontFamily: P.fontValue, fontSize: 10, fontStyle: 'italic', color: '#7a5030' }}>Nenhum atalho</span>
+                        ? shortcutMap.split('+').map((p, i) => <KbdKey key={i} k={p} />)
+                        : <span className="text-[10px] italic" style={{ color: '#9a7a40', fontFamily: "'JetBrains Mono', monospace" }}>Nenhum atalho</span>
                       }
                     </div>
                     {recordingType === 'map' && (
-                      <span style={{ fontFamily: P.fontValue, fontSize: 8.5, fontStyle: 'italic', color: '#7a5030' }} className="animate-pulse">Esc cancelar · Backspace limpar</span>
+                      <span className="text-[8.5px] italic animate-pulse" style={{ color: '#c8a030' }}>Esc cancelar · Backspace limpar</span>
                     )}
                   </div>
-                </ParchRow>
+                </ListItem>
 
                 {/* Settings shortcut */}
-                <ParchRow vertical isLast>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontFamily: P.fontValue, fontSize: 11, fontWeight: 600, color: P.darkBrown, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Keyboard size={13} style={{ color: '#7a5030' }} /> Abrir Configurações
+                <ListItem vertical isLast>
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-semibold flex items-center gap-1.5" style={{ color: '#e8d5a0' }}>
+                        <Keyboard size={13} style={{ color: '#9a7a40' }} /> Abrir Configurações
                       </span>
-                      <span style={{ fontFamily: P.fontValue, fontSize: 9, color: '#7a5030', marginTop: 2 }}>Exibe e foca a tela de Configurações</span>
+                      <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Exibe e foca a tela de Configurações</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
                       {shortcutSettings && (
                         <button
                           onClick={() => { window.ipcRenderer?.invoke('register-shortcut', { type: 'settings', shortcut: '' }).then((res: any) => { if (res?.success) { setShortcutSettings(''); window.ipcRenderer?.send('set-config', { shortcutSettings: '' }); setErrorMessage('') } }) }}
-                          style={{ padding: 6, borderRadius: 4, cursor: 'pointer', background: 'rgba(120,20,20,.08)', border: '1px solid rgba(160,40,40,.3)', color: '#c05050' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(120,20,20,.25)' }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(120,20,20,.08)' }}
+                          className="p-1.5 rounded-[3px] transition-all cursor-pointer border"
+                          style={{ color: '#e07070', background: 'rgba(120,20,20,0.1)', borderColor: '#7a1414' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.3)' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.1)' }}
                         >
                           <Trash2 size={12} />
                         </button>
                       )}
                       {recordingType === 'settings' ? (
-                        <ParchPrimaryBtn>PRESSIONE...</ParchPrimaryBtn>
+                        <PrimaryButton>PRESSIONE...</PrimaryButton>
                       ) : (
-                        <ParchSecondaryBtn onClick={() => { setRecordingType('settings'); setErrorMessage('') }}>GRAVAR NOVO</ParchSecondaryBtn>
+                        <SecondaryButton onClick={() => { setRecordingType('settings'); setErrorMessage('') }}>GRAVAR NOVO</SecondaryButton>
                       )}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4, width: '100%' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div className="flex items-center justify-between pt-1 w-full">
+                    <div className="flex items-center gap-1">
                       {shortcutSettings
-                        ? shortcutSettings.split('+').map((p, i) => <ParchKbd key={i} k={p} />)
-                        : <span style={{ fontFamily: P.fontValue, fontSize: 10, fontStyle: 'italic', color: '#7a5030' }}>Nenhum atalho</span>
+                        ? shortcutSettings.split('+').map((p, i) => <KbdKey key={i} k={p} />)
+                        : <span className="text-[10px] italic" style={{ color: '#9a7a40', fontFamily: "'JetBrains Mono', monospace" }}>Nenhum atalho</span>
                       }
                     </div>
                     {recordingType === 'settings' && (
-                      <span style={{ fontFamily: P.fontValue, fontSize: 8.5, fontStyle: 'italic', color: '#7a5030' }} className="animate-pulse">Esc cancelar · Backspace limpar</span>
+                      <span className="text-[8.5px] italic animate-pulse" style={{ color: '#c8a030' }}>Esc cancelar · Backspace limpar</span>
                     )}
                   </div>
-                </ParchRow>
-              </ParchRowList>
+                </ListItem>
+              </ListContainer>
             </div>
 
             {errorMessage && (
-              <div style={{
-                fontSize: 9.5, fontFamily: P.fontValue, padding: '6px 10px', borderRadius: 4,
-                background: 'rgba(120,20,20,.10)', border: '1px solid rgba(160,40,40,.3)', color: '#8a2020',
-              }}>
+              <div
+                className="text-[9.5px] font-semibold px-2.5 py-1.5 rounded-[3px] border"
+                style={{ background: 'rgba(120,20,20,0.2)', border: '1px solid #7a1414', color: '#e07070', fontFamily: "'JetBrains Mono', monospace" }}
+              >
                 {errorMessage}
               </div>
             )}
@@ -344,7 +441,7 @@ export const SettingsScreen = () => {
         )}
       </div>
 
-      <span style={{ fontFamily: P.fontLabel, fontSize: 9, color: P.border, display: 'block', textAlign: 'right', marginTop: 8, flexShrink: 0 }}>
+      <span className="text-[9.5px] block text-right mt-2 flex-none" style={{ color: '#4a2f0a', fontFamily: "'JetBrains Mono', monospace" }}>
         Configurações salvas localmente.
       </span>
     </div>

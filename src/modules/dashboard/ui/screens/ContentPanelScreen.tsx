@@ -108,22 +108,20 @@ export const ContentPanelScreen = ({
         contentClassName={isMapTab ? "flex flex-col overflow-hidden p-0" : "p-5"}
       >
         {isMapTab && (
-          <div className="h-14 px-4 flex items-center justify-between gap-4 select-none z-50 flex-none relative"
-            style={{ borderBottom: '2px solid rgba(90,55,20,.3)', background: 'rgba(90,55,20,.04)' }}
-          >
+          <div className="h-14 bg-transparent border-b border-[#4a2f0a] px-4 flex items-center justify-between gap-4 select-none z-50 flex-none relative">
             {/* Title row */}
             <div className="flex items-center gap-2 min-w-0 flex-none">
               <div
                 className="flex items-center justify-center w-[18px] h-[18px] rounded-full border flex-shrink-0"
-                style={{ borderColor: "rgba(90,55,20,.4)", color: "#3a2614" }}
+                style={{ borderColor: "#c8860a", color: "#c8860a" }}
               >
                 <Map size={10} />
               </div>
               <div className="flex items-center gap-2" style={{ fontFamily: "'Cinzel', serif" }}>
-                <span className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "#5a3618" }}>
+                <span className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "#c8860a" }}>
                   SandCore
                 </span>
-                <span className="text-[10px] uppercase tracking-[0.12em]" style={{ color: "#7a5030" }}>
+                <span className="text-[10px] uppercase tracking-[0.12em]" style={{ color: "#9a9080" }}>
                   MAPA
                 </span>
               </div>
@@ -140,14 +138,10 @@ export const ContentPanelScreen = ({
                   placeholder="Buscar recursos no mapa..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-lg py-1.5 pl-9 pr-9 text-xs focus:outline-none transition-colors"
-                  style={{ background: 'rgba(90,55,20,.08)', border: '1px solid rgba(90,55,20,.25)', color: '#3a2614' }}
-                  onFocus={e => (e.currentTarget.style.borderColor = 'rgba(90,55,20,.55)')}
-                  onBlur={e => (e.currentTarget.style.borderColor = 'rgba(90,55,20,.25)')}
+                  className="w-full bg-[#1a1007]/65 border border-[#4a2f0a] rounded-lg py-1.5 pl-9 pr-9 text-xs text-[#f0d9a0] placeholder-[#9a7a40] focus:border-[#c8860a]/50 focus:outline-none transition-colors backdrop-blur-sm"
                 />
                 <button
-                  className="absolute right-2.5 transition-colors flex items-center justify-center p-0.5 rounded-full cursor-pointer"
-                  style={{ color: '#7a5030' }}
+                  className="absolute right-2.5 text-[#9a7a40] hover:text-[#c8860a] transition-colors flex items-center justify-center p-0.5 rounded-full hover:bg-white/5 cursor-pointer"
                   title="Ajuda"
                 >
                   <HelpCircle size={14} />
@@ -161,13 +155,19 @@ export const ContentPanelScreen = ({
                 onClick={() =>
                   window.dispatchEvent(new CustomEvent("open-map-settings"))
                 }
-                className="flex items-center justify-center w-5 h-5 text-[11px] rounded transition-all cursor-pointer"
-                style={{ background: 'rgba(90,55,20,.08)', border: '1px solid rgba(90,55,20,.25)', color: '#3a2614' }}
+                className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#4a2f0a] transition-all cursor-pointer"
+                style={{ background: "#2e1f08", color: "#9a7a40" }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(90,55,20,.20)';
+                  const el = e.currentTarget;
+                  el.style.borderColor = "#c8860a";
+                  el.style.color = "#c8860a";
+                  el.style.background = "#4a2f0a";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(90,55,20,.08)';
+                  const el = e.currentTarget;
+                  el.style.borderColor = "#4a2f0a";
+                  el.style.color = "#9a7a40";
+                  el.style.background = "#2e1f08";
                 }}
                 title="Configurações do Mapa"
               >
@@ -175,13 +175,19 @@ export const ContentPanelScreen = ({
               </button>
               <button
                 onClick={() => window.ipcRenderer?.send("minimize-panel-window")}
-                className="flex items-center justify-center w-5 h-5 text-[11px] rounded transition-all cursor-pointer"
-                style={{ background: 'rgba(90,55,20,.08)', border: '1px solid rgba(90,55,20,.25)', color: '#3a2614' }}
+                className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#4a2f0a] transition-all cursor-pointer"
+                style={{ background: "#2e1f08", color: "#9a7a40" }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(90,55,20,.20)';
+                  const el = e.currentTarget;
+                  el.style.borderColor = "#c8860a";
+                  el.style.color = "#c8860a";
+                  el.style.background = "#4a2f0a";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(90,55,20,.08)';
+                  const el = e.currentTarget;
+                  el.style.borderColor = "#4a2f0a";
+                  el.style.color = "#9a7a40";
+                  el.style.background = "#2e1f08";
                 }}
                 title="Minimizar"
               >
@@ -189,13 +195,19 @@ export const ContentPanelScreen = ({
               </button>
               <button
                 onClick={handleClose}
-                className="flex items-center justify-center w-5 h-5 text-[11px] rounded transition-all cursor-pointer"
-                style={{ background: 'rgba(90,55,20,.08)', border: '1px solid rgba(90,55,20,.25)', color: '#3a2614' }}
+                className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#4a2f0a] transition-all cursor-pointer"
+                style={{ background: "#2e1f08", color: "#9a7a40" }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(90,55,20,.20)';
+                  const el = e.currentTarget;
+                  el.style.borderColor = "#c8860a";
+                  el.style.color = "#c8860a";
+                  el.style.background = "#4a2f0a";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(90,55,20,.08)';
+                  const el = e.currentTarget;
+                  el.style.borderColor = "#4a2f0a";
+                  el.style.color = "#9a7a40";
+                  el.style.background = "#2e1f08";
                 }}
                 title="Fechar"
               >
@@ -218,27 +230,29 @@ export const ContentPanelScreen = ({
         {!isMapTab && lastActiveTab === "crafting" && <CraftingScreen />}
         {!isMapTab && lastActiveTab === "missions" && (
           <div className="flex flex-col h-full">
-            <div className="flex flex-none mb-3" style={{ gap: 4, padding: 4, borderRadius: 6, background: 'rgba(90,55,20,.07)', boxShadow: 'inset 0 0 0 1px rgba(90,55,20,.25)' }}>
-              {([
-                { key: 'board', icon: <Scroll size={10} />, label: 'QUADRO' },
-                { key: 'mine', icon: <MyMissionsIcon size={10} />, label: 'MINHAS' },
-              ] as const).map(tab => (
-                <button
-                  key={tab.key}
-                  onClick={() => setMissionsSubTab(tab.key)}
-                  style={{
-                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    gap: 4, padding: '5px 4px', borderRadius: 4, border: 'none',
-                    fontFamily: "'Cinzel', 'Georgia', serif", fontWeight: 700, fontSize: 9, letterSpacing: '0.1em',
-                    cursor: 'pointer', transition: 'all .15s',
-                    background: missionsSubTab === tab.key ? 'linear-gradient(180deg,#d8b87f,#c19f63)' : 'transparent',
-                    boxShadow: missionsSubTab === tab.key ? 'inset 0 2px 4px rgba(80,50,15,.30), inset 0 0 0 1px rgba(90,60,25,.45)' : 'none',
-                    color: missionsSubTab === tab.key ? '#194651' : '#3a2614',
-                  }}
-                >
-                  {tab.icon} {tab.label}
-                </button>
-              ))}
+            <div className="flex border-b border-[#2e1f08] flex-none">
+              <button
+                onClick={() => setMissionsSubTab('board')}
+                className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-mono font-black uppercase tracking-widest transition-colors cursor-pointer"
+                style={{
+                  color: missionsSubTab === 'board' ? '#c8860a' : '#6a5028',
+                  borderBottom: missionsSubTab === 'board' ? '2px solid #c8860a' : '2px solid transparent',
+                }}
+              >
+                <Scroll size={11} />
+                Quadro
+              </button>
+              <button
+                onClick={() => setMissionsSubTab('mine')}
+                className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-mono font-black uppercase tracking-widest transition-colors cursor-pointer"
+                style={{
+                  color: missionsSubTab === 'mine' ? '#c8860a' : '#6a5028',
+                  borderBottom: missionsSubTab === 'mine' ? '2px solid #c8860a' : '2px solid transparent',
+                }}
+              >
+                <MyMissionsIcon size={11} />
+                Minhas Missões
+              </button>
             </div>
             <div className="flex-1 overflow-hidden">
               {missionsSubTab === 'board' ? <MissionBoardScreen /> : <MyMissionsScreen />}
