@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { motion } from "framer-motion";
 import {
   Calendar,
@@ -452,7 +452,7 @@ export const StatsScreen = () => {
                     </SL>
                     <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
                       <ListContainer>
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                        {/* eslint-disable-next-line @typescript-eslint/no-unused-vars */}
                         {Object.entries(flatCounts).filter(([, count]) => count > 0).sort((a, b) => b[1] - a[1]).map(([type, count], idx, arr) => {
                           const def = ORE_DEFINITIONS[type] || MUSHROOM_DEFINITIONS[type] || PLANT_DEFINITIONS[type] || STICK_DEFINITIONS[type];
                           return (

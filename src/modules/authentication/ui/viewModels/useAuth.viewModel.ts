@@ -64,7 +64,7 @@ export const useAuthViewModel = () => {
     const result = await loginUseCase.execute(email, password)
     setAuthLoading(false)
     if (result.success) {
-      handleUserAfterAuth((result as any).value)
+      handleUserAfterAuth((result as any).data)
       return { success: true }
     } else {
       return { success: false, error: (result as any).error.message }
@@ -77,7 +77,7 @@ export const useAuthViewModel = () => {
     const result = await registerUseCase.execute(name, email, password)
     setAuthLoading(false)
     if (result.success) {
-      handleUserAfterAuth((result as any).value)
+      handleUserAfterAuth((result as any).data)
       return { success: true }
     } else {
       return { success: false, error: (result as any).error.message }
@@ -102,12 +102,15 @@ export const useAuthViewModel = () => {
   const loginWithOAuth = async (provider: 'google' | 'discord') => {
     setAuthLoading(true)
     setGeneralError('')
+    window.ipcRenderer?.send('window-control', 'oauth-start')
     const result = await oauthUseCase.execute(provider)
     setAuthLoading(false)
     if (result.success) {
-      handleUserAfterAuth((result as any).value)
+      handleUserAfterAuth((result as any).data)
+      window.ipcRenderer?.send('window-control', 'focus')
       return { success: true }
     } else {
+      window.ipcRenderer?.send('window-control', 'oauth-end')
       setGeneralError((result as any).error.message)
       return { success: false, error: (result as any).error.message }
     }

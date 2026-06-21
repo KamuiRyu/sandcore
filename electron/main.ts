@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, screen, globalShortcut } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, globalShortcut, shell } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fs from 'node:fs'
@@ -15,6 +15,7 @@ process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(process.
 let splashWin: BrowserWindow | null = null
 let loginWin: BrowserWindow | null = null
 let sidebarWin: BrowserWindow | null = null
+let oauthInProgress = false
 let currentLayoutSide: 'left' | 'right' = 'right'
 let currentAlignSide: 'top' | 'bottom' = 'top'
 
@@ -246,13 +247,20 @@ function createLoginWindow() {
   })
 
   // Open DevTools automatically to see errors - can be commented out later
-  //loginWin.webContents.openDevTools({ mode: 'detach' })
+  loginWin.webContents.openDevTools({ mode: 'detach' })
 
   if (process.env.VITE_DEV_SERVER_URL) {
     loginWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}?windowType=login`)
   } else {
     loginWin.loadFile(path.join(process.env.DIST!, 'index.html'), { query: { windowType: 'login' } })
   }
+
+  loginWin.on('minimize', () => {
+    if (oauthInProgress && loginWin && !loginWin.isDestroyed()) {
+      loginWin.restore()
+      loginWin.focus()
+    }
+  })
 
   loginWin.on('closed', () => {
     loginWin = null
@@ -294,16 +302,11 @@ function setupMoveListeners(win: BrowserWindow) {
 
 function forcePanelToFront() {
   if (panelWin && !panelWin.isDestroyed() && currentTabId) {
-    if (process.platform === 'win32') {
-      panelWin.hide()
-    }
     if (appConfig.alwaysOnTop) {
       panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
-    } else {
-      panelWin.setAlwaysOnTop(true)
-      panelWin.setAlwaysOnTop(false)
     }
     panelWin.showInactive()
+    panelWin.moveTop()
   }
 }
 
@@ -466,7 +469,8 @@ function createPanelWindow() {
   })
 
   panelWin.setMenu(null)
-
+  panelWin.setFullScreenable(false)
+  panelWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
 
   if (appConfig.alwaysOnTop) {
     panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
@@ -578,7 +582,7 @@ function openPanel(tabId: string, immediate = false) {
   const physicalSidebarW = Math.round(60 * zoom)
   const physicalSidebarH = Math.round(580 * zoom)
 
-  const largeTabs = ['map', 'missions', 'my-missions', 'ninja-card', 'admin', 'manager']
+  const largeTabs = ['map', 'admin', 'manager']
   const isLargeTab = largeTabs.includes(tabId)
   let panelLogicalW = isLargeTab ? 1200 : 450
   let panelLogicalH = isLargeTab ? 800 : 550
@@ -637,7 +641,6 @@ function openPanel(tabId: string, immediate = false) {
 
   // Force Z-order elevation before showing
   if (appConfig.alwaysOnTop) {
-    panel.setAlwaysOnTop(false)
     panel.setAlwaysOnTop(true, 'screen-saver', 1)
   } else {
     panel.setAlwaysOnTop(false)
@@ -645,6 +648,7 @@ function openPanel(tabId: string, immediate = false) {
 
   // Force show unconditionally
   panel.showInactive()
+  panel.moveTop()
 
   const payload = { tabId, layoutSide: nextLayoutSide, alignSide: nextAlignSide }
   sidebarWin.webContents.send('layout-updated', payload)
@@ -708,6 +712,10 @@ function handleWindowMoved(win: BrowserWindow) {
 }
 
 // IPC Handlers
+ipcMain.on('open-external-url', (_event, url: string) => {
+  shell.openExternal(url)
+})
+
 ipcMain.handle('get-config', () => appConfig)
 ipcMain.handle('get-app-version', () => app.getVersion())
 
@@ -990,6 +998,16 @@ ipcMain.on('window-control', (event, action) => {
         panelWin.close()
       }
     }
+  } else if (action === 'oauth-start') {
+    oauthInProgress = true
+  } else if (action === 'oauth-end') {
+    oauthInProgress = false
+  } else if (action === 'focus') {
+    oauthInProgress = false
+    if (loginWin && !loginWin.isDestroyed()) {
+      if (loginWin.isMinimized()) loginWin.restore()
+      loginWin.focus()
+    }
   } else if (action === 'login-success') {
     createSidebarWindow()
     if (loginWin && !loginWin.isDestroyed()) {
@@ -1074,6 +1092,11 @@ app.on('browser-window-created', (event, window) => {
           }
         }
       })
+      // Traz a janela de login para frente após fechar o popup OAuth
+      if (loginWin && !loginWin.isDestroyed()) {
+        if (loginWin.isMinimized()) loginWin.restore()
+        loginWin.focus()
+      }
     })
   }
 })

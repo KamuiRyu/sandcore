@@ -15,6 +15,7 @@ import {
   Scroll,
   Shield,
   Award,
+  Award as MyMissionsIcon,
 } from "lucide-react";
 import { GroupsScreen } from "../../../groups/ui/screens/GroupsScreen";
 import { MapScreen } from "../../../map/ui/screens/MapScreen";
@@ -28,7 +29,7 @@ import { NinjaCardScreen } from "../../../village/ui/screens/NinjaCardScreen";
 import { AdminPanelScreen } from "../../../village/ui/screens/AdminPanelScreen";
 import { ManagerScreen } from "../../../village/ui/screens/ManagerScreen";
 import { HudPanel } from "../../../app/ui/components/HudPanel";
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { SunagakureLogo } from "../../../app/ui/components/SunagakureLogo";
 
 const TAB_META: Record<string, { label: string; icon: LucideIcon }> = {
@@ -38,7 +39,6 @@ const TAB_META: Record<string, { label: string; icon: LucideIcon }> = {
   details: { label: "Detalhes", icon: Info },
   crafting: { label: "Crafting", icon: Hammer },
   missions: { label: "Missões", icon: Scroll },
-  "my-missions": { label: "Minhas Missões", icon: Award },
   "ninja-card": { label: "Carteirinha", icon: Shield },
   admin: { label: "Admin", icon: Settings },
   manager: { label: "Organização", icon: Users },
@@ -56,6 +56,7 @@ export const ContentPanelScreen = ({
   const [isClosing, setIsClosing] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [missionsSubTab, setMissionsSubTab] = useState<'board' | 'mine'>('board');
 
   useEffect(() => {
     if (activeTab) {
@@ -74,6 +75,7 @@ export const ContentPanelScreen = ({
   };
 
   const isMapTab = lastActiveTab === "map";
+  const isNinjaCardTab = lastActiveTab === "ninja-card";
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const isCraftingTab = lastActiveTab === "crafting";
 
@@ -85,12 +87,18 @@ export const ContentPanelScreen = ({
       key={lastActiveTab}
       className={`flex flex-col relative overflow-hidden transition-[opacity,transform,filter] duration-300 ease-out
         ${isMounted && !isClosing ? "opacity-100 scale-100 blur-none" : "opacity-0 scale-95 blur-sm"}
-        ${['map','missions','my-missions','ninja-card','admin','manager'].includes(lastActiveTab)
+        ${['map','admin','manager'].includes(lastActiveTab)
             ? 'w-[1200px] h-[800px]'
             : 'w-[450px] h-[550px]'}
       `}
     >
-      <HudPanel
+      {isNinjaCardTab && (
+        <div className="w-full h-full relative">
+          <NinjaCardScreen onClose={handleClose} />
+        </div>
+      )}
+
+      {!isNinjaCardTab && <HudPanel
         isOpen={isMounted && !isClosing}
         onClose={handleClose}
         title={TAB_META[lastActiveTab!]?.label || "Painel"}
@@ -220,12 +228,40 @@ export const ContentPanelScreen = ({
         {!isMapTab && lastActiveTab === "stats" && <StatsScreen />}
         {!isMapTab && lastActiveTab === "details" && <AppDetailsScreen />}
         {!isMapTab && lastActiveTab === "crafting" && <CraftingScreen />}
-        {!isMapTab && lastActiveTab === "missions" && <MissionBoardScreen />}
-        {!isMapTab && lastActiveTab === "my-missions" && <MyMissionsScreen />}
-        {!isMapTab && lastActiveTab === "ninja-card" && <NinjaCardScreen />}
+        {!isMapTab && lastActiveTab === "missions" && (
+          <div className="flex flex-col h-full">
+            <div className="flex border-b border-[#2e1f08] flex-none">
+              <button
+                onClick={() => setMissionsSubTab('board')}
+                className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-mono font-black uppercase tracking-widest transition-colors cursor-pointer"
+                style={{
+                  color: missionsSubTab === 'board' ? '#c8860a' : '#6a5028',
+                  borderBottom: missionsSubTab === 'board' ? '2px solid #c8860a' : '2px solid transparent',
+                }}
+              >
+                <Scroll size={11} />
+                Quadro
+              </button>
+              <button
+                onClick={() => setMissionsSubTab('mine')}
+                className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-mono font-black uppercase tracking-widest transition-colors cursor-pointer"
+                style={{
+                  color: missionsSubTab === 'mine' ? '#c8860a' : '#6a5028',
+                  borderBottom: missionsSubTab === 'mine' ? '2px solid #c8860a' : '2px solid transparent',
+                }}
+              >
+                <MyMissionsIcon size={11} />
+                Minhas Missões
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              {missionsSubTab === 'board' ? <MissionBoardScreen /> : <MyMissionsScreen />}
+            </div>
+          </div>
+        )}
         {!isMapTab && lastActiveTab === "admin" && <AdminPanelScreen />}
         {!isMapTab && lastActiveTab === "manager" && <ManagerScreen />}
-      </HudPanel>
+      </HudPanel>}
     </div>
   );
 };

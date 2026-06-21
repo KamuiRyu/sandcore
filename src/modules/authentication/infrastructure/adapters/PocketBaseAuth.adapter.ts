@@ -26,8 +26,9 @@ export class PocketBaseAuthAdapter implements AuthRepository {
 
   async login(email: string, password: string): Promise<Result<User, Error>> {
     try {
-      const authData = await pb.collection('users').authWithPassword(email.trim(), password)
-      return ok(this.mapToUser(authData.record))
+      await pb.collection('users').authWithPassword(email.trim(), password)
+      const refreshed = await pb.collection('users').authRefresh()
+      return ok(this.mapToUser(refreshed.record))
     } catch (err: any) {
       if (err.status === 400 || err.status === 401) {
         return fail(new Error('E-mail ou senha incorretos.'))
@@ -66,11 +67,17 @@ export class PocketBaseAuthAdapter implements AuthRepository {
 
   async authWithOAuth2(provider: 'google' | 'discord'): Promise<Result<User, Error>> {
     try {
-      const authData = await pb.collection('users').authWithOAuth2({ provider })
+      const authData = await pb.collection('users').authWithOAuth2({
+        provider,
+        urlCallback: (url) => {
+          window.ipcRenderer?.send('open-external-url', url)
+        },
+      })
       if (!authData.record) {
         return fail(new Error('Falha na autenticação social.'))
       }
-      return ok(this.mapToUser(authData.record))
+      const refreshed = await pb.collection('users').authRefresh()
+      return ok(this.mapToUser(refreshed.record ?? authData.record))
     } catch (err: any) {
       return fail(new Error(err.message || 'Erro no login social. Tente novamente.'))
     }

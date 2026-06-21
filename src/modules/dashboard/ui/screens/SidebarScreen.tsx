@@ -1,8 +1,8 @@
 import React from 'react'
-import { Map, LogOut, Users, Settings, BarChart2, Hammer, Scroll, Shield, Award, Building2 } from 'lucide-react'
+import { Map, LogOut, Users, Settings, BarChart2, Hammer, Scroll, Shield, Building2 } from 'lucide-react'
 import { pb } from '../../../../lib/pocketbase'
 
-type TabType = 'groups' | 'map' | 'stats' | 'details' | 'settings' | 'crafting' | 'missions' | 'my-missions' | 'ninja-card' | 'admin' | 'manager'
+type TabType = 'groups' | 'map' | 'stats' | 'details' | 'settings' | 'crafting' | 'missions' | 'ninja-card' | 'admin' | 'manager'
 
 interface SidebarScreenProps {
   activeTab: string | null
@@ -34,7 +34,6 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
   const mainMenuItems = [
     { id: 'map', icon: Map, label: 'Mapa' },
     { id: 'missions', icon: Scroll, label: 'Missões' },
-    { id: 'my-missions', icon: Award, label: 'Minhas Missões' },
     { id: 'ninja-card', icon: Shield, label: 'Carteirinha' },
     { id: 'groups', icon: Users, label: 'Grupos' },
     { id: 'stats', icon: BarChart2, label: 'Estatísticas' },
