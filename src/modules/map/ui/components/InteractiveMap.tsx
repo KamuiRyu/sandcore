@@ -1733,77 +1733,58 @@ export function InteractiveMap({
         </div>
 
         {/* Painel Flutuante de Atalhos Rápidos (Canto Superior Direito) */}
-        <div className="absolute top-3 right-3 sm:top-5 sm:right-5 z-[60] flex flex-col gap-1.5 rounded-[2px] border border-[#c8860a]/30 bg-[#030c10]/70 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl">
+        <div
+          className="absolute top-3 right-3 sm:top-5 sm:right-5 z-[60] flex flex-col gap-1.5 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.45)]"
+          style={{
+            background: "linear-gradient(150deg,#4a6350,#34463a 55%,#2c3b31)",
+            borderRadius: 5,
+            padding: 4,
+          }}
+        >
+          <div
+            className="flex flex-col gap-1.5 p-1.5 rounded-[3px]"
+            style={{ background: "#e3cd9e", backgroundImage: "radial-gradient(circle at 50% 0%,rgba(255,245,215,.5),transparent 80%)" }}
+          >
           {/* Adicionar Pin */}
           <button
             onClick={() => {
-              if (mode === "pin") {
-                setMode("explore");
-              } else {
-                openCustomPinsSection();
-                setIsSidebarOpen(true);
-              }
+              if (mode === "pin") { setMode("explore"); }
+              else { openCustomPinsSection(); setIsSidebarOpen(true); }
             }}
-            className={cn(
-              "grid h-10 w-10 place-items-center rounded-[2px] border transition-all duration-200 cursor-pointer group relative",
-              mode === "pin"
-                ? "border-amber-500 bg-amber-500/20 text-white shadow-[0_0_15px_rgba(200,134,10,0.4)]"
-                : "border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95",
-            )}
-            title={
-              mode === "pin" ? "Cancelar Adição" : "Adicionar Pin Customizado"
-            }
+            className="grid h-9 w-9 place-items-center rounded-[2px] border transition-all duration-200 cursor-pointer group relative active:scale-95"
+            style={{
+              border: mode === "pin" ? "1px solid rgba(90,55,20,.6)" : "1px solid rgba(90,55,20,.3)",
+              background: mode === "pin" ? "rgba(90,55,20,.20)" : "rgba(255,245,215,.5)",
+              color: "#5a3618",
+            }}
+            title={mode === "pin" ? "Cancelar Adição" : "Adicionar Pin Customizado"}
             type="button"
           >
-            <MapPin
-              size={18}
-              className="transition-transform group-hover:scale-110"
-            />
+            <MapPin size={16} className="transition-transform group-hover:scale-110" />
             {mode !== "pin" && (
-              <span className="absolute right-1 top-1 flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                <Plus
-                  size={8}
-                  strokeWidth={4}
-                  className="relative inline-flex text-[var(--cyan)]"
-                />
+              <span className="absolute right-0.5 top-0.5 flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ background: "#5a3618" }} />
+                <Plus size={8} strokeWidth={4} className="relative inline-flex" style={{ color: "#5a3618" }} />
               </span>
             )}
           </button>
 
           {/* Enviar Feedback */}
           <button
-            onClick={() => {
-              if (mode === "feedback") {
-                setMode("explore");
-              } else {
-                setMode("feedback");
-              }
+            onClick={() => { if (mode === "feedback") { setMode("explore"); } else { setMode("feedback"); } }}
+            className="grid h-9 w-9 place-items-center rounded-[2px] border transition-all duration-200 cursor-pointer group relative active:scale-95"
+            style={{
+              border: mode === "feedback" ? "1px solid rgba(90,55,20,.6)" : "1px solid rgba(90,55,20,.3)",
+              background: mode === "feedback" ? "rgba(90,55,20,.20)" : "rgba(255,245,215,.5)",
+              color: "#5a3618",
             }}
-            className={cn(
-              "grid h-10 w-10 place-items-center rounded-[2px] border transition-all duration-200 cursor-pointer group relative",
-              mode === "feedback"
-                ? "border-purple-500 bg-purple-500/20 text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]"
-                : "border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95",
-            )}
-            title={
-              mode === "feedback"
-                ? "Sair do Modo Feedback"
-                : "Enviar Feedback / Sugerir Ponto"
-            }
+            title={mode === "feedback" ? "Sair do Modo Feedback" : "Enviar Feedback / Sugerir Ponto"}
             type="button"
           >
-            <MessageSquare
-              size={18}
-              className="transition-transform group-hover:scale-110"
-            />
+            <MessageSquare size={16} className="transition-transform group-hover:scale-110" />
             {mode !== "feedback" && (
-              <span className="absolute right-1 top-1 flex h-2 w-2">
-                <Plus
-                  size={8}
-                  strokeWidth={4}
-                  className="relative inline-flex text-purple-400"
-                />
+              <span className="absolute right-0.5 top-0.5 flex h-2 w-2">
+                <Plus size={8} strokeWidth={4} className="relative inline-flex" style={{ color: "#5a3618" }} />
               </span>
             )}
           </button>
@@ -1811,34 +1792,22 @@ export function InteractiveMap({
           {/* Criar Rota */}
           <button
             onClick={() => {
-              if (mode === "route") {
-                setMode("explore");
-              } else {
-                setSidebarSection("routes");
-                setMode("route");
-                setIsSidebarOpen(true);
-              }
+              if (mode === "route") { setMode("explore"); }
+              else { setSidebarSection("routes"); setMode("route"); setIsSidebarOpen(true); }
             }}
-            className={cn(
-              "grid h-10 w-10 place-items-center rounded-[2px] border transition-all duration-200 cursor-pointer group relative",
-              mode === "route"
-                ? "border-orange-500 bg-orange-500/20 text-white shadow-[0_0_15px_rgba(249,115,22,0.4)]"
-                : "border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95",
-            )}
+            className="grid h-9 w-9 place-items-center rounded-[2px] border transition-all duration-200 cursor-pointer group relative active:scale-95"
+            style={{
+              border: mode === "route" ? "1px solid rgba(90,55,20,.6)" : "1px solid rgba(90,55,20,.3)",
+              background: mode === "route" ? "rgba(90,55,20,.20)" : "rgba(255,245,215,.5)",
+              color: "#5a3618",
+            }}
             title={mode === "route" ? "Sair do Modo Rota" : "Criar Nova Rota"}
             type="button"
           >
-            <Route
-              size={18}
-              className="transition-transform group-hover:scale-110"
-            />
+            <Route size={16} className="transition-transform group-hover:scale-110" />
             {mode !== "route" && (
-              <span className="absolute right-1 top-1 flex h-2 w-2">
-                <Plus
-                  size={8}
-                  strokeWidth={4}
-                  className="relative inline-flex text-orange-400"
-                />
+              <span className="absolute right-0.5 top-0.5 flex h-2 w-2">
+                <Plus size={8} strokeWidth={4} className="relative inline-flex" style={{ color: "#5a3618" }} />
               </span>
             )}
           </button>
@@ -1846,75 +1815,67 @@ export function InteractiveMap({
           {/* Auto Rota */}
           <button
             onClick={() => setIsAutoRouteModalOpen(true)}
-            className="grid h-10 w-10 place-items-center rounded-[2px] border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group relative"
+            className="grid h-9 w-9 place-items-center rounded-[2px] border transition-all duration-200 cursor-pointer group relative active:scale-95"
+            style={{ border: "1px solid rgba(90,55,20,.3)", background: "rgba(255,245,215,.5)", color: "#5a3618" }}
             title="Auto Rota Otimizada"
             type="button"
           >
-            <Wand2
-              size={18}
-              className="transition-transform group-hover:scale-110"
-            />
-            <span className="absolute right-1 top-1 flex h-2 w-2">
-              <Plus
-                size={8}
-                strokeWidth={4}
-                className="relative inline-flex text-amber-400"
-              />
+            <Wand2 size={16} className="transition-transform group-hover:scale-110" />
+            <span className="absolute right-0.5 top-0.5 flex h-2 w-2">
+              <Plus size={8} strokeWidth={4} className="relative inline-flex" style={{ color: "#5a3618" }} />
             </span>
           </button>
 
           {/* Divider */}
-          <span className="block h-px mx-1 bg-gradient-to-r from-transparent via-white/10 to-transparent my-0.5" />
+          <span className="block h-px mx-1 my-0.5" style={{ background: "rgba(90,55,20,.3)" }} />
 
           {/* Biblioteca de Rotas */}
           <button
-            onClick={() => {
-              setSidebarSection("routes");
-              setIsSidebarOpen(true);
-            }}
-            className="grid h-10 w-10 place-items-center rounded-[2px] border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group"
+            onClick={() => { setSidebarSection("routes"); setIsSidebarOpen(true); }}
+            className="grid h-9 w-9 place-items-center rounded-[2px] border transition-all duration-200 cursor-pointer group active:scale-95"
+            style={{ border: "1px solid rgba(90,55,20,.3)", background: "rgba(255,245,215,.5)", color: "#5a3618" }}
             title="Biblioteca de Rotas"
             type="button"
           >
-            <Layers
-              size={18}
-              className="transition-transform group-hover:scale-110"
-            />
+            <Layers size={16} className="transition-transform group-hover:scale-110" />
           </button>
 
           {/* Meus Pinos */}
           <button
-            onClick={() => {
-              setSidebarSection("customPins");
-              selectCustomPin(null);
-              setIsSidebarOpen(true);
-            }}
-            className="grid h-10 w-10 place-items-center rounded-[2px] border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer group"
+            onClick={() => { setSidebarSection("customPins"); selectCustomPin(null); setIsSidebarOpen(true); }}
+            className="grid h-9 w-9 place-items-center rounded-[2px] border transition-all duration-200 cursor-pointer group active:scale-95"
+            style={{ border: "1px solid rgba(90,55,20,.3)", background: "rgba(255,245,215,.5)", color: "#5a3618" }}
             title="Meus Pinos Customizados"
             type="button"
           >
-            <Hourglass
-              size={18}
-              className="transition-transform group-hover:scale-110"
-            />
+            <Hourglass size={16} className="transition-transform group-hover:scale-110" />
           </button>
+          </div>
         </div>
 
-        <div className="absolute bottom-3 right-3 sm:bottom-5 sm:right-5 z-[60] rounded-[2px] border border-[#c8860a]/30 bg-[#030c10]/70 px-2 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl">
-          <div className="grid justify-items-center gap-2">
+        {/* Zoom controls */}
+        <div
+          className="absolute bottom-3 right-3 sm:bottom-5 sm:right-5 z-[60] shadow-[0_8px_32px_rgba(0,0,0,0.45)]"
+          style={{ background: "linear-gradient(150deg,#4a6350,#34463a 55%,#2c3b31)", borderRadius: 5, padding: 4 }}
+        >
+          <div
+            className="grid justify-items-center gap-2 px-1.5 py-2 rounded-[3px]"
+            style={{ background: "#e3cd9e", backgroundImage: "radial-gradient(circle at 50% 0%,rgba(255,245,215,.5),transparent 80%)" }}
+          >
             <button
               aria-label="Aproximar mapa"
-              className="grid h-8 w-8 place-items-center rounded-[2px] border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer"
+              className="grid h-7 w-7 place-items-center rounded-[2px] border transition-all duration-200 cursor-pointer active:scale-95"
+              style={{ border: "1px solid rgba(90,55,20,.3)", background: "rgba(255,245,215,.5)", color: "#5a3618" }}
               onClick={zoomIn}
               title="Aproximar"
               type="button"
             >
-              <Plus size={16} strokeWidth={2} />
+              <Plus size={14} strokeWidth={2} />
             </button>
 
             <button
               aria-label="Ajustar zoom do mapa"
-              className="relative h-28 w-8 cursor-pointer bg-transparent"
+              className="relative h-28 w-7 cursor-pointer bg-transparent"
               onPointerCancel={handleZoomPointerCancel}
               onPointerDown={handleZoomPointerDown}
               onPointerMove={handleZoomPointerMove}
@@ -1922,24 +1883,25 @@ export function InteractiveMap({
               title={`${Math.round(displayedZoomScale * 100)}%`}
               type="button"
             >
-              <span className="absolute left-1/2 top-1 h-[calc(100%-8px)] w-px -translate-x-1/2 rounded-full bg-gradient-to-b from-white/5 via-white/10 to-white/5" />
+              <span className="absolute left-1/2 top-1 h-[calc(100%-8px)] w-px -translate-x-1/2 rounded-full" style={{ background: "linear-gradient(to bottom,rgba(90,55,20,.1),rgba(90,55,20,.3),rgba(90,55,20,.1))" }} />
               <span
-                className="absolute left-1/2 grid h-4 w-4 -translate-x-1/2 place-items-center rounded-full border border-[#c8860a]/80 bg-[#4a2f0a] shadow-[0_0_8px_rgba(200,134,10,0.4),0_2px_6px_rgba(0,0,0,0.5)]"
-                style={{ bottom: `${zoomThumbBottom}px` }}
+                className="absolute left-1/2 grid h-4 w-4 -translate-x-1/2 place-items-center rounded-full border"
+                style={{ borderColor: "rgba(90,55,20,.5)", background: "linear-gradient(180deg,#d8b87f,#c19f63)", boxShadow: "0 1px 4px rgba(0,0,0,0.25)", bottom: `${zoomThumbBottom}px` }}
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-[#ffdd66]" />
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#5a3618" }} />
               </span>
             </button>
 
             <button
               aria-label="Afastar mapa"
-              className="grid h-8 w-8 place-items-center rounded-[2px] border border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white disabled:cursor-not-allowed disabled:opacity-45 active:scale-95 transition-all duration-200 cursor-pointer"
+              className="grid h-7 w-7 place-items-center rounded-[2px] border transition-all duration-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 active:scale-95"
+              style={{ border: "1px solid rgba(90,55,20,.3)", background: "rgba(255,245,215,.5)", color: "#5a3618" }}
               disabled={displayedZoomScale <= minMapZoom}
               onClick={zoomOut}
               title="Afastar"
               type="button"
             >
-              <Minus size={16} strokeWidth={2} />
+              <Minus size={14} strokeWidth={2} />
             </button>
           </div>
         </div>
