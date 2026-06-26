@@ -6,6 +6,7 @@ import {
   VillageSection, VillageCard, VillagePrimaryButton, VillageSecondaryButton,
   VillageInput, VillageSelect, StatusBadge, VillageIconButton
 } from '../components/VillageSection'
+import { usePagination, Pagination } from '../components/Pagination'
 import { User } from '../../../authentication/core/entities/User.entity'
 import { MissionTemplate } from '../../core/entities/MissionTemplate.entity'
 import { Title } from '../../core/entities/Title.entity'
@@ -32,28 +33,29 @@ const MembersTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   const [editUser, setEditUser] = useState<User | null>(null)
 
   const list = tab === 'pending' ? vm.pendingUsers : vm.approvedUsers
+  const pg = usePagination(list)
 
   return (
     <div className="space-y-3">
       <div style={{ display: 'flex', gap: 4 }}>
         {(['pending', 'approved'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            style={{ padding: '4px 12px', borderRadius: 2, fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", cursor: 'pointer', background: tab === t ? 'rgba(200,134,10,0.2)' : 'transparent', border: `1px solid ${tab === t ? '#c8860a' : '#2e1e06'}`, color: tab === t ? '#c8860a' : '#9a7a40' }}>
+          <button key={t} onClick={() => { setTab(t); pg.setPage(1) }}
+            style={{ padding: '6px 14px', borderRadius: 2, fontSize: 11, fontWeight: 700, fontFamily: "'Orbitron', sans-serif", cursor: 'pointer', background: tab === t ? 'rgba(200,134,10,0.2)' : 'transparent', border: `1px solid ${tab === t ? '#c8860a' : '#1e1e1e'}`, color: tab === t ? '#c8860a' : '#9a7a40' }}>
             {t === 'pending' ? `PENDENTES (${vm.pendingUsers.length})` : `APROVADOS (${vm.approvedUsers.length})`}
           </button>
         ))}
       </div>
 
       <div className="space-y-2">
-        {list.map(u => (
+        {pg.paged.map(u => (
           <VillageCard key={u.id}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#e8d5a0' }}>{u.name}</div>
-                <div style={{ fontSize: 9, color: '#9a7a40' }}>{u.email} · {new Date(u.created).toLocaleDateString('pt-BR')}</div>
-                <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#e8d5a0' }}>{u.name}</div>
+                <div style={{ fontSize: 11, color: '#9a7a40' }}>{u.email} · {new Date(u.created).toLocaleDateString('pt-BR')}</div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
                   <StatusBadge status={u.status} />
-                  <span style={{ fontSize: 9, color: '#9a7a40', fontFamily: "'JetBrains Mono', monospace' " }}>
+                  <span style={{ fontSize: 11, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>
                     {u.role} {u.ninja_rank ? `· ${u.ninja_rank}` : ''} {u.level ? `· Nv.${u.level}` : ''}
                   </span>
                 </div>
@@ -76,11 +78,12 @@ const MembersTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
           </VillageCard>
         ))}
         {list.length === 0 && (
-          <div style={{ color: '#4a2f0a', fontSize: 10, textAlign: 'center', padding: '20px 0', fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ color: '#282828', fontSize: 12, textAlign: 'center', padding: '30px 0', fontFamily: "'Orbitron', sans-serif" }}>
             Nenhum membro {tab === 'pending' ? 'pendente' : 'aprovado'}
           </div>
         )}
       </div>
+      <Pagination page={pg.page} totalPages={pg.totalPages} total={pg.total} onPage={pg.setPage} />
 
       {editUser && (
         <EditUserModal user={editUser} vm={vm} onClose={() => setEditUser(null)} />
@@ -104,11 +107,11 @@ const EditUserModal = ({ user, vm, onClose }: { user: User; vm: ReturnType<typeo
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#0e0b05', border: '1px solid #4a2f0a', borderRadius: 3, padding: 20, minWidth: 320, maxWidth: 400 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#e8d5a0', marginBottom: 16, fontFamily: "'Cinzel', serif" }}>Editar: {user.name}</div>
+      <div style={{ background: '#0a0a0a', border: '1px solid #282828', borderRadius: 3, padding: 20, minWidth: 320, maxWidth: 400 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#e8d5a0', marginBottom: 18, fontFamily: "'Cinzel', serif" }}>Editar: {user.name}</div>
         <div className="space-y-3">
           <div>
-            <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 4, fontFamily: "'JetBrains Mono', monospace" }}>ROLE</div>
+            <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 4, fontFamily: "'Orbitron', sans-serif" }}>ROLE</div>
             <VillageSelect value={role} onChange={setRole}>
               <option value="ninja">Ninja</option>
               <option value="manager">Manager</option>
@@ -116,7 +119,7 @@ const EditUserModal = ({ user, vm, onClose }: { user: User; vm: ReturnType<typeo
             </VillageSelect>
           </div>
           <div>
-            <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 4, fontFamily: "'JetBrains Mono', monospace" }}>POSTO</div>
+            <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 4, fontFamily: "'Orbitron', sans-serif" }}>POSTO</div>
             <VillageSelect value={ninja_rank} onChange={setNinjaRank}>
               <option value="">–</option>
               <option value="genin">Genin</option>
@@ -127,7 +130,7 @@ const EditUserModal = ({ user, vm, onClose }: { user: User; vm: ReturnType<typeo
             </VillageSelect>
           </div>
           <div>
-            <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 4, fontFamily: "'JetBrains Mono', monospace" }}>NÍVEL</div>
+            <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 4, fontFamily: "'Orbitron', sans-serif" }}>NÍVEL</div>
             <VillageInput type="number" value={level} onChange={setLevel} placeholder="0" />
           </div>
         </div>
@@ -146,6 +149,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   const [showForm, setShowForm] = useState(false)
   const [editTpl, setEditTpl] = useState<MissionTemplate | null>(null)
   const [form, setForm] = useState({ title: '', description: '', rank: 'D' as MissionRank, min_ninja_rank: '', min_level: '0', reward_yens: '0', reward_items: '', reward_points: '0', is_active: true })
+  const pg = usePagination(vm.templates)
 
   const resetForm = () => setForm({ title: '', description: '', rank: 'D', min_ninja_rank: '', min_level: '0', reward_yens: '0', reward_items: '', reward_points: '0', is_active: true })
 
@@ -175,26 +179,26 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
 
       {showForm && (
         <VillageCard>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#c8860a', marginBottom: 12, fontFamily: "'Cinzel', serif" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#c8860a', marginBottom: 14, fontFamily: "'Cinzel', serif" }}>
             {editTpl ? 'Editar Missão' : 'Nova Missão'}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>TÍTULO</div>
+              <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>TÍTULO</div>
               <VillageInput value={form.title} onChange={v => setForm(f => ({ ...f, title: v }))} placeholder="Nome da missão" />
             </div>
             <div className="col-span-2">
-              <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>DESCRIÇÃO</div>
+              <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>DESCRIÇÃO</div>
               <VillageInput value={form.description} onChange={v => setForm(f => ({ ...f, description: v }))} placeholder="Detalhes da missão" />
             </div>
             <div>
-              <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>RANK</div>
+              <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>RANK</div>
               <VillageSelect value={form.rank} onChange={v => setForm(f => ({ ...f, rank: v as MissionRank }))}>
                 {RANKS.map(r => <option key={r} value={r}>Rank {r}</option>)}
               </VillageSelect>
             </div>
             <div>
-              <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>POSTO MÍNIMO</div>
+              <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>POSTO MÍNIMO</div>
               <VillageSelect value={form.min_ninja_rank} onChange={v => setForm(f => ({ ...f, min_ninja_rank: v }))}>
                 <option value="">Nenhum</option>
                 <option value="genin">Genin</option>
@@ -205,19 +209,19 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
               </VillageSelect>
             </div>
             <div>
-              <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>NÍVEL MÍNIMO</div>
+              <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>NÍVEL MÍNIMO</div>
               <VillageInput type="number" value={form.min_level} onChange={v => setForm(f => ({ ...f, min_level: v }))} placeholder="0" />
             </div>
             <div>
-              <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>RECOMPENSA (YENS)</div>
+              <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>RECOMPENSA (YENS)</div>
               <VillageInput type="number" value={form.reward_yens} onChange={v => setForm(f => ({ ...f, reward_yens: v }))} placeholder="0" />
             </div>
             <div>
-              <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>PONTOS DE TÍTULO</div>
+              <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>PONTOS DE TÍTULO</div>
               <VillageInput type="number" value={form.reward_points} onChange={v => setForm(f => ({ ...f, reward_points: v }))} placeholder="0" />
             </div>
             <div>
-              <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>ITENS (TEXTO)</div>
+              <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>ITENS (TEXTO)</div>
               <VillageInput value={form.reward_items} onChange={v => setForm(f => ({ ...f, reward_items: v }))} placeholder="Ex: 5x Poção" />
             </div>
           </div>
@@ -229,15 +233,15 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
       )}
 
       <div className="space-y-2">
-        {vm.templates.map(t => (
+        {pg.paged.map(t => (
           <VillageCard key={t.id}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <MissionRankBadge rank={t.rank} />
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: t.is_active ? '#e8d5a0' : '#6a5028' }}>{t.title}</div>
-                  {t.description && <div style={{ fontSize: 9, color: '#9a7a40' }}>{t.description}</div>}
-                  <div style={{ display: 'flex', gap: 8, fontSize: 9, color: '#c8a030', marginTop: 2 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: t.is_active ? '#e8d5a0' : '#6a5028' }}>{t.title}</div>
+                  {t.description && <div style={{ fontSize: 11, color: '#9a7a40', marginTop: 2 }}>{t.description}</div>}
+                  <div style={{ display: 'flex', gap: 10, fontSize: 11, color: '#c8a030', marginTop: 4 }}>
                     {t.reward_yens > 0 && <span>💰 {t.reward_yens}¥</span>}
                     {t.reward_points > 0 && <span>⭐ {t.reward_points}pts</span>}
                     {!t.is_active && <span style={{ color: '#6a5028' }}>ARQUIVADA</span>}
@@ -252,6 +256,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
           </VillageCard>
         ))}
       </div>
+      <Pagination page={pg.page} totalPages={pg.totalPages} total={pg.total} onPage={pg.setPage} />
     </div>
   )
 }
@@ -261,32 +266,33 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
 const ReviewsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   const [rejectNote, setRejectNote] = useState<Record<string, string>>({})
   const [rejectOpen, setRejectOpen] = useState<string | null>(null)
+  const pg = usePagination(vm.pendingReviews)
 
   return (
     <div className="space-y-2">
       {vm.pendingReviews.length === 0 ? (
-        <div style={{ color: '#4a2f0a', fontSize: 10, textAlign: 'center', padding: '40px 0', fontFamily: "'JetBrains Mono', monospace" }}>
+        <div style={{ color: '#282828', fontSize: 10, textAlign: 'center', padding: '40px 0', fontFamily: "'Orbitron', sans-serif" }}>
           Nenhuma missão aguardando avaliação
         </div>
-      ) : vm.pendingReviews.map(a => {
+      ) : pg.paged.map(a => {
         const tpl = a.expand?.template
         const ninja = a.expand?.assigned_to
         return (
           <VillageCard key={a.id}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
               <div className="flex-1 min-w-0">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   {tpl && <MissionRankBadge rank={tpl.rank as MissionRank} />}
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#e8d5a0' }}>{tpl?.title || 'Missão'}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#e8d5a0' }}>{tpl?.title || 'Missão'}</span>
                 </div>
-                <div style={{ fontSize: 9, color: '#9a7a40' }}>
+                <div style={{ fontSize: 11, color: '#9a7a40' }}>
                   Ninja: <span style={{ color: '#c8a030' }}>{ninja?.name || '–'}</span> · {a.day}
                 </div>
                 {a.submitted_at && (
-                  <div style={{ fontSize: 9, color: '#9a7a40' }}>Enviado em: {new Date(a.submitted_at).toLocaleString('pt-BR')}</div>
+                  <div style={{ fontSize: 11, color: '#9a7a40', marginTop: 2 }}>Enviado em: {new Date(a.submitted_at).toLocaleString('pt-BR')}</div>
                 )}
                 {tpl && (
-                  <div style={{ display: 'flex', gap: 8, fontSize: 9, color: '#c8a030', marginTop: 4 }}>
+                  <div style={{ display: 'flex', gap: 10, fontSize: 11, color: '#c8a030', marginTop: 6 }}>
                     {tpl.reward_yens > 0 && <span>💰 {tpl.reward_yens}¥</span>}
                     {tpl.reward_points > 0 && <span>⭐ {tpl.reward_points}pts</span>}
                   </div>
@@ -315,6 +321,7 @@ const ReviewsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
           </VillageCard>
         )
       })}
+      <Pagination page={pg.page} totalPages={pg.totalPages} total={pg.total} onPage={pg.setPage} />
     </div>
   )
 }
@@ -353,19 +360,19 @@ const TitlesTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
         <VillageCard>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>NOME</div>
+              <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>NOME</div>
               <VillageInput value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} placeholder="Nome do título" />
             </div>
             <div>
-              <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>PONTOS MÍNIMOS</div>
+              <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>PONTOS MÍNIMOS</div>
               <VillageInput type="number" value={form.min_points} onChange={v => setForm(f => ({ ...f, min_points: v }))} />
             </div>
             <div>
-              <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>ORDEM</div>
+              <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>ORDEM</div>
               <VillageInput type="number" value={form.order} onChange={v => setForm(f => ({ ...f, order: v }))} />
             </div>
             <div className="col-span-2">
-              <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>DESCRIÇÃO</div>
+              <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>DESCRIÇÃO</div>
               <VillageInput value={form.description} onChange={v => setForm(f => ({ ...f, description: v }))} placeholder="Descrição do título" />
             </div>
           </div>
@@ -380,8 +387,8 @@ const TitlesTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
           <VillageCard key={t.id}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#e8b840' }}>{t.name}</div>
-                <div style={{ fontSize: 9, color: '#9a7a40' }}>{t.min_points} pontos mínimos {t.description ? `· ${t.description}` : ''}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#e8b840' }}>{t.name}</div>
+                <div style={{ fontSize: 11, color: '#9a7a40', marginTop: 2 }}>{t.min_points} pontos mínimos {t.description ? `· ${t.description}` : ''}</div>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <VillageIconButton icon={Edit3} onClick={() => openEdit(t)} title="Editar" />
@@ -421,7 +428,7 @@ const SettingsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   }
 
   if (!vm.settings) {
-    return <div style={{ color: '#9a7a40', fontSize: 10, padding: 20, fontFamily: "'JetBrains Mono', monospace", textAlign: 'center' }}>Nenhuma configuração encontrada no banco. Crie o registro village_settings no PocketBase.</div>
+    return <div style={{ color: '#9a7a40', fontSize: 12, padding: 24, fontFamily: "'Orbitron', sans-serif", textAlign: 'center' }}>Nenhuma configuração encontrada no banco. Crie o registro village_settings no PocketBase.</div>
   }
 
   return (
@@ -430,11 +437,11 @@ const SettingsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
       <VillageCard>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 4, fontFamily: "'JetBrains Mono', monospace" }}>MISSÕES DIÁRIAS POR NINJA</div>
+            <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 4, fontFamily: "'Orbitron', sans-serif" }}>MISSÕES DIÁRIAS POR NINJA</div>
             <VillageInput type="number" value={form.max_daily_missions} onChange={v => setForm(f => ({ ...f, max_daily_missions: v }))} />
           </div>
           <div>
-            <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 4, fontFamily: "'JetBrains Mono', monospace" }}>PONTOS DIÁRIOS POR NINJA</div>
+            <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 4, fontFamily: "'Orbitron', sans-serif" }}>PONTOS DIÁRIOS POR NINJA</div>
             <VillageInput type="number" value={form.daily_points_per_ninja} onChange={v => setForm(f => ({ ...f, daily_points_per_ninja: v }))} />
           </div>
         </div>
@@ -446,22 +453,22 @@ const SettingsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
           {(['D', 'C', 'B', 'A', 'S'] as MissionRank[]).map(r => (
             <div key={r}>
               <MissionRankBadge rank={r} />
-              <div style={{ marginTop: 4, fontSize: 9, color: '#9a7a40', fontFamily: "'JetBrains Mono', monospace" }}>{vm.settings?.points_cost?.[r] ?? '–'} pts</div>
+              <div style={{ marginTop: 4, fontSize: 9, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>{vm.settings?.points_cost?.[r] ?? '–'} pts</div>
             </div>
           ))}
         </div>
-        <div style={{ fontSize: 9, color: '#4a2f0a', marginTop: 8, fontFamily: "'JetBrains Mono', monospace" }}>Edite os custos diretamente no PocketBase (village_settings.points_cost)</div>
+        <div style={{ fontSize: 9, color: '#282828', marginTop: 8, fontFamily: "'Orbitron', sans-serif" }}>Edite os custos diretamente no PocketBase (village_settings.points_cost)</div>
       </VillageCard>
 
       <VillageSection label="Doações" />
       <VillageCard>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 4, fontFamily: "'JetBrains Mono', monospace" }}>DOAÇÃO MÍNIMA</div>
+            <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 4, fontFamily: "'Orbitron', sans-serif" }}>DOAÇÃO MÍNIMA</div>
             <VillageInput type="number" value={form.min_donation_amount} onChange={v => setForm(f => ({ ...f, min_donation_amount: v }))} />
           </div>
           <div>
-            <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 4, fontFamily: "'JetBrains Mono', monospace" }}>PERÍODO</div>
+            <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 4, fontFamily: "'Orbitron', sans-serif" }}>PERÍODO</div>
             <VillageSelect value={form.donation_period} onChange={v => setForm(f => ({ ...f, donation_period: v }))}>
               <option value="weekly">Semanal</option>
               <option value="monthly">Mensal</option>
@@ -482,32 +489,34 @@ const SettingsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
 const BankTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   const balance = vm.settings?.bank_balance ?? 0
   const typeLabel = { reward_payout: 'Pagamento', tax_income: 'Imposto', donation_income: 'Doação' }
+  const pg = usePagination(vm.transactions)
 
   return (
     <div className="space-y-4">
       <VillageCard>
         <div style={{ textAlign: 'center', padding: '8px 0' }}>
-          <div style={{ fontSize: 9, color: '#9a7a40', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.12em', textTransform: 'uppercase' }}>Saldo do Banco da Vila</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#c8860a', fontFamily: "'Cinzel', serif", marginTop: 4 }}>{balance.toLocaleString('pt-BR')} ¥</div>
+          <div style={{ fontSize: 9, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif", letterSpacing: '0.12em', textTransform: 'uppercase' }}>Saldo do Banco da Vila</div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: '#c8860a', fontFamily: "'Cinzel', serif", marginTop: 6 }}>{balance.toLocaleString('pt-BR')} ¥</div>
         </div>
       </VillageCard>
       <VillageSection label="Últimas Transações" />
       <div className="space-y-1">
-        {vm.transactions.slice(0, 30).map(t => (
-          <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: 'rgba(13,10,4,0.7)', border: '1px solid #1e1204', borderRadius: 3 }}>
+        {pg.paged.map(t => (
+          <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'rgba(8,8,8,0.7)', border: '1px solid #1e1204', borderRadius: 3 }}>
             <div>
-              <div style={{ fontSize: 10, color: '#e8d5a0' }}>{t.description || typeLabel[t.type]}</div>
-              <div style={{ fontSize: 9, color: '#9a7a40' }}>{new Date(t.created).toLocaleString('pt-BR')}</div>
+              <div style={{ fontSize: 12, color: '#e8d5a0' }}>{t.description || typeLabel[t.type]}</div>
+              <div style={{ fontSize: 11, color: '#9a7a40', marginTop: 2 }}>{new Date(t.created).toLocaleString('pt-BR')}</div>
             </div>
-            <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: t.type === 'reward_payout' ? '#e07070' : '#5ac87a' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "'Orbitron', sans-serif", color: t.type === 'reward_payout' ? '#e07070' : '#5ac87a' }}>
               {t.type === 'reward_payout' ? '-' : '+'}{t.amount.toLocaleString('pt-BR')}¥
             </span>
           </div>
         ))}
         {vm.transactions.length === 0 && (
-          <div style={{ color: '#4a2f0a', fontSize: 10, textAlign: 'center', padding: '20px 0', fontFamily: "'JetBrains Mono', monospace" }}>Nenhuma transação registrada</div>
+          <div style={{ color: '#282828', fontSize: 12, textAlign: 'center', padding: '30px 0', fontFamily: "'Orbitron', sans-serif" }}>Nenhuma transação registrada</div>
         )}
       </div>
+      <Pagination page={pg.page} totalPages={pg.totalPages} total={pg.total} onPage={pg.setPage} />
     </div>
   )
 }
@@ -534,7 +543,7 @@ const OrgsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
       <div style={{ display: 'flex', gap: 4 }}>
         {(['policia', 'hospital', 'assistente'] as const).map(org => (
           <button key={org} onClick={() => setSelectedOrg(org)}
-            style={{ padding: '4px 10px', borderRadius: 2, fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", cursor: 'pointer', background: selectedOrg === org ? 'rgba(200,134,10,0.2)' : 'transparent', border: `1px solid ${selectedOrg === org ? '#c8860a' : '#2e1e06'}`, color: selectedOrg === org ? '#c8860a' : '#9a7a40' }}>
+            style={{ padding: '6px 14px', borderRadius: 2, fontSize: 11, fontWeight: 700, fontFamily: "'Orbitron', sans-serif", cursor: 'pointer', background: selectedOrg === org ? 'rgba(200,134,10,0.2)' : 'transparent', border: `1px solid ${selectedOrg === org ? '#c8860a' : '#1e1e1e'}`, color: selectedOrg === org ? '#c8860a' : '#9a7a40' }}>
             {ORG_LABELS[org].toUpperCase()}
           </button>
         ))}
@@ -547,20 +556,20 @@ const OrgsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
         <VillageCard>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>NOME DO CARGO</div>
+              <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>NOME DO CARGO</div>
               <VillageInput value={form.role_name} onChange={v => setForm(f => ({ ...f, role_name: v }))} placeholder="Ex: Capitão" />
             </div>
             <div>
-              <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>YENS/MIN</div>
+              <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>YENS/MIN</div>
               <VillageInput type="number" value={form.yens_per_minute} onChange={v => setForm(f => ({ ...f, yens_per_minute: v }))} />
             </div>
             <div>
-              <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>ORDEM</div>
+              <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>ORDEM</div>
               <VillageInput type="number" value={form.order} onChange={v => setForm(f => ({ ...f, order: v }))} />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input type="checkbox" checked={form.is_manager} onChange={e => setForm(f => ({ ...f, is_manager: e.target.checked }))} />
-              <span style={{ fontSize: 9, color: '#9a7a40', fontFamily: "'JetBrains Mono', monospace" }}>É gestor</span>
+              <span style={{ fontSize: 9, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>É gestor</span>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
@@ -575,15 +584,15 @@ const OrgsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
           <VillageCard key={r.id}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#e8d5a0' }}>{r.role_name} {r.is_manager ? '⭐' : ''}</div>
-                <div style={{ fontSize: 9, color: '#9a7a40' }}>{r.yens_per_minute} yens/min</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#e8d5a0' }}>{r.role_name} {r.is_manager ? '⭐' : ''}</div>
+                <div style={{ fontSize: 11, color: '#9a7a40', marginTop: 2 }}>{r.yens_per_minute} yens/min</div>
               </div>
               <VillageIconButton icon={Trash2} danger onClick={() => vm.removeOrgRole(r.id)} />
             </div>
           </VillageCard>
         ))}
         {roles.length === 0 && (
-          <div style={{ color: '#4a2f0a', fontSize: 10, textAlign: 'center', padding: '20px 0', fontFamily: "'JetBrains Mono', monospace" }}>Nenhum cargo cadastrado</div>
+          <div style={{ color: '#282828', fontSize: 12, textAlign: 'center', padding: '30px 0', fontFamily: "'Orbitron', sans-serif" }}>Nenhum cargo cadastrado</div>
         )}
       </div>
     </div>
@@ -599,7 +608,7 @@ export const AdminPanelScreen = () => {
   if (vm.loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <span style={{ color: '#9a7a40', fontSize: 11, fontFamily: "'JetBrains Mono', monospace" }}>Carregando painel admin...</span>
+        <span style={{ color: '#9a7a40', fontSize: 13, fontFamily: "'Orbitron', sans-serif" }}>Carregando painel admin...</span>
       </div>
     )
   }
@@ -607,7 +616,7 @@ export const AdminPanelScreen = () => {
   return (
     <div className="flex h-full overflow-hidden" style={{ color: '#e8d5a0' }}>
       {/* Side nav */}
-      <div style={{ width: 120, flexShrink: 0, borderRight: '1px solid #2e1e06', paddingRight: 12, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <div style={{ width: 140, flexShrink: 0, borderRight: '1px solid #1e1e1e', paddingRight: 12, display: 'flex', flexDirection: 'column', gap: 3 }}>
         {TABS.map(t => {
           const Icon = t.icon
           const badge = t.id === 'members' ? vm.pendingUsers.length : t.id === 'reviews' ? vm.pendingReviews.length : 0
@@ -616,18 +625,18 @@ export const AdminPanelScreen = () => {
               key={t.id}
               onClick={() => setActiveTab(t.id)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', borderRadius: 2,
+                display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 2,
                 background: activeTab === t.id ? 'rgba(200,134,10,0.12)' : 'transparent',
                 border: `1px solid ${activeTab === t.id ? '#c8860a30' : 'transparent'}`,
                 color: activeTab === t.id ? '#c8860a' : '#9a7a40',
-                fontSize: 9, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, cursor: 'pointer',
+                fontSize: 11, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, cursor: 'pointer',
                 letterSpacing: '0.06em', textAlign: 'left', position: 'relative',
               }}
             >
-              <Icon size={11} />
+              <Icon size={13} />
               {t.label}
               {badge > 0 && (
-                <span style={{ position: 'absolute', right: 6, top: 4, background: '#c8860a', color: '#0a0800', borderRadius: 10, padding: '1px 4px', fontSize: 7, fontWeight: 900 }}>
+                <span style={{ position: 'absolute', right: 8, top: 5, background: '#c8860a', color: '#0a0800', borderRadius: 10, padding: '1px 5px', fontSize: 9, fontWeight: 900 }}>
                   {badge}
                 </span>
               )}
@@ -635,8 +644,8 @@ export const AdminPanelScreen = () => {
           )
         })}
         <div style={{ marginTop: 'auto', paddingTop: 8 }}>
-          <button onClick={vm.reload} style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#9a7a40', background: 'transparent', border: '1px solid #2e1e06', borderRadius: 2, padding: '5px 8px', cursor: 'pointer', fontSize: 9, fontFamily: "'JetBrains Mono', monospace" }}>
-            <RefreshCw size={10} /> Atualizar
+          <button onClick={vm.reload} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9a7a40', background: 'transparent', border: '1px solid #1e1e1e', borderRadius: 2, padding: '7px 10px', cursor: 'pointer', fontSize: 11, fontFamily: "'Orbitron', sans-serif" }}>
+            <RefreshCw size={12} /> Atualizar
           </button>
         </div>
       </div>

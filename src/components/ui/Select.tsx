@@ -13,7 +13,7 @@ const SelectTrigger = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Trigger
     className={cn(
-      'flex items-center justify-between w-full border border-[#4a2f0a] bg-[rgba(13,10,5,0.6)] text-[#c8860a] h-10 px-4 rounded-[2px] text-xs focus:outline-none focus:border-[#c8860a] transition-colors',
+      'flex items-center justify-between w-full border border-[#282828] bg-[rgba(8,8,8,0.6)] text-[#c8860a] h-10 px-4 rounded-[2px] text-xs focus:outline-none focus:border-[#c8860a] transition-colors',
       className
     )}
     ref={ref}
@@ -32,7 +32,7 @@ const SelectScrollUpButton = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpButton>
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.ScrollUpButton
-    className={cn('ui-select-scroll-button flex items-center justify-center h-6 bg-[#0f0b04] text-[#9a7a40] hover:text-[#c8860a] cursor-default', className)}
+    className={cn('ui-select-scroll-button flex items-center justify-center h-6 bg-[#0c0c0c] text-[#9a7a40] hover:text-[#c8860a] cursor-default', className)}
     ref={ref}
     {...props}
   >
@@ -46,7 +46,7 @@ const SelectScrollDownButton = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollDownButton>
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.ScrollDownButton
-    className={cn('ui-select-scroll-button flex items-center justify-center h-6 bg-[#0f0b04] text-[#9a7a40] hover:text-[#c8860a] cursor-default', className)}
+    className={cn('ui-select-scroll-button flex items-center justify-center h-6 bg-[#0c0c0c] text-[#9a7a40] hover:text-[#c8860a] cursor-default', className)}
     ref={ref}
     {...props}
   >
@@ -63,7 +63,7 @@ const SelectContent = React.forwardRef<
   <SelectPrimitive.Portal>
     <SelectPrimitive.Content
       className={cn(
-        'relative z-[9999] min-w-[8rem] overflow-hidden rounded-[2px] border border-[#4a2f0a] bg-[#0f0b04] text-[#e8d5a0] shadow-[0_8px_24px_rgba(0,0,0,0.8)] animate-in fade-in-50 duration-100',
+        'relative z-[9999] min-w-[8rem] overflow-hidden rounded-[2px] border border-[#282828] bg-[#0c0c0c] text-[#e8d5a0] shadow-[0_8px_24px_rgba(0,0,0,0.8)] animate-in fade-in-50 duration-100',
         position === 'popper' && 'data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1',
         className
       )}

@@ -145,7 +145,7 @@ const PinTimer = memo(function PinTimer({
   if (timeLeft <= 0) return null;
 
   return (
-    <span className="absolute z-10 rounded bg-[#0f0b04]/90 border border-green-500/40 px-1 py-0.5 font-mono text-[8px] font-bold text-green-400 shadow-md">
+    <span className="absolute z-10 rounded bg-[#0c0c0c]/90 border border-green-500/40 px-1 py-0.5 font-mono text-[8px] font-bold text-green-400 shadow-md">
       {formatRemainingTime(timeLeft)}
     </span>
   );
@@ -259,7 +259,7 @@ const PinBadge = memo(function PinBadge({
           isSelected
             ? "ring-2 ring-white/85 ring-offset-2 ring-offset-[rgba(6,14,22,0.7)]"
             : "",
-          isCluster ? "ring-1 ring-[#c8860a]/50 bg-[#4a2f0a]/40" : "",
+          isCluster ? "ring-1 ring-[#c8860a]/50 bg-[#282828]/40" : "",
         )}
         style={{
           boxShadow: isMoving
@@ -427,7 +427,7 @@ const RouteCheckpointBadge = memo(function RouteCheckpointBadge({
           isCurrent === true
             ? "bg-amber-500 ring-2 ring-amber-400"
             : isCurrent === false
-              ? "bg-[#1a1007] ring-1 ring-[#4a2f0a] opacity-80 text-[#9a7a40]"
+              ? "bg-[#111111] ring-1 ring-[#282828] opacity-80 text-[#9a7a40]"
               : "bg-orange-500 ring-2 ring-orange-950/50",
         )}
         style={{
@@ -1924,7 +1924,7 @@ export function InteractiveMap({
             >
               <span className="absolute left-1/2 top-1 h-[calc(100%-8px)] w-px -translate-x-1/2 rounded-full bg-gradient-to-b from-white/5 via-white/10 to-white/5" />
               <span
-                className="absolute left-1/2 grid h-4 w-4 -translate-x-1/2 place-items-center rounded-full border border-[#c8860a]/80 bg-[#4a2f0a] shadow-[0_0_8px_rgba(200,134,10,0.4),0_2px_6px_rgba(0,0,0,0.5)]"
+                className="absolute left-1/2 grid h-4 w-4 -translate-x-1/2 place-items-center rounded-full border border-[#c8860a]/80 bg-[#282828] shadow-[0_0_8px_rgba(200,134,10,0.4),0_2px_6px_rgba(0,0,0,0.5)]"
                 style={{ bottom: `${zoomThumbBottom}px` }}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-[#ffdd66]" />
@@ -2151,7 +2151,7 @@ export function InteractiveMap({
 
                       {/* Image Section */}
                       {activePopupPin.imageUrl && (
-                        <div className="w-full h-16 rounded-[8px] overflow-hidden border border-white/8 mb-1.5 bg-[#0f0b04] shrink-0">
+                        <div className="w-full h-16 rounded-[8px] overflow-hidden border border-white/8 mb-1.5 bg-[#0c0c0c] shrink-0">
                           <img
                             src={activePopupPin.imageUrl}
                             alt={activePopupPin.name}

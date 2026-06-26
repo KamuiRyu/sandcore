@@ -15,8 +15,8 @@ interface MissionRankBadgeProps {
 
 export const MissionRankBadge = ({ rank, size = 'sm' }: MissionRankBadgeProps) => {
   const c = RANK_COLORS[rank]
-  const px = size === 'md' ? '8px 14px' : '3px 8px'
-  const fs = size === 'md' ? 11 : 9
+  const px = size === 'md' ? '8px 16px' : '5px 10px'
+  const fs = size === 'md' ? 13 : 11
   return (
     <span
       style={{
@@ -24,7 +24,7 @@ export const MissionRankBadge = ({ rank, size = 'sm' }: MissionRankBadgeProps) =
         border: `1px solid ${c.border}`,
         color: c.text,
         fontSize: fs,
-        fontFamily: "'JetBrains Mono', monospace",
+        fontFamily: "'Orbitron', sans-serif",
         fontWeight: 700,
         letterSpacing: '0.08em',
         padding: px,

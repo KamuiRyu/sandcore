@@ -79,7 +79,7 @@ export const LoginScreen = ({ viewModel: externalViewModel }: LoginScreenProps =
     </div>
   )
 
-  const windowClass = `h-screen w-screen bg-[#0f0b04] relative rounded-xl border border-[#4a2f0a] overflow-hidden text-slate-300 font-sans select-none`
+  const windowClass = `h-screen w-screen bg-[#0c0c0c] relative rounded-xl border border-[#282828] overflow-hidden text-slate-300 font-sans select-none`
   const windowTransition: React.CSSProperties = {
     opacity: windowVisible ? 1 : 0,
     transform: windowVisible ? 'scale(1)' : 'scale(0.95)',
@@ -193,7 +193,7 @@ export const LoginScreen = ({ viewModel: externalViewModel }: LoginScreenProps =
 
       {/* Left Form Column */}
       <div
-        className="w-[360px] flex-none bg-[#0f0b04] flex flex-col px-8 pt-7 pb-4 justify-between border-r border-[#2e1f08] h-full relative"
+        className="w-[360px] flex-none bg-[#0c0c0c] flex flex-col px-8 pt-7 pb-4 justify-between border-r border-[#1a1a1a] h-full relative"
         style={contentStyle}
       >
         {/* Main Content Area */}
@@ -218,9 +218,9 @@ export const LoginScreen = ({ viewModel: externalViewModel }: LoginScreenProps =
             )}
 
             <div className="flex items-center gap-2.5 my-3.5">
-              <div className="h-[1px] flex-1" style={{ background: 'linear-gradient(90deg, transparent, #2e1e06)' }}></div>
+              <div className="h-[1px] flex-1" style={{ background: 'linear-gradient(90deg, transparent, #1e1e1e)' }}></div>
               <span className="text-[#6a5028] text-[0.55rem] font-black font-mono uppercase tracking-[0.15em]">ou continue com</span>
-              <div className="h-[1px] flex-1" style={{ background: 'linear-gradient(90deg, #2e1e06, transparent)' }}></div>
+              <div className="h-[1px] flex-1" style={{ background: 'linear-gradient(90deg, #1e1e1e, transparent)' }}></div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -228,7 +228,7 @@ export const LoginScreen = ({ viewModel: externalViewModel }: LoginScreenProps =
                 type="button"
                 onClick={() => handleOAuth('google')}
                 disabled={viewModel.authLoading}
-                className="bg-[#1a1105] hover:bg-[#2a1b08] border border-[#4a2f0a] rounded-[2px] py-2.5 px-4 flex items-center justify-center gap-2 text-[0.65rem] font-black font-mono uppercase tracking-widest text-[#c8860a] hover:text-[#f0d9a0] transition-all cursor-pointer"
+                className="bg-[#1a1105] hover:bg-[#2a1b08] border border-[#282828] rounded-[2px] py-2.5 px-4 flex items-center justify-center gap-2 text-[0.65rem] font-black font-mono uppercase tracking-widest text-[#c8860a] hover:text-[#f0d9a0] transition-all cursor-pointer"
                 style={{ WebkitAppRegion: 'no-drag' } as any}
               >
                 <svg className="w-4 h-4 flex-none" viewBox="0 0 24 24" fill="none">
@@ -243,7 +243,7 @@ export const LoginScreen = ({ viewModel: externalViewModel }: LoginScreenProps =
                 type="button"
                 onClick={() => handleOAuth('discord')}
                 disabled={viewModel.authLoading}
-                className="bg-[#1a1105] hover:bg-[#2a1b08] border border-[#4a2f0a] rounded-[2px] py-2.5 px-4 flex items-center justify-center gap-2 text-[0.65rem] font-black font-mono uppercase tracking-widest text-[#c8860a] hover:text-[#f0d9a0] transition-all cursor-pointer"
+                className="bg-[#1a1105] hover:bg-[#2a1b08] border border-[#282828] rounded-[2px] py-2.5 px-4 flex items-center justify-center gap-2 text-[0.65rem] font-black font-mono uppercase tracking-widest text-[#c8860a] hover:text-[#f0d9a0] transition-all cursor-pointer"
                 style={{ WebkitAppRegion: 'no-drag' } as any}
               >
                 <svg className="w-4 h-4 text-[#5865F2] flex-none" viewBox="0 0 127.14 96.36" fill="currentColor">
@@ -299,7 +299,7 @@ export const LoginScreen = ({ viewModel: externalViewModel }: LoginScreenProps =
 
         {/* Floating Success */}
         {viewModel.resetSuccess && (
-          <div className="absolute bottom-16 left-8 right-8 bg-[#0f0b04] border border-[#4a2f0a] text-[#c8860a] text-xs py-2.5 px-3.5 rounded-[2px] text-center shadow-2xl z-50 flex items-center justify-between gap-2 animate-in fade-in slide-in-from-bottom-2">
+          <div className="absolute bottom-16 left-8 right-8 bg-[#0c0c0c] border border-[#282828] text-[#c8860a] text-xs py-2.5 px-3.5 rounded-[2px] text-center shadow-2xl z-50 flex items-center justify-between gap-2 animate-in fade-in slide-in-from-bottom-2">
             <span className="flex-1 text-center font-medium leading-relaxed">{viewModel.resetSuccess}</span>
             <button
               type="button"
@@ -318,7 +318,7 @@ export const LoginScreen = ({ viewModel: externalViewModel }: LoginScreenProps =
         className="flex-1 bg-cover bg-[85%_center] select-none relative max-[500px]:hidden h-full"
         style={{ backgroundImage: "url('./images/background.webp')", ...contentStyle }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0f0b04] via-transparent to-transparent w-24"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0c0c0c] via-transparent to-transparent w-24"></div>
       </div>
 
     </div>

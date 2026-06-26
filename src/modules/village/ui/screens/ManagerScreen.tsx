@@ -17,7 +17,7 @@ export const ManagerScreen = () => {
   if (vm.loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <span style={{ color: '#9a7a40', fontSize: 11, fontFamily: "'JetBrains Mono', monospace" }}>Carregando...</span>
+        <span style={{ color: '#9a7a40', fontSize: 13, fontFamily: "'Orbitron', sans-serif" }}>Carregando...</span>
       </div>
     )
   }
@@ -53,14 +53,14 @@ export const ManagerScreen = () => {
     <div className="flex flex-col h-full overflow-hidden" style={{ color: '#e8d5a0' }}>
       <div className="flex items-center justify-between mb-4 flex-none">
         <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#c8860a', fontFamily: "'Cinzel', serif" }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#c8860a', fontFamily: "'Cinzel', serif" }}>
             Gestão de Organização
           </div>
-          <div style={{ fontSize: 9, color: '#9a7a40', fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ fontSize: 11, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif", marginTop: 2 }}>
             Semana: {vm.weekStart} · Período: {vm.period}
           </div>
         </div>
-        <button onClick={vm.reload} style={{ color: '#9a7a40', background: 'transparent', border: '1px solid #2e1e06', borderRadius: 3, padding: 5, cursor: 'pointer', display: 'flex' }}>
+        <button onClick={vm.reload} style={{ color: '#9a7a40', background: 'transparent', border: '1px solid #1e1e1e', borderRadius: 3, padding: 5, cursor: 'pointer', display: 'flex' }}>
           <RefreshCw size={12} />
         </button>
       </div>
@@ -73,7 +73,7 @@ export const ManagerScreen = () => {
           <VillageCard>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>NINJA</div>
+                <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>NINJA</div>
                 <VillageSelect value={addUserId} onChange={setAddUserId}>
                   <option value="">Selecionar...</option>
                   {vm.availableUsers.map(u => (
@@ -82,7 +82,7 @@ export const ManagerScreen = () => {
                 </VillageSelect>
               </div>
               <div>
-                <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>CARGO</div>
+                <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>CARGO</div>
                 <VillageSelect value={addRoleId} onChange={setAddRoleId}>
                   <option value="">Selecionar...</option>
                   {vm.orgRoles.map(r => (
@@ -103,8 +103,8 @@ export const ManagerScreen = () => {
         <div>
           <VillageSection label={`Membros da Semana (${vm.members.length})`} />
           {vm.members.length === 0 ? (
-            <div style={{ color: '#4a2f0a', fontSize: 10, textAlign: 'center', padding: '20px 0', fontFamily: "'JetBrains Mono', monospace" }}>
-              Nenhum membro nesta semana
+            <div style={{ color: '#282828', fontSize: 10, textAlign: 'center', padding: '20px 0', fontFamily: "'Orbitron', sans-serif" }}>
+              <span style={{ fontSize: 12, color: '#282828', fontFamily: "'Orbitron', sans-serif" }}>Nenhum membro nesta semana</span>
             </div>
           ) : (
             <div className="space-y-2">
@@ -125,16 +125,16 @@ export const ManagerScreen = () => {
                           ) : (
                             <CheckCircle2 size={12} style={{ color: '#5ac87a' }} />
                           )}
-                          <span style={{ fontSize: 11, fontWeight: 600, color: '#e8d5a0' }}>{u?.name || member.user}</span>
-                          {role && <span style={{ fontSize: 9, color: '#9a7a40', fontFamily: "'JetBrains Mono', monospace" }}>{role.role_name}</span>}
-                          {blockStatus.blocked && <span style={{ fontSize: 9, color: '#e07070', fontFamily: "'JetBrains Mono', monospace" }}>⚠ {blockStatus.reason}</span>}
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#e8d5a0' }}>{u?.name || member.user}</span>
+                          {role && <span style={{ fontSize: 11, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>{role.role_name}</span>}
+                          {blockStatus.blocked && <span style={{ fontSize: 11, color: '#e07070', fontFamily: "'Orbitron', sans-serif" }}>⚠ {blockStatus.reason}</span>}
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
                           {/* Tax */}
                           <div>
-                            <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>
-                              IMPOSTO {tax ? `(✓ ${tax.amount}¥)` : '(pendente)'}
+                            <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>
+                              IMPOSTO {tax ? `(✓ ${tax.amount}¥)` : <span style={{ color: '#e07070' }}>(pendente)</span>}
                             </div>
                             {!tax && (
                               <div style={{ display: 'flex', gap: 4 }}>
@@ -153,8 +153,8 @@ export const ManagerScreen = () => {
 
                           {/* Donation */}
                           <div>
-                            <div style={{ fontSize: 9, color: '#9a7a40', marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>
-                              DOAÇÃO {donation ? `(✓ ${donation.amount}¥)` : '(pendente)'}
+                            <div style={{ fontSize: 11, color: '#9a7a40', marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>
+                              DOAÇÃO {donation ? `(✓ ${donation.amount}¥)` : <span style={{ color: '#e07070' }}>(pendente)</span>}
                             </div>
                             {!donation && (
                               <div style={{ display: 'flex', gap: 4 }}>

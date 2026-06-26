@@ -64,7 +64,7 @@ export function AppModal({
         <section
           aria-label={ariaLabel}
           className={cn(
-            'relative flex max-h-[calc(100vh_-_128px)] flex-col overflow-hidden rounded-[2px] border border-[#4a2f0a] bg-[#0c0804] text-[var(--text)] shadow-[0_32px_96px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-2xl animate-[modal-in_180ms_ease-out_both] max-[640px]:w-full',
+            'relative flex max-h-[calc(100vh_-_128px)] flex-col overflow-hidden rounded-[2px] border border-[#282828] bg-[#080808] text-[var(--text)] shadow-[0_32px_96px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-2xl animate-[modal-in_180ms_ease-out_both] max-[640px]:w-full',
             widthClassName,
             className,
           )}
@@ -96,7 +96,7 @@ export function AppModal({
             </div>
             <button
               aria-label={closeLabel}
-              className="inline-flex h-[36px] w-[36px] flex-none items-center justify-center rounded-[2px] border border-[#4a2f0a] bg-white/5 p-0 text-slate-300 transition hover:-translate-y-px hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400 hover:shadow-[0_0_15px_rgba(239,68,68,0.15)] disabled:cursor-wait disabled:opacity-60 [&_svg]:h-[18px] [&_svg]:w-[18px] cursor-pointer"
+              className="inline-flex h-[36px] w-[36px] flex-none items-center justify-center rounded-[2px] border border-[#282828] bg-white/5 p-0 text-slate-300 transition hover:-translate-y-px hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400 hover:shadow-[0_0_15px_rgba(239,68,68,0.15)] disabled:cursor-wait disabled:opacity-60 [&_svg]:h-[18px] [&_svg]:w-[18px] cursor-pointer"
               disabled={isCloseDisabled}
               onClick={onClose}
               type="button"
@@ -117,7 +117,7 @@ export function AppModal({
           </div>
 
           {/* Footer */}
-          <div className="sticky bottom-0 z-[2] border-t border-[#4a2f0a] bg-[rgba(12,8,4,0.95)] backdrop-blur-xl px-7 py-5 max-[640px]:px-5 relative">
+          <div className="sticky bottom-0 z-[2] border-t border-[#282828] bg-[rgba(8,8,8,0.95)] backdrop-blur-xl px-7 py-5 max-[640px]:px-5 relative">
             {footer ?? <div className="h-0" aria-hidden="true" />}
           </div>
         </section>

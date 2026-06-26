@@ -4,17 +4,17 @@ import { useGroupViewModel } from '../viewModels/useGroup.viewModel'
 
 const SL = ({ children }: { children: React.ReactNode }) => (
   <div className="flex items-center gap-2 mb-2">
-    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>[</span>
-    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#c8a030', whiteSpace: 'nowrap' }}>
+    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'Orbitron', sans-serif" }}>[</span>
+    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: "'Orbitron', sans-serif", fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#c8a030', whiteSpace: 'nowrap' }}>
       {children}
     </span>
     <div className="flex-1" style={{ borderTop: '1px dashed rgba(200,160,48,0.25)' }} />
-    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>]</span>
+    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'Orbitron', sans-serif" }}>]</span>
   </div>
 )
 
 const TechCard = ({ children, style }: { children: React.ReactNode, style?: React.CSSProperties }) => (
-  <div style={{ background: 'rgba(13,10,4,0.7)', border: '1px solid #3a2508', borderRadius: 3, padding: '14px 14px', position: 'relative', overflow: 'hidden', ...style }}>
+  <div style={{ background: 'rgba(8,8,8,0.7)', border: '1px solid #3a2508', borderRadius: 3, padding: '14px 14px', position: 'relative', overflow: 'hidden', ...style }}>
     <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: 'linear-gradient(180deg,#c8860a,#7a4e08)' }} />
     <div style={{ position: 'absolute', top: 6, left: 6, width: 10, height: 10, borderTop: '1px solid #c8860a', borderLeft: '1px solid #c8860a' }} />
     <div style={{ position: 'absolute', top: 6, right: 6, width: 10, height: 10, borderTop: '1px solid #c8860a', borderRight: '1px solid #c8860a' }} />
@@ -25,7 +25,7 @@ const TechCard = ({ children, style }: { children: React.ReactNode, style?: Reac
 )
 
 const ListContainer = ({ children }: { children: React.ReactNode }) => (
-  <div style={{ borderRadius: 3, overflow: 'hidden', border: '1px solid #2e1e06' }}>
+  <div style={{ borderRadius: 3, overflow: 'hidden', border: '1px solid #1e1e1e' }}>
     {children}
   </div>
 )
@@ -38,8 +38,8 @@ const ListItem = ({ children, isLast = false }: { children: React.ReactNode, isL
       justifyContent: 'space-between',
       padding: '8px 12px',
       fontSize: 10,
-      background: 'rgba(13,10,4,0.8)',
-      borderBottom: isLast ? 'none' : '1px solid rgba(46,30,6,0.7)',
+      background: 'rgba(8,8,8,0.8)',
+      borderBottom: isLast ? 'none' : '1px solid rgba(30,30,30,0.7)',
     }}
   >
     {children}
@@ -53,7 +53,7 @@ const PrimaryButton = ({ children, onClick, disabled = false, padding = '5px 12p
     style={{
       display: 'flex', alignItems: 'center', gap: 6, padding, borderRadius: 3,
       background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none',
-      fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em',
+      fontWeight: 700, fontSize: 9, fontFamily: "'Orbitron', sans-serif", letterSpacing: '0.08em',
       cursor: disabled ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1
     }}
   >
@@ -67,13 +67,13 @@ const SecondaryButton = ({ children, onClick, disabled = false, padding = '4px 1
     disabled={disabled}
     style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding,
-      borderRadius: 3, background: 'transparent', border: '1px solid #2e1e06', color: '#c8a840',
-      fontSize: 9, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, letterSpacing: '0.08em',
+      borderRadius: 3, background: 'transparent', border: '1px solid #1e1e1e', color: '#c8a840',
+      fontSize: 9, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, letterSpacing: '0.08em',
       cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.15s', opacity: disabled ? 0.5 : 1,
       whiteSpace: 'nowrap'
     }}
-    onMouseEnter={e => { if(!disabled) { e.currentTarget.style.background = 'rgba(74,47,10,0.25)'; e.currentTarget.style.borderColor = '#6a4e18'; e.currentTarget.style.color = '#e8c860'; } }}
-    onMouseLeave={e => { if(!disabled) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#2e1e06'; e.currentTarget.style.color = '#c8a840'; } }}
+    onMouseEnter={e => { if(!disabled) { e.currentTarget.style.background = 'rgba(40,40,40,0.25)'; e.currentTarget.style.borderColor = '#6a4e18'; e.currentTarget.style.color = '#e8c860'; } }}
+    onMouseLeave={e => { if(!disabled) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#1e1e1e'; e.currentTarget.style.color = '#c8a840'; } }}
   >
     {children}
   </button>
@@ -86,7 +86,7 @@ const ErrorButton = ({ children, onClick, disabled = false }: { children: React.
     style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '7px 14px', borderRadius: 3,
       background: 'rgba(120,20,20,0.2)', border: '1px solid #7a1414', color: '#e07070',
-      fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", cursor: disabled ? 'not-allowed' : 'pointer', letterSpacing: '0.08em',
+      fontWeight: 700, fontSize: 9, fontFamily: "'Orbitron', sans-serif", cursor: disabled ? 'not-allowed' : 'pointer', letterSpacing: '0.08em',
       transition: 'all 0.15s', opacity: disabled ? 0.5 : 1, width: '100%'
     }}
     onMouseEnter={e => { if(!disabled) { e.currentTarget.style.background = 'rgba(120,20,20,0.4)'; } }}
@@ -125,7 +125,7 @@ export const GroupsScreen = () => {
           {/* Empty state */}
           <div
             className="rounded-[2px] border border-dashed p-4 text-center"
-            style={{ borderColor: '#2e1e06', background: 'rgba(13,10,4,0.8)' }}
+            style={{ borderColor: '#1e1e1e', background: 'rgba(8,8,8,0.8)' }}
           >
             <Users size={28} className="mx-auto mb-2 opacity-30" style={{ color: '#c8a030' }} />
             <p className="text-[11px] leading-normal" style={{ color: '#9a7a40' }}>
@@ -153,12 +153,12 @@ export const GroupsScreen = () => {
                 onChange={(e) => { setJoinCode(e.target.value.toUpperCase()); setGroupError(null) }}
                 className="flex-1 rounded-[2px] px-3 py-2 text-xs outline-none transition-colors"
                 style={{
-                  background: 'rgba(13,10,4,0.8)',
-                  border: '1px solid #2e1e06',
+                  background: 'rgba(8,8,8,0.8)',
+                  border: '1px solid #1e1e1e',
                   color: '#e8d5a0',
                 }}
                 onFocus={e => (e.currentTarget.style.borderColor = '#c8860a')}
-                onBlur={e => (e.currentTarget.style.borderColor = '#2e1e06')}
+                onBlur={e => (e.currentTarget.style.borderColor = '#1e1e1e')}
               />
               <PrimaryButton onClick={() => joinGroup(joinCode)} disabled={!joinCode.trim() || groupLoading} padding="8px 14px">
                 <UserPlus size={14} />
@@ -178,12 +178,12 @@ export const GroupsScreen = () => {
                 onChange={(e) => { setNewGroupName(e.target.value); setGroupError(null) }}
                 className="flex-1 rounded-[2px] px-3 py-2 text-xs outline-none transition-colors"
                 style={{
-                  background: 'rgba(13,10,4,0.8)',
-                  border: '1px solid #2e1e06',
+                  background: 'rgba(8,8,8,0.8)',
+                  border: '1px solid #1e1e1e',
                   color: '#e8d5a0',
                 }}
                 onFocus={e => (e.currentTarget.style.borderColor = '#c8860a')}
-                onBlur={e => (e.currentTarget.style.borderColor = '#2e1e06')}
+                onBlur={e => (e.currentTarget.style.borderColor = '#1e1e1e')}
               />
               <SecondaryButton onClick={() => createGroup(newGroupName)} disabled={!newGroupName.trim() || groupLoading} padding="8px 14px">
                 <Plus size={14} />
@@ -217,7 +217,7 @@ export const GroupsScreen = () => {
                 </div>
                 <div
                   className="flex items-center gap-2 rounded-[2px] p-1.5 px-2"
-                  style={{ background: 'rgba(13,10,4,0.8)', border: '1px solid #2e1e06' }}
+                  style={{ background: 'rgba(8,8,8,0.8)', border: '1px solid #1e1e1e' }}
                 >
                   <div className="flex flex-col">
                     <span className="text-[8px] font-mono font-bold uppercase leading-none mb-0.5" style={{ color: '#9a7a40' }}>

@@ -499,7 +499,7 @@ function createPanelWindow() {
     panelWin?.webContents.setZoomFactor(zoom)
   })
 
-  //panelWin.webContents.openDevTools({ mode: 'detach' })
+  panelWin.webContents.openDevTools({ mode: 'detach' })
 
   if (process.env.VITE_DEV_SERVER_URL) {
     panelWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}?windowType=panel`)
@@ -857,6 +857,19 @@ ipcMain.handle('register-shortcut', (_event, { type, shortcut }) => {
     return { success: updateShortcutSettings(shortcut) }
   }
   return { success: false }
+})
+
+ipcMain.on('resize-sidebar', (_event, { visibleMain, visibleAdmin }: { visibleMain: number; visibleAdmin: number }) => {
+  if (!sidebarWin || sidebarWin.isDestroyed()) return
+  const zoom = (appConfig.uiScale || 100) / 100
+  const ITEM_H = 42   // height per nav button + gap
+  const TOP    = 70   // logo + top divider
+  const SEP    = 16   // separator before admin/bottom section
+  const BOTTOM = 88   // settings + logout + padding
+  const rawH = TOP + visibleMain * ITEM_H + SEP + visibleAdmin * ITEM_H + BOTTOM
+  const newHeight = Math.round(Math.max(rawH, 180) * zoom)
+  const newWidth  = Math.round(56 * zoom)
+  sidebarWin.setSize(newWidth, newHeight)
 })
 
 ipcMain.on('set-config', (_event, newConfig) => {

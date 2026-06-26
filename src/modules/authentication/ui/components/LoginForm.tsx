@@ -92,8 +92,8 @@ export const LoginForm = ({ viewModel, rememberMe, setRememberMe }: LoginFormPro
             style={{
               width: 14, height: 14, flexShrink: 0, borderRadius: 2, display: 'inline-flex',
               alignItems: 'center', justifyContent: 'center',
-              border: `1px solid ${rememberMe ? '#c8860a' : '#4a2f0a'}`,
-              background: rememberMe ? 'rgba(200,134,10,0.2)' : '#0d0a04',
+              border: `1px solid ${rememberMe ? '#c8860a' : '#282828'}`,
+              background: rememberMe ? 'rgba(200,134,10,0.2)' : '#080808',
               transition: 'all 0.15s',
             }}
           >

@@ -30,12 +30,12 @@ export const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
           <input
             ref={ref}
             type={actualType}
-            className={`w-full bg-[#0d0a04] text-[#e8d5a0] placeholder-[#6a5028] text-sm rounded-[2px] border transition-all py-2.5 focus:ring-0 focus:outline-none
+            className={`w-full bg-[#080808] text-[#e8d5a0] placeholder-[#6a5028] text-sm rounded-[2px] border transition-all py-2.5 focus:ring-0 focus:outline-none
               ${Icon ? 'pl-10' : 'pl-3.5'}
               ${isPassword ? 'pr-14' : hasError ? 'pr-9' : 'pr-3.5'}
               ${hasError
                 ? 'border-red-800/60 focus:border-red-600'
-                : 'border-[#2e1e06] focus:border-[#c8860a]/60'
+                : 'border-[#1e1e1e] focus:border-[#c8860a]/60'
               }
               ${className}
             `}

@@ -108,7 +108,7 @@ export const ContentPanelScreen = ({
         contentClassName={isMapTab ? "flex flex-col overflow-hidden p-0" : "p-5"}
       >
         {isMapTab && (
-          <div className="h-14 bg-transparent border-b border-[#4a2f0a] px-4 flex items-center justify-between gap-4 select-none z-50 flex-none relative">
+          <div className="h-14 bg-transparent border-b border-[#282828] px-4 flex items-center justify-between gap-4 select-none z-50 flex-none relative">
             {/* Title row */}
             <div className="flex items-center gap-2 min-w-0 flex-none">
               <div
@@ -138,7 +138,7 @@ export const ContentPanelScreen = ({
                   placeholder="Buscar recursos no mapa..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-[#1a1007]/65 border border-[#4a2f0a] rounded-lg py-1.5 pl-9 pr-9 text-xs text-[#f0d9a0] placeholder-[#9a7a40] focus:border-[#c8860a]/50 focus:outline-none transition-colors backdrop-blur-sm"
+                  className="w-full bg-[#111111]/65 border border-[#282828] rounded-lg py-1.5 pl-9 pr-9 text-xs text-[#f0d9a0] placeholder-[#9a7a40] focus:border-[#c8860a]/50 focus:outline-none transition-colors backdrop-blur-sm"
                 />
                 <button
                   className="absolute right-2.5 text-[#9a7a40] hover:text-[#c8860a] transition-colors flex items-center justify-center p-0.5 rounded-full hover:bg-white/5 cursor-pointer"
@@ -155,19 +155,19 @@ export const ContentPanelScreen = ({
                 onClick={() =>
                   window.dispatchEvent(new CustomEvent("open-map-settings"))
                 }
-                className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#4a2f0a] transition-all cursor-pointer"
-                style={{ background: "#2e1f08", color: "#9a7a40" }}
+                className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#282828] transition-all cursor-pointer"
+                style={{ background: "#1a1a1a", color: "#9a7a40" }}
                 onMouseEnter={(e) => {
                   const el = e.currentTarget;
                   el.style.borderColor = "#c8860a";
                   el.style.color = "#c8860a";
-                  el.style.background = "#4a2f0a";
+                  el.style.background = "#282828";
                 }}
                 onMouseLeave={(e) => {
                   const el = e.currentTarget;
-                  el.style.borderColor = "#4a2f0a";
+                  el.style.borderColor = "#282828";
                   el.style.color = "#9a7a40";
-                  el.style.background = "#2e1f08";
+                  el.style.background = "#1a1a1a";
                 }}
                 title="Configurações do Mapa"
               >
@@ -175,19 +175,19 @@ export const ContentPanelScreen = ({
               </button>
               <button
                 onClick={() => window.ipcRenderer?.send("minimize-panel-window")}
-                className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#4a2f0a] transition-all cursor-pointer"
-                style={{ background: "#2e1f08", color: "#9a7a40" }}
+                className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#282828] transition-all cursor-pointer"
+                style={{ background: "#1a1a1a", color: "#9a7a40" }}
                 onMouseEnter={(e) => {
                   const el = e.currentTarget;
                   el.style.borderColor = "#c8860a";
                   el.style.color = "#c8860a";
-                  el.style.background = "#4a2f0a";
+                  el.style.background = "#282828";
                 }}
                 onMouseLeave={(e) => {
                   const el = e.currentTarget;
-                  el.style.borderColor = "#4a2f0a";
+                  el.style.borderColor = "#282828";
                   el.style.color = "#9a7a40";
-                  el.style.background = "#2e1f08";
+                  el.style.background = "#1a1a1a";
                 }}
                 title="Minimizar"
               >
@@ -195,19 +195,19 @@ export const ContentPanelScreen = ({
               </button>
               <button
                 onClick={handleClose}
-                className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#4a2f0a] transition-all cursor-pointer"
-                style={{ background: "#2e1f08", color: "#9a7a40" }}
+                className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#282828] transition-all cursor-pointer"
+                style={{ background: "#1a1a1a", color: "#9a7a40" }}
                 onMouseEnter={(e) => {
                   const el = e.currentTarget;
                   el.style.borderColor = "#c8860a";
                   el.style.color = "#c8860a";
-                  el.style.background = "#4a2f0a";
+                  el.style.background = "#282828";
                 }}
                 onMouseLeave={(e) => {
                   const el = e.currentTarget;
-                  el.style.borderColor = "#4a2f0a";
+                  el.style.borderColor = "#282828";
                   el.style.color = "#9a7a40";
-                  el.style.background = "#2e1f08";
+                  el.style.background = "#1a1a1a";
                 }}
                 title="Fechar"
               >
@@ -230,7 +230,7 @@ export const ContentPanelScreen = ({
         {!isMapTab && lastActiveTab === "crafting" && <CraftingScreen />}
         {!isMapTab && lastActiveTab === "missions" && (
           <div className="flex flex-col h-full">
-            <div className="flex border-b border-[#2e1f08] flex-none">
+            <div className="flex border-b border-[#1a1a1a] flex-none">
               <button
                 onClick={() => setMissionsSubTab('board')}
                 className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-mono font-black uppercase tracking-widest transition-colors cursor-pointer"

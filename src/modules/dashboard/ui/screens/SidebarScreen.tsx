@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Map, LogOut, Users, Settings, BarChart2, Hammer, Scroll, Shield, Building2 } from 'lucide-react'
 import { pb } from '../../../../lib/pocketbase'
+import { appStorage } from '../../../../lib/storage'
 
 type TabType = 'groups' | 'map' | 'stats' | 'details' | 'settings' | 'crafting' | 'missions' | 'ninja-card' | 'admin' | 'manager'
 
@@ -12,13 +13,43 @@ interface SidebarScreenProps {
 const NOISE_SVG = `url("./images/noise.svg")`
 
 import { SunagakureLogo } from '../../../app/ui/components/SunagakureLogo'
-import { appStorage } from '../../../../lib/storage';
+
+const SIDEBAR_HIDDEN_KEY = 'shinobi-map-sidebar-hidden'
+
+function loadHidden(): Set<string> {
+  try {
+    const raw = appStorage.getItem(SIDEBAR_HIDDEN_KEY)
+    return new Set(raw ? JSON.parse(raw) : [])
+  } catch {
+    return new Set()
+  }
+}
 
 export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
   const user = pb.authStore.model
   const role = user?.role || 'ninja'
   const isAdmin = role === 'admin'
   const isManager = role === 'manager' || role === 'admin'
+
+  const [hiddenItems, setHiddenItems] = useState<Set<string>>(loadHidden)
+
+  useEffect(() => {
+    const channel = new BroadcastChannel('sidebar-config')
+    channel.onmessage = (e: MessageEvent<{ hiddenItems: string[] }>) => {
+      setHiddenItems(new Set(e.data.hiddenItems))
+    }
+    return () => channel.close()
+  }, [])
+
+  // Resize the Electron window to fit visible items
+  useEffect(() => {
+    const visibleMain  = mainMenuItems.filter(item => !hiddenItems.has(item.id)).length
+    const visibleAdmin = [
+      ...(isManager ? ['manager'] : []),
+      ...(isAdmin   ? ['admin']   : []),
+    ].filter(id => !hiddenItems.has(id)).length
+    window.ipcRenderer?.send('resize-sidebar', { visibleMain, visibleAdmin })
+  }, [hiddenItems, isManager, isAdmin])
 
   const handleTabClick = (tabId: TabType) => {
     const nextTab = activeTab === tabId ? null : tabId
@@ -49,7 +80,7 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
     <div
       className="w-full h-full select-none"
       style={{
-        background: 'linear-gradient(180deg, #0e0b05 0%, #090704 100%)',
+        background: 'linear-gradient(180deg, #0a0a0a 0%, #080808 100%)',
         border: '1px solid rgba(255,221,102,0.4)',
         borderRadius: 8,
         WebkitAppRegion: 'drag',
@@ -78,7 +109,7 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
 
         {/* Main nav */}
         <div className="flex flex-col items-center w-full overflow-y-auto flex-1 py-2" style={{ gap: 2 }}>
-          {mainMenuItems.map((item) => {
+          {mainMenuItems.filter(item => !hiddenItems.has(item.id)).map((item) => {
             const Icon = item.icon
             const isActive = activeTab === item.id
             return (
@@ -92,7 +123,7 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
         {/* Bottom nav */}
         <div className="flex flex-col items-center w-full" style={{ padding: '10px 0', gap: 2 }}>
           <div style={{ width: 28, height: 1, background: 'linear-gradient(90deg, transparent, rgba(200,134,10,0.4), transparent)', margin: '0 0 6px', flexShrink: 0 }} />
-          {adminItems.map(item => {
+          {adminItems.filter(item => !hiddenItems.has(item.id)).map(item => {
             const Icon = item.icon
             return (
               <NavItem key={item.id} isActive={activeTab === item.id} label={item.label} onClick={() => handleTabClick(item.id)}>
@@ -124,7 +155,7 @@ interface NavItemProps {
 
 const NavItem = ({ isActive, isExit = false, label, onClick, children }: NavItemProps) => {
   const baseColor   = isExit ? '#7a3020'             : '#6a5028'
-  const hoverBg     = isExit ? 'rgba(120,48,32,0.2)' : 'rgba(74,47,10,0.35)'
+  const hoverBg     = isExit ? 'rgba(120,48,32,0.2)' : 'rgba(40,40,40,0.35)'
   const hoverBorder = isExit ? 'rgba(180,80,50,0.4)' : 'rgba(200,134,10,0.3)'
   const hoverColor  = isExit ? '#e07060'             : '#c8a040'
 
@@ -138,7 +169,7 @@ const NavItem = ({ isActive, isExit = false, label, onClick, children }: NavItem
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           borderRadius: 3, cursor: 'pointer', position: 'relative',
           border: isActive ? '1px solid rgba(200,134,10,0.35)' : '1px solid transparent',
-          background: isActive ? 'rgba(74,47,10,0.4)' : 'transparent',
+          background: isActive ? 'rgba(40,40,40,0.4)' : 'transparent',
           color: isActive ? '#e8b840' : baseColor,
           transition: 'all .2s',
           WebkitAppRegion: 'no-drag',

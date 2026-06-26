@@ -41,17 +41,17 @@ import { appStorage } from "../../../../lib/storage";
 
 const SL = ({ children }: { children: React.ReactNode }) => (
   <div className="flex items-center gap-2 mb-2">
-    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>[</span>
-    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#c8a030', whiteSpace: 'nowrap' }}>
+    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'Orbitron', sans-serif" }}>[</span>
+    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: "'Orbitron', sans-serif", fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#c8a030', whiteSpace: 'nowrap' }}>
       {children}
     </span>
     <div className="flex-1" style={{ borderTop: '1px dashed rgba(200,160,48,0.25)' }} />
-    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>]</span>
+    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'Orbitron', sans-serif" }}>]</span>
   </div>
 )
 
 const TechCard = ({ children, style, subtle = false }: { children: React.ReactNode, style?: React.CSSProperties, subtle?: boolean }) => (
-  <div style={{ background: subtle ? 'rgba(74,47,10,0.1)' : 'rgba(13,10,4,0.7)', border: '1px solid #3a2508', borderRadius: 3, padding: '12px', position: 'relative', overflow: 'hidden', ...style }}>
+  <div style={{ background: subtle ? 'rgba(40,40,40,0.1)' : 'rgba(8,8,8,0.7)', border: '1px solid #3a2508', borderRadius: 3, padding: '12px', position: 'relative', overflow: 'hidden', ...style }}>
     {!subtle && <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: 'linear-gradient(180deg,#c8860a,#7a4e08)' }} />}
     <div style={{ position: 'absolute', top: 6, left: 6, width: 10, height: 10, borderTop: '1px solid #c8860a', borderLeft: '1px solid #c8860a' }} />
     <div style={{ position: 'absolute', top: 6, right: 6, width: 10, height: 10, borderTop: '1px solid #c8860a', borderRight: '1px solid #c8860a' }} />
@@ -62,7 +62,7 @@ const TechCard = ({ children, style, subtle = false }: { children: React.ReactNo
 )
 
 const ListContainer = ({ children }: { children: React.ReactNode }) => (
-  <div style={{ borderRadius: 3, overflow: 'hidden', border: '1px solid #2e1e06' }}>
+  <div style={{ borderRadius: 3, overflow: 'hidden', border: '1px solid #1e1e1e' }}>
     {children}
   </div>
 )
@@ -76,8 +76,8 @@ const ListItem = ({ children, isLast = false, vertical = false }: { children: Re
       justifyContent: vertical ? 'flex-start' : 'space-between',
       padding: '8px 12px',
       fontSize: 10,
-      background: 'rgba(13,10,4,0.8)',
-      borderBottom: isLast ? 'none' : '1px solid rgba(46,30,6,0.7)',
+      background: 'rgba(8,8,8,0.8)',
+      borderBottom: isLast ? 'none' : '1px solid rgba(30,30,30,0.7)',
       gap: vertical ? 8 : 12
     }}
   >
@@ -91,13 +91,13 @@ const SecondaryButton = ({ children, onClick, disabled = false, padding = '4px 1
     disabled={disabled}
     style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding,
-      borderRadius: 3, background: active ? 'rgba(74,47,10,0.25)' : 'transparent', border: '1px solid #2e1e06', color: active ? '#e8c860' : '#c8a840',
-      fontSize: 9, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, letterSpacing: '0.08em',
+      borderRadius: 3, background: active ? 'rgba(40,40,40,0.25)' : 'transparent', border: '1px solid #1e1e1e', color: active ? '#e8c860' : '#c8a840',
+      fontSize: 9, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, letterSpacing: '0.08em',
       cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.15s', opacity: disabled ? 0.5 : 1,
-      whiteSpace: 'nowrap', borderColor: active ? '#6a4e18' : '#2e1e06'
+      whiteSpace: 'nowrap', borderColor: active ? '#6a4e18' : '#1e1e1e'
     }}
-    onMouseEnter={e => { if(!disabled) { e.currentTarget.style.background = 'rgba(74,47,10,0.25)'; e.currentTarget.style.borderColor = '#6a4e18'; e.currentTarget.style.color = '#e8c860'; } }}
-    onMouseLeave={e => { if(!disabled && !active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#2e1e06'; e.currentTarget.style.color = '#c8a840'; } }}
+    onMouseEnter={e => { if(!disabled) { e.currentTarget.style.background = 'rgba(40,40,40,0.25)'; e.currentTarget.style.borderColor = '#6a4e18'; e.currentTarget.style.color = '#e8c860'; } }}
+    onMouseLeave={e => { if(!disabled && !active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#1e1e1e'; e.currentTarget.style.color = '#c8a840'; } }}
   >
     {children}
   </button>
@@ -217,14 +217,14 @@ export const StatsScreen = () => {
       {/* Sub-tab nav */}
       <div
         className="flex rounded-[2px] p-0.5 mb-4 flex-none"
-        style={{ border: '1px solid #2e1e06', WebkitAppRegion: 'no-drag' } as any}
+        style={{ border: '1px solid #1e1e1e', WebkitAppRegion: 'no-drag' } as any}
       >
         <button
           onClick={() => setPeriod('today')}
           className="flex-1 py-1.5 rounded-[2px] text-[9px] font-bold cursor-pointer transition-all flex items-center justify-center gap-1"
           style={period === 'today'
-            ? { background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em' }
-            : { background: 'transparent', color: '#c8a840', border: '1px solid transparent', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em' }
+            ? { background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none', fontFamily: "'Orbitron', sans-serif", letterSpacing: '0.08em' }
+            : { background: 'transparent', color: '#c8a840', border: '1px solid transparent', fontFamily: "'Orbitron', sans-serif", letterSpacing: '0.08em' }
           }
         >
           <Calendar size={11} /> HOJE
@@ -233,8 +233,8 @@ export const StatsScreen = () => {
           onClick={() => setPeriod('routes')}
           className="flex-1 py-1.5 rounded-[2px] text-[9px] font-bold cursor-pointer transition-all flex items-center justify-center gap-1"
           style={period === 'routes'
-            ? { background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em' }
-            : { background: 'transparent', color: '#c8a840', border: '1px solid transparent', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em' }
+            ? { background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none', fontFamily: "'Orbitron', sans-serif", letterSpacing: '0.08em' }
+            : { background: 'transparent', color: '#c8a840', border: '1px solid transparent', fontFamily: "'Orbitron', sans-serif", letterSpacing: '0.08em' }
           }
         >
           <Route size={11} /> ROTAS
@@ -243,8 +243,8 @@ export const StatsScreen = () => {
           onClick={() => setPeriod('monthly')}
           className="flex-1 py-1.5 rounded-[2px] text-[9px] font-bold cursor-pointer transition-all flex items-center justify-center gap-1"
           style={period === 'monthly'
-            ? { background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em' }
-            : { background: 'transparent', color: '#c8a840', border: '1px solid transparent', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em' }
+            ? { background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none', fontFamily: "'Orbitron', sans-serif", letterSpacing: '0.08em' }
+            : { background: 'transparent', color: '#c8a840', border: '1px solid transparent', fontFamily: "'Orbitron', sans-serif", letterSpacing: '0.08em' }
           }
         >
           <CalendarRange size={11} /> MÊS
@@ -253,8 +253,8 @@ export const StatsScreen = () => {
           onClick={() => setPeriod('total')}
           className="flex-1 py-1.5 rounded-[2px] text-[9px] font-bold cursor-pointer transition-all flex items-center justify-center gap-1"
           style={period === 'total'
-            ? { background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em' }
-            : { background: 'transparent', color: '#c8a840', border: '1px solid transparent', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em' }
+            ? { background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none', fontFamily: "'Orbitron', sans-serif", letterSpacing: '0.08em' }
+            : { background: 'transparent', color: '#c8a840', border: '1px solid transparent', fontFamily: "'Orbitron', sans-serif", letterSpacing: '0.08em' }
           }
         >
           <Trophy size={11} /> TOTAL
@@ -269,7 +269,7 @@ export const StatsScreen = () => {
               return (
                 <div
                   className="flex-1 flex flex-col justify-center items-center text-center p-6 border border-dashed rounded-[2px]"
-                  style={{ borderColor: '#2e1e06', background: 'rgba(13,10,4,0.8)' }}
+                  style={{ borderColor: '#1e1e1e', background: 'rgba(8,8,8,0.8)' }}
                 >
                   <Route className="w-10 h-10 mb-2 opacity-35" style={{ color: '#c8a030' }} />
                   <p className="text-xs font-semibold" style={{ color: '#c8a060' }}>Nenhuma rota com recursos</p>
@@ -286,11 +286,11 @@ export const StatsScreen = () => {
 
             return (
               <>
-                <div className="sticky top-0 z-50 pb-2 pt-1" style={{ background: 'linear-gradient(180deg,#0d0a05 60%,transparent)' }}>
+                <div className="sticky top-0 z-50 pb-2 pt-1" style={{ background: 'linear-gradient(180deg,#080808 60%,transparent)' }}>
                   <Select value={activeRouteId} onValueChange={setSelectedRouteId}>
                     <SelectTrigger
                       className="w-full font-bold hover:opacity-90 transition-colors"
-                      style={{ background: 'rgba(13,10,4,0.8)', border: '1px solid #2e1e06', color: '#c8860a' }}
+                      style={{ background: 'rgba(8,8,8,0.8)', border: '1px solid #1e1e1e', color: '#c8860a' }}
                     >
                       <SelectValue placeholder="Selecione uma rota" />
                     </SelectTrigger>
@@ -331,14 +331,14 @@ export const StatsScreen = () => {
                                 <CircleDollarSign size={40} />
                               </div>
                               <span className="text-[10px] font-bold mb-1 relative z-10" style={{ color: '#c8a060' }}>Vender Bruto</span>
-                              <span className="text-lg font-black relative z-10 block mt-1" style={{ color: '#c8860a', fontFamily: "'JetBrains Mono', monospace" }}>¥ {rawProfit.netProfit.toLocaleString()}</span>
+                              <span className="text-lg font-black relative z-10 block mt-1" style={{ color: '#c8860a', fontFamily: "'Orbitron', sans-serif" }}>¥ {rawProfit.netProfit.toLocaleString()}</span>
                             </TechCard>
                             <TechCard style={{ background: 'rgba(255,100,0,0.05)', borderColor: 'rgba(255,100,0,0.2)' }}>
                               <div className="absolute right-[-10px] bottom-[-10px] opacity-[0.03]">
                                 <Flame size={40} color="#ff6600" />
                               </div>
                               <span className="text-[10px] font-bold mb-1 relative z-10 text-amber-500/80">Fazer Lingote</span>
-                              <span className="text-lg font-black text-amber-400 relative z-10 block mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>¥ {craftProfit.netProfit.toLocaleString()}</span>
+                              <span className="text-lg font-black text-amber-400 relative z-10 block mt-1" style={{ fontFamily: "'Orbitron', sans-serif" }}>¥ {craftProfit.netProfit.toLocaleString()}</span>
                               {craftProfit.totalCost > 0 && <span className="text-[9px] text-red-400 mt-0.5 relative z-10 block">Custos: ¥ {craftProfit.totalCost}</span>}
                             </TechCard>
                           </div>
@@ -368,8 +368,8 @@ export const StatsScreen = () => {
                                       className="px-2 py-0.5 rounded-[2px] font-bold text-[10px]"
                                       style={
                                         hasCollected
-                                          ? { background: 'rgba(45,110,45,0.2)', color: '#4caf50', border: '1px solid #2d6e2d', fontFamily: "'JetBrains Mono', monospace" }
-                                          : { background: 'rgba(74,47,10,0.4)', color: '#e8d5a0', fontFamily: "'JetBrains Mono', monospace" }
+                                          ? { background: 'rgba(45,110,45,0.2)', color: '#4caf50', border: '1px solid #2d6e2d', fontFamily: "'Orbitron', sans-serif" }
+                                          : { background: 'rgba(40,40,40,0.4)', color: '#e8d5a0', fontFamily: "'Orbitron', sans-serif" }
                                       }
                                     >
                                       {count}x {hasCollected ? "Total" : ""}
@@ -392,7 +392,7 @@ export const StatsScreen = () => {
       ) : !hasStats ? (
         <div
           className="flex-1 flex flex-col justify-center items-center text-center p-6 border border-dashed rounded-[2px]"
-          style={{ borderColor: '#2e1e06', background: 'rgba(13,10,4,0.8)' }}
+          style={{ borderColor: '#1e1e1e', background: 'rgba(8,8,8,0.8)' }}
         >
           <Trophy className="w-10 h-10 mb-2 opacity-30" style={{ color: '#c8a030' }} />
           <p className="text-xs font-semibold" style={{ color: '#c8a060' }}>
@@ -432,14 +432,14 @@ export const StatsScreen = () => {
                           <CircleDollarSign size={40} />
                         </div>
                         <span className="text-[10px] font-bold mb-1 relative z-10" style={{ color: '#c8a060' }}>Vender Bruto</span>
-                        <span className="text-lg font-black relative z-10 block mt-1" style={{ color: '#c8860a', fontFamily: "'JetBrains Mono', monospace" }}>¥ {rawProfit.netProfit.toLocaleString()}</span>
+                        <span className="text-lg font-black relative z-10 block mt-1" style={{ color: '#c8860a', fontFamily: "'Orbitron', sans-serif" }}>¥ {rawProfit.netProfit.toLocaleString()}</span>
                       </TechCard>
                       <TechCard style={{ background: 'rgba(255,100,0,0.05)', borderColor: 'rgba(255,100,0,0.2)' }}>
                         <div className="absolute right-[-10px] bottom-[-10px] opacity-[0.03]">
                           <Flame size={40} color="#ff6600" />
                         </div>
                         <span className="text-[10px] text-amber-500/80 font-bold mb-1 relative z-10">Fazer Lingote</span>
-                        <span className="text-lg font-black text-amber-400 relative z-10 block mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>¥ {craftProfit.netProfit.toLocaleString()}</span>
+                        <span className="text-lg font-black text-amber-400 relative z-10 block mt-1" style={{ fontFamily: "'Orbitron', sans-serif" }}>¥ {craftProfit.netProfit.toLocaleString()}</span>
                         {craftProfit.totalCost > 0 && <span className="text-[9px] text-red-400 mt-0.5 relative z-10 block">Custos: ¥ {craftProfit.totalCost}</span>}
                       </TechCard>
                     </div>
@@ -480,9 +480,9 @@ export const StatsScreen = () => {
                                           handleSetResource(type, val);
                                         }}
                                         className="px-1 py-0.5 rounded-[2px] font-bold text-[10px] w-12 text-center outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                        style={{ background: 'rgba(13,10,4,0.8)', color: '#e8d5a0', border: '1px solid #2e1e06', fontFamily: "'JetBrains Mono', monospace" }}
+                                        style={{ background: 'rgba(8,8,8,0.8)', color: '#e8d5a0', border: '1px solid #1e1e1e', fontFamily: "'Orbitron', sans-serif" }}
                                         onFocus={e => { e.currentTarget.style.borderColor = '#c8860a'; }}
-                                        onBlur={e => { e.currentTarget.style.borderColor = '#4a2f0a'; }}
+                                        onBlur={e => { e.currentTarget.style.borderColor = '#282828'; }}
                                       />
                                     </div>
                                     <SecondaryButton
@@ -495,7 +495,7 @@ export const StatsScreen = () => {
                                 ) : (
                                   <span
                                     className="px-2 py-0.5 rounded-[2px] font-bold text-[10px]"
-                                    style={{ background: 'rgba(74,47,10,0.4)', color: '#e8d5a0', fontFamily: "'JetBrains Mono', monospace" }}
+                                    style={{ background: 'rgba(40,40,40,0.4)', color: '#e8d5a0', fontFamily: "'Orbitron', sans-serif" }}
                                   >
                                     {count}x Total
                                   </span>

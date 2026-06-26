@@ -13,7 +13,10 @@ import {
 } from '../../infrastructure/adapters/PocketBaseVillage.adapter'
 
 function today() {
-  return new Date().toISOString().split('T')[0]
+  const now = new Date()
+  // Reset happens at 12h local time — before noon still counts as previous day
+  if (now.getHours() < 12) now.setDate(now.getDate() - 1)
+  return now.toLocaleDateString('sv') // YYYY-MM-DD in local time
 }
 
 export const useMissionsViewModel = () => {
@@ -114,6 +117,15 @@ export const useMissionsViewModel = () => {
     todayAssignments.filter(a => a.assigned_to === userId).map(a => a.template)
   )
 
+  const usedPoints = settings
+    ? todayAssignments
+        .filter(a => a.assigned_to === userId)
+        .reduce((sum, a) => {
+          const t = a.expand?.template
+          return sum + (t ? (settings.points_cost[t.rank] || 0) : 0)
+        }, 0)
+    : 0
+
   return {
     templates,
     myAssignments,
@@ -129,5 +141,6 @@ export const useMissionsViewModel = () => {
     submitEvidence,
     checkEligibility,
     assignMission,
+    usedPoints,
   }
 }

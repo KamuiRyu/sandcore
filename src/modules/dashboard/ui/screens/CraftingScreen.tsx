@@ -71,17 +71,17 @@ function calculateRequirements(targets: CraftingTarget[]) {
 
 const SL = ({ children }: { children: React.ReactNode }) => (
   <div className="flex items-center gap-2 mb-2">
-    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>[</span>
-    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#c8a030', whiteSpace: 'nowrap' }}>
+    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'Orbitron', sans-serif" }}>[</span>
+    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: "'Orbitron', sans-serif", fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#c8a030', whiteSpace: 'nowrap' }}>
       {children}
     </span>
     <div className="flex-1" style={{ borderTop: '1px dashed rgba(200,160,48,0.25)' }} />
-    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>]</span>
+    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'Orbitron', sans-serif" }}>]</span>
   </div>
 );
 
 const TechCard = ({ children, style }: { children: React.ReactNode, style?: React.CSSProperties }) => (
-  <div style={{ background: 'rgba(13,10,4,0.7)', border: '1px solid #3a2508', borderRadius: 3, padding: '14px', position: 'relative', overflow: 'hidden', ...style }}>
+  <div style={{ background: 'rgba(8,8,8,0.7)', border: '1px solid #3a2508', borderRadius: 3, padding: '14px', position: 'relative', overflow: 'hidden', ...style }}>
     <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: 'linear-gradient(180deg,#c8860a,#7a4e08)' }} />
     <div style={{ position: 'absolute', top: 6, left: 6, width: 10, height: 10, borderTop: '1px solid #c8860a', borderLeft: '1px solid #c8860a' }} />
     <div style={{ position: 'absolute', top: 6, right: 6, width: 10, height: 10, borderTop: '1px solid #c8860a', borderRight: '1px solid #c8860a' }} />
@@ -92,7 +92,7 @@ const TechCard = ({ children, style }: { children: React.ReactNode, style?: Reac
 );
 
 const ListContainer = ({ children }: { children: React.ReactNode }) => (
-  <div style={{ borderRadius: 3, overflow: 'hidden', border: '1px solid #2e1e06' }}>
+  <div style={{ borderRadius: 3, overflow: 'hidden', border: '1px solid #1e1e1e' }}>
     {children}
   </div>
 );
@@ -106,8 +106,8 @@ const ListItem = ({ children, isLast = false, vertical = false }: { children: Re
       justifyContent: vertical ? 'flex-start' : 'space-between',
       padding: '8px 12px',
       fontSize: 10,
-      background: 'rgba(13,10,4,0.8)',
-      borderBottom: isLast ? 'none' : '1px solid rgba(46,30,6,0.7)',
+      background: 'rgba(8,8,8,0.8)',
+      borderBottom: isLast ? 'none' : '1px solid rgba(30,30,30,0.7)',
       gap: vertical ? 8 : 12
     }}
   >
@@ -122,7 +122,7 @@ const PrimaryButton = ({ children, onClick, disabled = false, padding = '5px 12p
     style={{
       display: 'flex', alignItems: 'center', gap: 6, padding, borderRadius: 3,
       background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none',
-      fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em',
+      fontWeight: 700, fontSize: 9, fontFamily: "'Orbitron', sans-serif", letterSpacing: '0.08em',
       cursor: disabled ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1
     }}
   >
@@ -136,13 +136,13 @@ const SecondaryButton = ({ children, onClick, disabled = false, padding = '4px 1
     disabled={disabled}
     style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding,
-      borderRadius: 3, background: active ? 'rgba(74,47,10,0.25)' : 'transparent', border: '1px solid #2e1e06', color: active ? '#e8c860' : '#c8a840',
-      fontSize: 9, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, letterSpacing: '0.08em',
+      borderRadius: 3, background: active ? 'rgba(40,40,40,0.25)' : 'transparent', border: '1px solid #1e1e1e', color: active ? '#e8c860' : '#c8a840',
+      fontSize: 9, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, letterSpacing: '0.08em',
       cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.15s', opacity: disabled ? 0.5 : 1,
-      whiteSpace: 'nowrap', borderColor: active ? '#6a4e18' : '#2e1e06'
+      whiteSpace: 'nowrap', borderColor: active ? '#6a4e18' : '#1e1e1e'
     }}
-    onMouseEnter={e => { if(!disabled) { e.currentTarget.style.background = 'rgba(74,47,10,0.25)'; e.currentTarget.style.borderColor = '#6a4e18'; e.currentTarget.style.color = '#e8c860'; } }}
-    onMouseLeave={e => { if(!disabled && !active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#2e1e06'; e.currentTarget.style.color = '#c8a840'; } }}
+    onMouseEnter={e => { if(!disabled) { e.currentTarget.style.background = 'rgba(40,40,40,0.25)'; e.currentTarget.style.borderColor = '#6a4e18'; e.currentTarget.style.color = '#e8c860'; } }}
+    onMouseLeave={e => { if(!disabled && !active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#1e1e1e'; e.currentTarget.style.color = '#c8a840'; } }}
   >
     {children}
   </button>
@@ -238,8 +238,8 @@ export function CraftingScreen() {
                 <SelectTrigger
                   className="w-full h-9 rounded-[2px] font-medium hover:opacity-90 transition-colors text-xs"
                   style={{
-                    background: "rgba(13,10,4,0.8)",
-                    border: "1px solid #2e1e06",
+                    background: "rgba(8,8,8,0.8)",
+                    border: "1px solid #1e1e1e",
                     color: "#c8860a",
                   }}
                 >
@@ -291,8 +291,8 @@ export function CraftingScreen() {
               <div
                 className="w-12 h-12 rounded-[2px] flex items-center justify-center"
                 style={{
-                  background: "rgba(13,10,4,0.8)",
-                  border: "1px solid #2e1e06",
+                  background: "rgba(8,8,8,0.8)",
+                  border: "1px solid #1e1e1e",
                 }}
               >
                 <Hammer size={20} style={{ color: "#c8a060" }} />
@@ -329,7 +329,7 @@ export function CraftingScreen() {
                             )
                           }
                           className="w-full text-center font-bold text-sm tabular-nums bg-transparent border-none outline-none focus:ring-0 p-0 m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                          style={{ color: "#c8860a", fontFamily: "'JetBrains Mono', monospace" }}
+                          style={{ color: "#c8860a", fontFamily: "'Orbitron', sans-serif" }}
                         />
                       </div>
                       <SecondaryButton onClick={() => handleUpdateTarget(target.itemId, 1)} padding="4px">
@@ -363,8 +363,8 @@ export function CraftingScreen() {
                   <div
                     className="w-12 h-12 rounded-[2px] flex items-center justify-center"
                     style={{
-                      background: "rgba(13,10,4,0.8)",
-                      border: "1px solid #2e1e06",
+                      background: "rgba(8,8,8,0.8)",
+                      border: "1px solid #1e1e1e",
                     }}
                   >
                     <Layers size={20} style={{ color: "#c8a060" }} />
@@ -392,8 +392,8 @@ export function CraftingScreen() {
                             <div
                               className="w-6 h-6 rounded-[2px] flex items-center justify-center shadow-inner"
                               style={{
-                                background: "rgba(13,10,4,0.8)",
-                                border: "1px solid #2e1e06",
+                                background: "rgba(8,8,8,0.8)",
+                                border: "1px solid #1e1e1e",
                               }}
                             >
                               {icon ? (
@@ -424,14 +424,14 @@ export function CraftingScreen() {
                             <div className="text-right">
                               <span
                                 className={`font-black text-sm ${useInventory && needed < qty ? "line-through mr-1.5 text-xs opacity-30" : ""}`}
-                                style={{ color: "#4caf50", fontFamily: "'JetBrains Mono', monospace" }}
+                                style={{ color: "#4caf50", fontFamily: "'Orbitron', sans-serif" }}
                               >
                                 {qty}x
                               </span>
                               {useInventory && needed < qty && (
                                 <span
                                   className="font-black text-sm"
-                                  style={{ color: "#4caf50", fontFamily: "'JetBrains Mono', monospace" }}
+                                  style={{ color: "#4caf50", fontFamily: "'Orbitron', sans-serif" }}
                                 >
                                   {needed}x
                                 </span>
@@ -447,7 +447,7 @@ export function CraftingScreen() {
                               >
                                 <span
                                   className="text-[10px] font-bold tabular-nums"
-                                  style={{ color: "#4caf50", fontFamily: "'JetBrains Mono', monospace" }}
+                                  style={{ color: "#4caf50", fontFamily: "'Orbitron', sans-serif" }}
                                 >
                                   {totalLineCost} ¥
                                 </span>
@@ -459,7 +459,7 @@ export function CraftingScreen() {
                         {useInventory && (
                           <div
                             className="mt-2 pt-2 flex items-center justify-between w-full"
-                            style={{ borderTop: "1px solid rgba(46,30,6,0.7)" }}
+                            style={{ borderTop: "1px solid rgba(30,30,30,0.7)" }}
                           >
                             <span
                               className="text-[9px] font-bold uppercase tracking-wider"
@@ -485,16 +485,16 @@ export function CraftingScreen() {
                                 placeholder="0"
                                 className="w-16 h-5 text-center font-bold text-[11px] tabular-nums rounded-[2px] outline-none [&::-webkit-inner-spin-button]:appearance-none"
                                 style={{
-                                  background: "rgba(13,10,4,0.8)",
-                                  border: "1px solid #2e1e06",
+                                  background: "rgba(8,8,8,0.8)",
+                                  border: "1px solid #1e1e1e",
                                   color: "#c8860a",
-                                  fontFamily: "'JetBrains Mono', monospace"
+                                  fontFamily: "'Orbitron', sans-serif"
                                 }}
                                 onFocus={(e) => {
                                   e.currentTarget.style.borderColor = "#c8860a";
                                 }}
                                 onBlur={(e) => {
-                                  e.currentTarget.style.borderColor = "#2e1e06";
+                                  e.currentTarget.style.borderColor = "#1e1e1e";
                                 }}
                               />
                             </div>
@@ -526,8 +526,8 @@ export function CraftingScreen() {
                           key={id}
                           className="text-[10px] px-1.5 py-0.5 rounded-[2px] font-medium flex items-center gap-1"
                           style={{
-                            background: "rgba(13,10,4,0.8)",
-                            border: "1px solid #2e1e06",
+                            background: "rgba(8,8,8,0.8)",
+                            border: "1px solid #1e1e1e",
                             color: "#e8d5a0",
                           }}
                         >
@@ -562,7 +562,7 @@ export function CraftingScreen() {
                   </p>
                   <p
                     className="text-[10px] font-medium"
-                    style={{ color: "#c8a060", fontFamily: "'JetBrains Mono', monospace" }}
+                    style={{ color: "#c8a060", fontFamily: "'Orbitron', sans-serif" }}
                   >
                     Comprando matérias-primas
                   </p>
@@ -570,7 +570,7 @@ export function CraftingScreen() {
                 <div className="text-right relative z-10 flex items-baseline gap-1.5">
                   <span
                     className="text-2xl font-black tabular-nums drop-shadow-md"
-                    style={{ color: "#e8a820", fontFamily: "'JetBrains Mono', monospace" }}
+                    style={{ color: "#e8a820", fontFamily: "'Orbitron', sans-serif" }}
                   >
                     {totalCost.toLocaleString()}
                   </span>

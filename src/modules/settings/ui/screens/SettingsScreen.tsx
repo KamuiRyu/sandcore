@@ -1,15 +1,29 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Volume2, Keyboard, Trash2 } from 'lucide-react'
+import { Volume2, Keyboard, Trash2, Map, Scroll, Shield, Users, BarChart2, Hammer, Building2, Settings as SettingsIcon } from 'lucide-react'
+import { appStorage } from '../../../../lib/storage'
+
+const SIDEBAR_HIDDEN_KEY = 'shinobi-map-sidebar-hidden'
+
+const SIDEBAR_ITEMS = [
+  { id: 'map',        label: 'Mapa',          icon: Map },
+  { id: 'missions',   label: 'Missões',        icon: Scroll },
+  { id: 'ninja-card', label: 'Carteirinha',    icon: Shield },
+  { id: 'groups',     label: 'Grupos',         icon: Users },
+  { id: 'stats',      label: 'Estatísticas',   icon: BarChart2 },
+  { id: 'crafting',   label: 'Crafting',       icon: Hammer },
+  { id: 'manager',    label: 'Organização',    icon: Building2 },
+  { id: 'admin',      label: 'Admin',          icon: SettingsIcon },
+] as const
 
 const SL = ({ children }: { children: React.ReactNode }) => (
   <div className="flex items-center gap-2 mb-2">
-    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>[</span>
-    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#c8a030', whiteSpace: 'nowrap' }}>
+    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'Orbitron', sans-serif" }}>[</span>
+    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: "'Orbitron', sans-serif", fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#c8a030', whiteSpace: 'nowrap' }}>
       {children}
     </span>
     <div className="flex-1" style={{ borderTop: '1px dashed rgba(200,160,48,0.25)' }} />
-    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>]</span>
+    <span style={{ color: '#c8a030', fontSize: 10, fontFamily: "'Orbitron', sans-serif" }}>]</span>
   </div>
 )
 
@@ -18,22 +32,22 @@ const Toggle = ({ active, onClick }: { active: boolean; onClick: () => void }) =
     onClick={onClick}
     className="w-10 h-5 rounded-full relative cursor-pointer transition-all duration-300 border"
     style={{
-      background: active ? 'rgba(200,134,10,0.2)' : 'rgba(13,10,5,0.6)',
-      borderColor: active ? '#c8860a' : '#4a2f0a',
+      background: active ? 'rgba(200,134,10,0.2)' : 'rgba(8,8,8,0.6)',
+      borderColor: active ? '#c8860a' : '#282828',
     }}
   >
     <div
       className="w-3.5 h-3.5 rounded-full absolute top-1/2 -translate-y-1/2 transition-all duration-300"
       style={{
         left: active ? 'calc(100% - 18px)' : '2px',
-        background: active ? '#c8860a' : '#4a2f0a',
+        background: active ? '#c8860a' : '#282828',
       }}
     />
   </button>
 )
 
 const ListContainer = ({ children }: { children: React.ReactNode }) => (
-  <div style={{ borderRadius: 3, overflow: 'hidden', border: '1px solid #2e1e06' }}>
+  <div style={{ borderRadius: 3, overflow: 'hidden', border: '1px solid #1e1e1e' }}>
     {children}
   </div>
 )
@@ -47,8 +61,8 @@ const ListItem = ({ children, isLast = false, vertical = false }: { children: Re
       justifyContent: vertical ? 'flex-start' : 'space-between',
       padding: '8px 12px',
       fontSize: 10,
-      background: 'rgba(13,10,4,0.8)',
-      borderBottom: isLast ? 'none' : '1px solid rgba(46,30,6,0.7)',
+      background: 'rgba(8,8,8,0.8)',
+      borderBottom: isLast ? 'none' : '1px solid rgba(30,30,30,0.7)',
       gap: vertical ? 8 : 12
     }}
   >
@@ -71,13 +85,13 @@ const SecondaryButton = ({ children, onClick, disabled = false, padding = '4px 1
     disabled={disabled}
     style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding,
-      borderRadius: 3, background: 'transparent', border: '1px solid #2e1e06', color: '#c8a840',
-      fontSize: 9, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, letterSpacing: '0.08em',
+      borderRadius: 3, background: 'transparent', border: '1px solid #1e1e1e', color: '#c8a840',
+      fontSize: 9, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, letterSpacing: '0.08em',
       cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.15s', opacity: disabled ? 0.5 : 1,
       whiteSpace: 'nowrap'
     }}
-    onMouseEnter={e => { if(!disabled) { e.currentTarget.style.background = 'rgba(74,47,10,0.25)'; e.currentTarget.style.borderColor = '#6a4e18'; e.currentTarget.style.color = '#e8c860'; } }}
-    onMouseLeave={e => { if(!disabled) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#2e1e06'; e.currentTarget.style.color = '#c8a840'; } }}
+    onMouseEnter={e => { if(!disabled) { e.currentTarget.style.background = 'rgba(40,40,40,0.25)'; e.currentTarget.style.borderColor = '#6a4e18'; e.currentTarget.style.color = '#e8c860'; } }}
+    onMouseLeave={e => { if(!disabled) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#1e1e1e'; e.currentTarget.style.color = '#c8a840'; } }}
   >
     {children}
   </button>
@@ -90,7 +104,7 @@ const PrimaryButton = ({ children, onClick, disabled = false }: { children: Reac
     style={{
       display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 3,
       background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none',
-      fontWeight: 700, fontSize: 9, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em',
+      fontWeight: 700, fontSize: 9, fontFamily: "'Orbitron', sans-serif", letterSpacing: '0.08em',
       cursor: disabled ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1
     }}
   >
@@ -128,7 +142,24 @@ export const SettingsScreen = () => {
   const [shortcutSettings, setShortcutSettings] = useState('CommandOrControl+Alt+S')
   const [recordingType, setRecordingType] = useState<'map' | 'settings' | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
-  const [activeSubTab, setActiveSubTab] = useState<'general' | 'keybinds'>('general')
+  const [activeSubTab, setActiveSubTab] = useState<'general' | 'keybinds' | 'sidebar'>('general')
+  const [hiddenSidebarItems, setHiddenSidebarItems] = useState<Set<string>>(() => {
+    try {
+      const raw = appStorage.getItem(SIDEBAR_HIDDEN_KEY)
+      return new Set(raw ? JSON.parse(raw) : [])
+    } catch { return new Set() }
+  })
+
+  const toggleSidebarItem = (id: string) => {
+    setHiddenSidebarItems(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      const list = [...next]
+      appStorage.setItem(SIDEBAR_HIDDEN_KEY, JSON.stringify(list))
+      new BroadcastChannel('sidebar-config').postMessage({ hiddenItems: list })
+      return next
+    })
+  }
 
   useEffect(() => {
     if (window.ipcRenderer) {
@@ -214,19 +245,23 @@ export const SettingsScreen = () => {
       {/* Sub-tab nav */}
       <div
         className="flex rounded-[2px] p-0.5 mb-4 flex-none"
-        style={{ border: '1px solid #2e1e06', WebkitAppRegion: 'no-drag' } as any}
+        style={{ border: '1px solid #1e1e1e', WebkitAppRegion: 'no-drag' } as any}
       >
-        {(['general', 'keybinds'] as const).map((tab) => (
+        {([
+          { id: 'general', label: 'GERAL' },
+          { id: 'sidebar', label: 'SIDEBAR' },
+          { id: 'keybinds', label: 'ATALHOS' },
+        ] as const).map((tab) => (
           <button
-            key={tab}
-            onClick={() => setActiveSubTab(tab)}
+            key={tab.id}
+            onClick={() => setActiveSubTab(tab.id)}
             className="flex-1 py-1.5 rounded-[2px] text-[10px] font-bold cursor-pointer transition-all text-center"
-            style={activeSubTab === tab
-              ? { background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em' }
-              : { background: 'transparent', color: '#c8a840', border: '1px solid transparent', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em' }
+            style={activeSubTab === tab.id
+              ? { background: 'linear-gradient(135deg,#b87a08,#e8a820)', color: '#0a0800', border: 'none', fontFamily: "'Orbitron', sans-serif", letterSpacing: '0.08em' }
+              : { background: 'transparent', color: '#c8a840', border: '1px solid transparent', fontFamily: "'Orbitron', sans-serif", letterSpacing: '0.08em' }
             }
           >
-            {tab === 'general' ? 'GERAL' : 'ATALHOS'}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -250,7 +285,7 @@ export const SettingsScreen = () => {
                     <span className="text-xs font-semibold" style={{ color: '#e8d5a0' }}>Lado do Painel</span>
                     <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Calculado automaticamente</span>
                   </div>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 3, background: '#0d0e0a', border: '1px solid #2e3020', color: '#f0e8c0' }}>
+                  <span style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 3, background: '#0d0e0a', border: '1px solid #2e3020', color: '#f0e8c0' }}>
                     {layoutSide === 'left' ? 'AUTO (ESQ)' : 'AUTO (DIR)'}
                   </span>
                 </ListItem>
@@ -272,24 +307,24 @@ export const SettingsScreen = () => {
                     <span className="flex items-center gap-1.5" style={{ color: '#c8a060' }}>
                       <Volume2 size={13} style={{ color: '#9a7a40' }} /> Volume de Avisos
                     </span>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#c8860a' }}>{volume}%</span>
+                    <span style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 10, color: '#c8860a' }}>{volume}%</span>
                   </div>
                   <input
                     type="range" min="0" max="100" value={volume} onChange={handleVolumeChange}
                     className="w-full cursor-pointer h-1 rounded-full appearance-none"
-                    style={{ accentColor: '#c8860a', background: '#2e1e06' }}
+                    style={{ accentColor: '#c8860a', background: '#1e1e1e' }}
                   />
                 </ListItem>
                 <ListItem vertical>
                   <div className="flex items-center justify-between text-xs font-semibold w-full">
                     <span style={{ color: '#c8a060' }}>Opacidade da Sidebar</span>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#c8860a' }}>{sidebarOpacity}%</span>
+                    <span style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 10, color: '#c8860a' }}>{sidebarOpacity}%</span>
                   </div>
                   <input
                     type="range" min="20" max="100" value={sidebarOpacity}
                     onChange={(e) => { const v = parseInt(e.target.value); setSidebarOpacity(v); window.ipcRenderer?.send('set-config', { sidebarOpacity: v }) }}
                     className="w-full cursor-pointer h-1 rounded-full appearance-none"
-                    style={{ accentColor: '#c8860a', background: '#2e1e06' }}
+                    style={{ accentColor: '#c8860a', background: '#1e1e1e' }}
                   />
                 </ListItem>
                 <ListItem isLast>
@@ -310,7 +345,7 @@ export const SettingsScreen = () => {
                           <div
                             className="fixed w-24 rounded-[3px] z-50 overflow-hidden"
                             style={{ 
-                              background: '#0f0b04', border: '1px solid #3a2508', boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
+                              background: '#0c0c0c', border: '1px solid #3a2508', boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
                               bottom: scaleDropdownCoords.bottom,
                               right: scaleDropdownCoords.right
                             }}
@@ -321,10 +356,10 @@ export const SettingsScreen = () => {
                               onClick={() => { setUiScale(scale); window.ipcRenderer?.send('set-config', { uiScale: scale }); setIsScaleDropdownOpen(false) }}
                               className="w-full text-left px-3 py-2 text-[10px] font-bold transition-all cursor-pointer flex items-center justify-between"
                               style={{
-                                fontFamily: "'JetBrains Mono', monospace",
-                                borderBottom: '1px solid rgba(46,30,6,0.7)',
+                                fontFamily: "'Orbitron', sans-serif",
+                                borderBottom: '1px solid rgba(30,30,30,0.7)',
                                 color: uiScale === scale ? '#e8b840' : '#c8a030',
-                                background: uiScale === scale ? 'rgba(74,47,10,0.4)' : 'transparent',
+                                background: uiScale === scale ? 'rgba(40,40,40,0.4)' : 'transparent',
                               }}
                             >
                               <span>{scale === 75 ? '0.75x' : scale === 100 ? '1x' : '1.3x'}</span>
@@ -337,6 +372,30 @@ export const SettingsScreen = () => {
                   </div>
                 </ListItem>
               </ListContainer>
+            </div>
+          </div>
+        ) : activeSubTab === 'sidebar' ? (
+          <div className="space-y-4">
+            <div>
+              <SL>Ícones Visíveis</SL>
+              <ListContainer>
+                {SIDEBAR_ITEMS.map((item, i) => {
+                  const Icon = item.icon
+                  const hidden = hiddenSidebarItems.has(item.id)
+                  return (
+                    <ListItem key={item.id} isLast={i === SIDEBAR_ITEMS.length - 1}>
+                      <div className="flex items-center gap-2.5">
+                        <Icon size={14} style={{ color: hidden ? '#282828' : '#c8860a' }} />
+                        <span className="text-xs font-semibold" style={{ color: hidden ? '#282828' : '#e8d5a0' }}>{item.label}</span>
+                      </div>
+                      <Toggle active={!hidden} onClick={() => toggleSidebarItem(item.id)} />
+                    </ListItem>
+                  )
+                })}
+              </ListContainer>
+              <p className="text-[9px] mt-2" style={{ color: '#6a5028', fontFamily: "'Orbitron', sans-serif" }}>
+                Alterações refletem na sidebar ao focar a janela.
+              </p>
             </div>
           </div>
         ) : (
@@ -377,7 +436,7 @@ export const SettingsScreen = () => {
                     <div className="flex items-center gap-1">
                       {shortcutMap
                         ? shortcutMap.split('+').map((p, i) => <KbdKey key={i} k={p} />)
-                        : <span className="text-[10px] italic" style={{ color: '#9a7a40', fontFamily: "'JetBrains Mono', monospace" }}>Nenhum atalho</span>
+                        : <span className="text-[10px] italic" style={{ color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>Nenhum atalho</span>
                       }
                     </div>
                     {recordingType === 'map' && (
@@ -418,7 +477,7 @@ export const SettingsScreen = () => {
                     <div className="flex items-center gap-1">
                       {shortcutSettings
                         ? shortcutSettings.split('+').map((p, i) => <KbdKey key={i} k={p} />)
-                        : <span className="text-[10px] italic" style={{ color: '#9a7a40', fontFamily: "'JetBrains Mono', monospace" }}>Nenhum atalho</span>
+                        : <span className="text-[10px] italic" style={{ color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>Nenhum atalho</span>
                       }
                     </div>
                     {recordingType === 'settings' && (
@@ -432,7 +491,7 @@ export const SettingsScreen = () => {
             {errorMessage && (
               <div
                 className="text-[9.5px] font-semibold px-2.5 py-1.5 rounded-[3px] border"
-                style={{ background: 'rgba(120,20,20,0.2)', border: '1px solid #7a1414', color: '#e07070', fontFamily: "'JetBrains Mono', monospace" }}
+                style={{ background: 'rgba(120,20,20,0.2)', border: '1px solid #7a1414', color: '#e07070', fontFamily: "'Orbitron', sans-serif" }}
               >
                 {errorMessage}
               </div>
@@ -441,7 +500,7 @@ export const SettingsScreen = () => {
         )}
       </div>
 
-      <span className="text-[9.5px] block text-right mt-2 flex-none" style={{ color: '#4a2f0a', fontFamily: "'JetBrains Mono', monospace" }}>
+      <span className="text-[9.5px] block text-right mt-2 flex-none" style={{ color: '#282828', fontFamily: "'Orbitron', sans-serif" }}>
         Configurações salvas localmente.
       </span>
     </div>

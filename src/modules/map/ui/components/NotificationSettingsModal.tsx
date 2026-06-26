@@ -144,7 +144,7 @@ export function NotificationSettingsModal({
                     onClick={() => onUpdate({ soundEnabled: !settings.soundEnabled })}
                     className={cn(
                       'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out',
-                      settings.soundEnabled ? 'bg-[#c8860a]' : 'bg-[#2e1f08]'
+                      settings.soundEnabled ? 'bg-[#c8860a]' : 'bg-[#1a1a1a]'
                     )}
                   >
                     <span className={cn('pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out', settings.soundEnabled ? 'translate-x-5' : 'translate-x-0')} />
@@ -158,7 +158,7 @@ export function NotificationSettingsModal({
                       <div className="flex items-center gap-3">
                         <Select value={settings.soundType} onValueChange={(v) => { onUpdate({ soundType: v as NotificationSoundType }); SoundSynthesizer.play(v as NotificationSoundType, settings.soundVolume) }}>
                           <SelectTrigger className="flex-1 border-white/10 bg-black/40 text-[#f0d9a0] h-10 px-4 rounded-[2px]"><SelectValue /></SelectTrigger>
-                          <SelectContent className="bg-[#1a1007] border-white/10 text-[#f0d9a0]">
+                          <SelectContent className="bg-[#111111] border-white/10 text-[#f0d9a0]">
                             {soundTypeOptions.map((opt) => (<SelectItem key={opt.value} value={opt.value} className="hover:bg-white/5 focus:bg-white/10">{opt.label}</SelectItem>))}
                           </SelectContent>
                         </Select>
@@ -167,7 +167,7 @@ export function NotificationSettingsModal({
                     </div>
                     <div className="grid gap-2">
                       <label className="text-[10px] font-black uppercase text-[#9a7a40] flex items-center gap-2"><Volume2 size={12} /> Volume ({Math.round(settings.soundVolume * 100)}%)</label>
-                      <input type="range" min="0" max="1" step="0.05" value={settings.soundVolume} onChange={(e) => onUpdate({ soundVolume: parseFloat(e.target.value) })} className="w-full h-1 bg-[#2e1f08] rounded-[2px] appearance-none cursor-pointer accent-[#c8860a]" />
+                      <input type="range" min="0" max="1" step="0.05" value={settings.soundVolume} onChange={(e) => onUpdate({ soundVolume: parseFloat(e.target.value) })} className="w-full h-1 bg-[#1a1a1a] rounded-[2px] appearance-none cursor-pointer accent-[#c8860a]" />
                     </div>
                   </div>
                 )}
@@ -183,7 +183,7 @@ export function NotificationSettingsModal({
                     <p className="text-[11px] text-[#9a7a40]">Alertas mesmo se a aba estiver em segundo plano.</p>
                   </div>
                   {isBrowserPushSupported ? (
-                    <button type="button" onClick={() => settings.pushEnabled ? onUpdate({ pushEnabled: false }) : onRequestPushPermission()} className={cn('relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors', settings.pushEnabled ? 'bg-[#c8860a]' : 'bg-[#2e1f08]')}><span className={cn('inline-block h-5 w-5 transform rounded-full bg-white transition', settings.pushEnabled ? 'translate-x-5' : 'translate-x-0')} /></button>
+                    <button type="button" onClick={() => settings.pushEnabled ? onUpdate({ pushEnabled: false }) : onRequestPushPermission()} className={cn('relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors', settings.pushEnabled ? 'bg-[#c8860a]' : 'bg-[#1a1a1a]')}><span className={cn('inline-block h-5 w-5 transform rounded-full bg-white transition', settings.pushEnabled ? 'translate-x-5' : 'translate-x-0')} /></button>
                   ) : (<span className="text-[9px] font-mono text-red-400 bg-red-400/10 px-2 py-1 rounded">NÃO SUPORTADO</span>)}
                 </div>
 
@@ -191,7 +191,7 @@ export function NotificationSettingsModal({
                   <label className="text-[10px] font-black uppercase text-[#9a7a40]">Antecedência do Alerta</label>
                   <Select value={String(settings.leadTime)} onValueChange={(v) => onUpdate({ leadTime: parseInt(v, 10) })}>
                     <SelectTrigger className="w-full border-white/10 bg-black/40 text-[#f0d9a0] h-10 px-4 rounded-[2px]"><SelectValue /></SelectTrigger>
-                    <SelectContent className="bg-[#1a1007] border-white/10 text-[#f0d9a0]">{leadTimeOptions.map((opt) => (<SelectItem key={opt.value} value={String(opt.value)} className="hover:bg-white/5 focus:bg-white/10">{opt.label}</SelectItem>))}</SelectContent>
+                    <SelectContent className="bg-[#111111] border-white/10 text-[#f0d9a0]">{leadTimeOptions.map((opt) => (<SelectItem key={opt.value} value={String(opt.value)} className="hover:bg-white/5 focus:bg-white/10">{opt.label}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
               </div>
@@ -230,7 +230,7 @@ export function NotificationSettingsModal({
                       </div>
                       <p className="text-[10px] text-[#9a7a40] leading-relaxed">Sugere automaticamente o último recurso coletado naquele tipo de node.</p>
                     </div>
-                    <button onClick={() => onUpdate({ rememberLastSubtype: !settings.rememberLastSubtype })} className={cn('relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all', settings.rememberLastSubtype ? 'bg-[#c8860a]' : 'bg-[#2e1f08]')}><span className={cn('inline-block h-4 w-4 transform rounded-full bg-white transition', settings.rememberLastSubtype ? 'translate-x-5' : 'translate-x-0')} /></button>
+                    <button onClick={() => onUpdate({ rememberLastSubtype: !settings.rememberLastSubtype })} className={cn('relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all', settings.rememberLastSubtype ? 'bg-[#c8860a]' : 'bg-[#1a1a1a]')}><span className={cn('inline-block h-4 w-4 transform rounded-full bg-white transition', settings.rememberLastSubtype ? 'translate-x-5' : 'translate-x-0')} /></button>
                   </div>
 
                   <div className="flex items-center justify-between p-4 rounded-[2px] bg-white/[0.03] border border-white/5 group hover:border-white/10 transition-all">
@@ -241,7 +241,7 @@ export function NotificationSettingsModal({
                       </div>
                       <p className="text-[10px] text-[#9a7a40] leading-relaxed">Ocultar spots que não possuem marcação ou timer ativo (limpeza visual).</p>
                     </div>
-                    <button onClick={() => onUpdate({ hideUnmarkedResources: !settings.hideUnmarkedResources })} className={cn('relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all', settings.hideUnmarkedResources ? 'bg-[#c8860a]' : 'bg-[#2e1f08]')}><span className={cn('inline-block h-4 w-4 transform rounded-full bg-white transition', settings.hideUnmarkedResources ? 'translate-x-5' : 'translate-x-0')} /></button>
+                    <button onClick={() => onUpdate({ hideUnmarkedResources: !settings.hideUnmarkedResources })} className={cn('relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all', settings.hideUnmarkedResources ? 'bg-[#c8860a]' : 'bg-[#1a1a1a]')}><span className={cn('inline-block h-4 w-4 transform rounded-full bg-white transition', settings.hideUnmarkedResources ? 'translate-x-5' : 'translate-x-0')} /></button>
                   </div>
 
                   <div className="flex items-center justify-between p-4 rounded-[2px] bg-white/[0.03] border border-white/5 group hover:border-white/10 transition-all">
@@ -252,7 +252,7 @@ export function NotificationSettingsModal({
                       </div>
                       <p className="text-[10px] text-[#9a7a40] leading-relaxed">Exibir selo ninja laranja e brilho em recursos que terminaram o tempo.</p>
                     </div>
-                    <button onClick={() => onUpdate({ showReadyAlerts: !settings.showReadyAlerts })} className={cn('relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all', settings.showReadyAlerts ? 'bg-[#c8860a]' : 'bg-[#2e1f08]')}><span className={cn('inline-block h-4 w-4 transform rounded-full bg-white transition', settings.showReadyAlerts ? 'translate-x-5' : 'translate-x-0')} /></button>
+                    <button onClick={() => onUpdate({ showReadyAlerts: !settings.showReadyAlerts })} className={cn('relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all', settings.showReadyAlerts ? 'bg-[#c8860a]' : 'bg-[#1a1a1a]')}><span className={cn('inline-block h-4 w-4 transform rounded-full bg-white transition', settings.showReadyAlerts ? 'translate-x-5' : 'translate-x-0')} /></button>
                   </div>
 
                   <div className="flex items-center justify-between p-4 rounded-[2px] bg-white/[0.03] border border-white/5 group hover:border-white/10 transition-all">
@@ -263,7 +263,7 @@ export function NotificationSettingsModal({
                       </div>
                       <p className="text-[10px] text-[#9a7a40] leading-relaxed">Exibir nomes das sub-regiões (como Vale do Fim) flutuando no mapa.</p>
                     </div>
-                    <button onClick={() => onUpdate({ showSubRegionNames: settings.showSubRegionNames !== false ? false : true })} className={cn('relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all', settings.showSubRegionNames !== false ? 'bg-[#c8860a]' : 'bg-[#2e1f08]')}><span className={cn('inline-block h-4 w-4 transform rounded-full bg-white transition', settings.showSubRegionNames !== false ? 'translate-x-5' : 'translate-x-0')} /></button>
+                    <button onClick={() => onUpdate({ showSubRegionNames: settings.showSubRegionNames !== false ? false : true })} className={cn('relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all', settings.showSubRegionNames !== false ? 'bg-[#c8860a]' : 'bg-[#1a1a1a]')}><span className={cn('inline-block h-4 w-4 transform rounded-full bg-white transition', settings.showSubRegionNames !== false ? 'translate-x-5' : 'translate-x-0')} /></button>
                   </div>
 
                   <div className="flex items-center justify-between p-4 rounded-[2px] bg-white/[0.03] border border-white/5 group hover:border-white/10 transition-all">
@@ -274,7 +274,7 @@ export function NotificationSettingsModal({
                       </div>
                       <p className="text-[10px] text-[#9a7a40] leading-relaxed">Se ativado, novas marcações serão feitas para o Grupo por padrão.</p>
                     </div>
-                    <button onClick={() => onUpdate({ defaultPinVisibility: settings.defaultPinVisibility === 'group' ? 'private' : 'group' })} className={cn('relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all', settings.defaultPinVisibility === 'group' ? 'bg-yellow-500' : 'bg-[#2e1f08]')}><span className={cn('inline-block h-4 w-4 transform rounded-full bg-white transition', settings.defaultPinVisibility === 'group' ? 'translate-x-5' : 'translate-x-0')} /></button>
+                    <button onClick={() => onUpdate({ defaultPinVisibility: settings.defaultPinVisibility === 'group' ? 'private' : 'group' })} className={cn('relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all', settings.defaultPinVisibility === 'group' ? 'bg-yellow-500' : 'bg-[#1a1a1a]')}><span className={cn('inline-block h-4 w-4 transform rounded-full bg-white transition', settings.defaultPinVisibility === 'group' ? 'translate-x-5' : 'translate-x-0')} /></button>
                   </div>
                 </div>
               </div>
