@@ -3,7 +3,8 @@
 Este documento detalha o plano de ação passo a passo para a construção do aplicativo desktop autônomo (Overlay/HUD) do mapa interativo para o jogo Shinobi Legends, utilizando Electron, React, e Vite. A regra de negócio será importada do código web antigo.
 
 ## Fase 1: Setup Base (Vite + React + Electron) [CONCLUÍDO]
-*Objetivo: Ter um "Hello World" rodando com a integração perfeita entre o Vite (Frontend) e o Electron (Backend do App).*
+
+_Objetivo: Ter um "Hello World" rodando com a integração perfeita entre o Vite (Frontend) e o Electron (Backend do App)._
 
 - [x] **Limpeza e Inicialização:** Inicializar um novo projeto Vite + React + TypeScript na raiz de `slp-map` (mantendo a pasta `old/` intocada como fonte de consulta).
 - [x] **Dependências do Electron:** Instalar `electron`, `vite-plugin-electron`, `vite-plugin-electron-renderer` e ferramentas de build (`electron-builder`).
@@ -13,7 +14,8 @@ Este documento detalha o plano de ação passo a passo para a construção do ap
   - `electron/preload.ts` (A ponte de segurança entre o Node.js e o React).
 
 ## Fase 2: Configuração da Janela Overlay e Atalhos Globais [EM PROGRESSO]
-*Objetivo: Configurar as capacidades nativas de desktop (janela sempre visível, fundo transparente e atalhos de teclado).*
+
+_Objetivo: Configurar as capacidades nativas de desktop (janela sempre visível, fundo transparente e atalhos de teclado)._
 
 - [x] **Sistema de Configuração:** Implementado sistema de persistência de configurações (JSON) no processo principal.
 - [x] **Janela Always-on-Top:** No `main.ts`, configurar o `BrowserWindow` com:
@@ -26,7 +28,8 @@ Este documento detalha o plano de ação passo a passo para a construção do ap
 - [x] **Área de Arrastar (Drag Region):** Adicionado CSS no React (`-webkit-app-region: drag`) para permitir que o usuário arraste a janela pelo mapa.
 
 ## Fase 3: Migração das Regras de Negócio (Clean Architecture)
-*Objetivo: Reaproveitar o código web existente (regras de negócio e conexão com PocketBase) mantendo os princípios de Clean Architecture. Todos os arquivos legados estão atualmente na pasta `old/`.*
+
+_Objetivo: Reaproveitar o código web existente (regras de negócio e conexão com PocketBase) mantendo os princípios de Clean Architecture. Todos os arquivos legados estão atualmente na pasta `old/`._
 
 - [x] **Cópia do Core:** Copiar as pastas `core`, `infrastructure`, e `dependencies` do módulo de map (`slp-map/old/src/modules/map/`) para a nova estrutura raiz.
 - [x] **Dependências do Projeto:** Instalar os pacotes necessários que já eram usados no web (ex: `pocketbase`, `lucide-react`, `tailwindcss`, libs de mapa, etc).
@@ -35,7 +38,8 @@ Este documento detalha o plano de ação passo a passo para a construção do ap
 - [x] **Limpeza Pós-Migração:** Após a validação de que todas as regras de negócio e dependências foram migradas e estão operando corretamente, deletar completamente a pasta `old/` para limpar o repositório.
 
 ## Fase 4: Nova Interface Visual (HUD)
-*Objetivo: Construir a nova UI em React, otimizada especificamente para atuar como um overlay desktop.*
+
+_Objetivo: Construir a nova UI em React, otimizada especificamente para atuar como um overlay desktop._
 
 - [ ] **Design do Overlay:** Desenvolver o componente base do mapa para ocupar a tela transparente sem bordas.
 - [ ] **Integração com Hooks:** Conectar os hooks migrados (da Fase 3) nos novos componentes visuais.
@@ -43,9 +47,12 @@ Este documento detalha o plano de ação passo a passo para a construção do ap
 - [ ] **Interatividade Diferenciada:** Adaptar cliques, scrolls e hovers para proporcionar uma boa experiência de uso enquanto o jogo roda em segundo plano.
 
 ## Fase 5: Build, Otimização e Distribuição
-*Objetivo: Garantir que o aplicativo seja otimizado (baixo consumo) e possa ser empacotado para instalação pelo usuário final.*
+
+_Objetivo: Garantir que o aplicativo seja otimizado (baixo consumo) e possa ser empacotado para instalação pelo usuário final._
 
 - [ ] **Otimização de RAM:** Revisar processos em background e otimizar flags do Chromium no Electron para reduzir o uso de memória.
 - [ ] **Ícones e Metadados:** Configurar ícones oficiais para a barra de tarefas e bandeja do sistema (system tray).
 - [ ] **Configuração de Build:** Configurar o `electron-builder` no `package.json` para gerar os instaladores (Windows `.exe`, Linux `.AppImage`/`.deb`, etc).
 - [ ] **Teste de Produção:** Gerar o executável e testar o app rodando de forma estritamente independente.
+
+WEBHOOK: https://discord.com/api/webhooks/1520245683234275378/dTZxbKPcZkaZSVhR2Gtry3hEHx4xLD1HWecRG4Y2akg9LxScK9bYrZyprCpGdatoQBdF
