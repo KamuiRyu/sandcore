@@ -57,7 +57,7 @@ export const AppDetailsScreen = () => {
   const [uiScale, setUiScale] = useState(100);
   const [alwaysOnTop, setAlwaysOnTop] = useState(true);
 
-  const [appVersion, setAppVersion] = useState("1.0.6-beta");
+  const [appVersion, setAppVersion] = useState("1.1.0-beta");
   const [updateStatus, setUpdateStatus] = useState<
     | "idle"
     | "checking"
@@ -760,7 +760,9 @@ export const AppDetailsScreen = () => {
                   fontSize: 10,
                   background: "rgba(8,8,8,0.8)",
                   borderBottom:
-                    i < arr.length - 1 ? "1px solid rgba(30,30,30,0.7)" : "none",
+                    i < arr.length - 1
+                      ? "1px solid rgba(30,30,30,0.7)"
+                      : "none",
                 }}
               >
                 <span style={{ color: "#a0a880" }}>{label}</span>
