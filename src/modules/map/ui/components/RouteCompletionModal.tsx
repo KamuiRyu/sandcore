@@ -81,7 +81,7 @@ export function RouteCompletionModal({
       }
     >
       <div className="flex flex-col gap-4">
-        <div className="bg-[#2e1f08]/30 border border-[#4a2f0a]/50 rounded-lg p-3 flex flex-col gap-1">
+        <div className="bg-[#1a1a1a]/30 border border-[#282828]/50 rounded-lg p-3 flex flex-col gap-1">
           <p className="text-[10px] text-[#9a7a40] font-mono uppercase tracking-wider">Rota</p>
           <p className="text-sm font-bold text-teal-400">{routeTitle}</p>
         </div>
@@ -99,7 +99,7 @@ export function RouteCompletionModal({
               const collectedCount = collected[type] || 0;
               
               return (
-                <div key={type} className="flex justify-between items-center bg-[#11161D]/75 border border-[#4a2f0a]/50 p-2 rounded-lg text-xs group">
+                <div key={type} className="flex justify-between items-center bg-[#11161D]/75 border border-[#282828]/50 p-2 rounded-lg text-xs group">
                   <span className="text-[#f0d9a0] font-medium">
                     {def ? def.name : type} {expectedCount > 0 && <span className="text-[#9a7a40] ml-1">(de {expectedCount}x)</span>}
                   </span>
@@ -108,7 +108,7 @@ export function RouteCompletionModal({
                     <button 
                       onClick={() => handleUpdate(type, -1)}
                       disabled={collectedCount === 0}
-                      className="w-6 h-6 flex items-center justify-center rounded bg-[#2e1f08] text-[#9a7a40] hover:bg-slate-700 hover:text-[#f0d9a0] disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold text-sm"
+                      className="w-6 h-6 flex items-center justify-center rounded bg-[#1a1a1a] text-[#9a7a40] hover:bg-slate-700 hover:text-[#f0d9a0] disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold text-sm"
                     >
                       -
                     </button>
@@ -123,7 +123,7 @@ export function RouteCompletionModal({
                     </div>
                     <button 
                       onClick={() => handleUpdate(type, 1)}
-                      className="w-6 h-6 flex items-center justify-center rounded bg-[#2e1f08] text-[#9a7a40] hover:bg-slate-700 hover:text-[#f0d9a0] transition-colors font-bold text-sm"
+                      className="w-6 h-6 flex items-center justify-center rounded bg-[#1a1a1a] text-[#9a7a40] hover:bg-slate-700 hover:text-[#f0d9a0] transition-colors font-bold text-sm"
                     >
                       +
                     </button>

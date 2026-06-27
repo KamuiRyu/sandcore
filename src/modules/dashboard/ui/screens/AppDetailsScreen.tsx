@@ -17,14 +17,14 @@ const SL = ({ children }: { children: string }) => (
       style={{
         color: "#c8a030",
         fontSize: 10,
-        fontFamily: "'JetBrains Mono', monospace",
+        fontFamily: "'Orbitron', sans-serif",
       }}
     >
       [
     </span>
     <span
       style={{
-        fontFamily: "'JetBrains Mono', monospace",
+        fontFamily: "'Orbitron', sans-serif",
         fontSize: 9,
         letterSpacing: "0.14em",
         textTransform: "uppercase",
@@ -42,7 +42,7 @@ const SL = ({ children }: { children: string }) => (
       style={{
         color: "#c8a030",
         fontSize: 10,
-        fontFamily: "'JetBrains Mono', monospace",
+        fontFamily: "'Orbitron', sans-serif",
       }}
     >
       ]
@@ -245,7 +245,7 @@ export const AppDetailsScreen = () => {
   const Kbd = ({ k }: { k: string }) => (
     <span
       style={{
-        fontFamily: "'JetBrains Mono', monospace",
+        fontFamily: "'Orbitron', sans-serif",
         fontSize: 9,
         fontWeight: 600,
         padding: "2px 7px",
@@ -267,7 +267,7 @@ export const AppDetailsScreen = () => {
         {/* App info */}
         <div
           style={{
-            background: "rgba(13,10,4,0.7)",
+            background: "rgba(8,8,8,0.7)",
             border: "1px solid #3a2508",
             borderRadius: 3,
             padding: "14px 14px",
@@ -368,7 +368,7 @@ export const AppDetailsScreen = () => {
             </h3>
             <p
               style={{
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: "'Orbitron', sans-serif",
                 fontSize: 9,
                 color: "#c8a030",
                 margin: "4px 0 0",
@@ -395,8 +395,8 @@ export const AppDetailsScreen = () => {
                 style={{
                   padding: "8px 10px",
                   borderRadius: 3,
-                  background: "rgba(13,10,4,0.8)",
-                  border: "1px solid #2e1e06",
+                  background: "rgba(8,8,8,0.8)",
+                  border: "1px solid #1e1e1e",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
@@ -420,7 +420,7 @@ export const AppDetailsScreen = () => {
                     gap: 5,
                     fontSize: 9,
                     fontWeight: 700,
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: "'Orbitron', sans-serif",
                     color: ok ? "#4caf50" : "#cc3333",
                     letterSpacing: "0.06em",
                   }}
@@ -439,8 +439,8 @@ export const AppDetailsScreen = () => {
             style={{
               padding: "10px 12px",
               borderRadius: 3,
-              background: "rgba(13,10,4,0.8)",
-              border: "1px solid #2e1e06",
+              background: "rgba(8,8,8,0.8)",
+              border: "1px solid #1e1e1e",
             }}
           >
             {updateStatus === "idle" && (
@@ -475,7 +475,7 @@ export const AppDetailsScreen = () => {
                     border: "none",
                     fontWeight: 700,
                     fontSize: 10,
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: "'Orbitron', sans-serif",
                     letterSpacing: "0.1em",
                     cursor: "pointer",
                     whiteSpace: "nowrap",
@@ -534,7 +534,7 @@ export const AppDetailsScreen = () => {
                     display: "flex",
                     justifyContent: "space-between",
                     fontSize: 9,
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: "'Orbitron', sans-serif",
                     color: "#7a8060",
                   }}
                 >
@@ -592,7 +592,7 @@ export const AppDetailsScreen = () => {
                     color: "#0a0800",
                     fontWeight: 700,
                     fontSize: 10,
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: "'Orbitron', sans-serif",
                     cursor: "pointer",
                     letterSpacing: "0.08em",
                     border: "none",
@@ -614,7 +614,7 @@ export const AppDetailsScreen = () => {
                   <div
                     style={{
                       fontSize: 9,
-                      fontFamily: "'JetBrains Mono', monospace",
+                      fontFamily: "'Orbitron', sans-serif",
                       color: "#7a8060",
                       marginTop: 2,
                     }}
@@ -648,7 +648,7 @@ export const AppDetailsScreen = () => {
                       color: "#e07070",
                       fontWeight: 700,
                       fontSize: 9,
-                      fontFamily: "'JetBrains Mono', monospace",
+                      fontFamily: "'Orbitron', sans-serif",
                       cursor: "pointer",
                       letterSpacing: "0.08em",
                     }}
@@ -659,7 +659,7 @@ export const AppDetailsScreen = () => {
                 <p
                   style={{
                     fontSize: 9,
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: "'Orbitron', sans-serif",
                     color: "#7a8060",
                     margin: 0,
                     lineHeight: 1.5,
@@ -679,7 +679,7 @@ export const AppDetailsScreen = () => {
             style={{
               borderRadius: 3,
               overflow: "hidden",
-              border: "1px solid #2e1e06",
+              border: "1px solid #1e1e1e",
             }}
           >
             {[
@@ -688,7 +688,7 @@ export const AppDetailsScreen = () => {
                 render: () => (
                   <span
                     style={{
-                      fontFamily: "'JetBrains Mono', monospace",
+                      fontFamily: "'Orbitron', sans-serif",
                       fontSize: 10,
                       fontWeight: 700,
                       padding: "2px 8px",
@@ -712,7 +712,7 @@ export const AppDetailsScreen = () => {
                       gap: 5,
                       fontSize: 10,
                       fontWeight: 700,
-                      fontFamily: "'JetBrains Mono', monospace",
+                      fontFamily: "'Orbitron', sans-serif",
                       color: alwaysOnTop ? "#4caf50" : "#7a8060",
                       letterSpacing: "0.06em",
                     }}
@@ -758,9 +758,9 @@ export const AppDetailsScreen = () => {
                   justifyContent: "space-between",
                   padding: "8px 12px",
                   fontSize: 10,
-                  background: "rgba(13,10,4,0.8)",
+                  background: "rgba(8,8,8,0.8)",
                   borderBottom:
-                    i < arr.length - 1 ? "1px solid rgba(46,30,6,0.7)" : "none",
+                    i < arr.length - 1 ? "1px solid rgba(30,30,30,0.7)" : "none",
                 }}
               >
                 <span style={{ color: "#a0a880" }}>{label}</span>
@@ -788,10 +788,10 @@ export const AppDetailsScreen = () => {
                 padding: "10px 8px",
                 borderRadius: 3,
                 background: "transparent",
-                border: "1px solid #2e1e06",
+                border: "1px solid #1e1e1e",
                 color: "#c8a840",
                 fontSize: 9,
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: "'Orbitron', sans-serif",
                 fontWeight: 700,
                 letterSpacing: "0.1em",
                 cursor: "pointer",
@@ -799,13 +799,13 @@ export const AppDetailsScreen = () => {
                 opacity: clearingCache ? 0.5 : 1,
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(74,47,10,0.25)";
+                e.currentTarget.style.background = "rgba(40,40,40,0.25)";
                 e.currentTarget.style.borderColor = "#6a4e18";
                 e.currentTarget.style.color = "#e8c860";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.borderColor = "#2e1e06";
+                e.currentTarget.style.borderColor = "#1e1e1e";
                 e.currentTarget.style.color = "#c8a840";
               }}
             >
@@ -824,10 +824,10 @@ export const AppDetailsScreen = () => {
                 padding: "10px 8px",
                 borderRadius: 3,
                 background: "transparent",
-                border: "1px solid #2e1e06",
+                border: "1px solid #1e1e1e",
                 color: "#c8a840",
                 fontSize: 9,
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: "'Orbitron', sans-serif",
                 fontWeight: 700,
                 letterSpacing: "0.1em",
                 cursor: "pointer",
@@ -835,13 +835,13 @@ export const AppDetailsScreen = () => {
                 opacity: clearingStats ? 0.5 : 1,
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(74,47,10,0.25)";
+                e.currentTarget.style.background = "rgba(40,40,40,0.25)";
                 e.currentTarget.style.borderColor = "#6a4e18";
                 e.currentTarget.style.color = "#e8c860";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.borderColor = "#2e1e06";
+                e.currentTarget.style.borderColor = "#1e1e1e";
                 e.currentTarget.style.color = "#c8a840";
               }}
             >
@@ -876,7 +876,7 @@ export const AppDetailsScreen = () => {
               gap: 16,
               borderRadius: 3,
               padding: 18,
-              background: "#0e0b05",
+              background: "#0a0a0a",
               border: "1px solid #3a2508",
               boxShadow: "0 0 40px rgba(0,0,0,0.9)",
             }}
@@ -933,11 +933,11 @@ export const AppDetailsScreen = () => {
                   borderRadius: 3,
                   fontWeight: 700,
                   fontSize: 9,
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: "'Orbitron', sans-serif",
                   letterSpacing: "0.08em",
                   cursor: "pointer",
                   background: "transparent",
-                  border: "1px solid #2e1e06",
+                  border: "1px solid #1e1e1e",
                   color: "#9a7a40",
                 }}
               >
@@ -950,7 +950,7 @@ export const AppDetailsScreen = () => {
                   borderRadius: 3,
                   fontWeight: 700,
                   fontSize: 9,
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: "'Orbitron', sans-serif",
                   letterSpacing: "0.08em",
                   cursor: "pointer",
                   background: "linear-gradient(135deg,#b87a08,#e8a820)",

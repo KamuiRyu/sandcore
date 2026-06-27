@@ -1,20 +1,29 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuthViewModel } from '../viewModels/useAuth.viewModel'
 import { LoginForm } from '../components/LoginForm'
 import { RegisterForm } from '../components/RegisterForm'
 import { SunagakureLogo } from '../../../app/ui/components/SunagakureLogo'
+import { Clock, XCircle } from 'lucide-react'
 
-export const LoginScreen = () => {
-  const viewModel = useAuthViewModel()
+type LoginScreenProps = {
+  viewModel?: ReturnType<typeof useAuthViewModel>
+}
+
+export const LoginScreen = ({ viewModel: externalViewModel }: LoginScreenProps = {}) => {
+  const internalViewModel = useAuthViewModel()
+  const viewModel = externalViewModel ?? internalViewModel
   const [rememberMe, setRememberMe] = useState(true)
   const [isClosing, setIsClosing] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  const [visibleScreen, setVisibleScreen] = useState(viewModel.authScreen)
+  const [transitioning, setTransitioning] = useState(false)
+  const prevScreen = useRef(viewModel.authScreen)
 
   const handleClose = () => {
     setIsClosing(true)
     setTimeout(() => {
       window.ipcRenderer?.send('window-control', 'close')
-    }, 200) // matches duration-200
+    }, 250)
   }
 
   useEffect(() => {
@@ -23,10 +32,19 @@ export const LoginScreen = () => {
   }, [])
 
   useEffect(() => {
+    if (viewModel.authScreen !== prevScreen.current) {
+      prevScreen.current = viewModel.authScreen
+      setTransitioning(true)
+      setTimeout(() => {
+        setVisibleScreen(viewModel.authScreen)
+        setTransitioning(false)
+      }, 250)
+    }
+  }, [viewModel.authScreen])
+
+  useEffect(() => {
     if (viewModel.resetSuccess) {
-      const timer = setTimeout(() => {
-        viewModel.setResetSuccess('')
-      }, 6000)
+      const timer = setTimeout(() => viewModel.setResetSuccess(''), 6000)
       return () => clearTimeout(timer)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -36,14 +54,122 @@ export const LoginScreen = () => {
     viewModel.loginWithOAuth(provider)
   }
 
+  const windowVisible = isMounted && !isClosing
+  const contentStyle: React.CSSProperties = {
+    opacity: transitioning ? 0 : 1,
+    transform: transitioning ? 'scale(0.97)' : 'scale(1)',
+    filter: transitioning ? 'blur(2px)' : 'blur(0px)',
+    transition: 'opacity 250ms ease, transform 250ms ease, filter 250ms ease',
+  }
+
+  const titlebarClose = (
+    <div
+      className="absolute top-0 left-0 right-0 h-8 flex items-center justify-end select-none z-50"
+      style={{ WebkitAppRegion: 'drag' } as any}
+    >
+      <button
+        onClick={handleClose}
+        className="h-full w-11 hover:bg-red-600 hover:text-white transition flex items-center justify-center text-slate-400 cursor-pointer"
+        style={{ WebkitAppRegion: 'no-drag' } as any}
+      >
+        <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2">
+          <path d="M1 1L9 9M9 1L1 9" />
+        </svg>
+      </button>
+    </div>
+  )
+
+  const windowClass = `h-screen w-screen bg-[#0c0c0c] relative rounded-xl border border-[#282828] overflow-hidden text-slate-300 font-sans select-none`
+  const windowTransition: React.CSSProperties = {
+    opacity: windowVisible ? 1 : 0,
+    transform: windowVisible ? 'scale(1)' : 'scale(0.95)',
+    filter: windowVisible ? 'blur(0px)' : 'blur(4px)',
+    transition: 'opacity 300ms ease, transform 300ms ease, filter 300ms ease',
+  }
+
+  if (visibleScreen === 'awaiting_approval') {
+    return (
+      <div className={`${windowClass} flex flex-col items-center justify-center`} style={windowTransition}>
+        {titlebarClose}
+        <div style={contentStyle} className="flex flex-col items-center gap-5 px-10 text-center max-w-sm">
+          <div
+            className="w-16 h-16 rounded-full border border-[#c8860a]/40 flex items-center justify-center"
+            style={{ background: 'rgba(200,134,10,0.08)' }}
+          >
+            <Clock size={28} style={{ color: '#c8860a' }} />
+          </div>
+          <div>
+            <h2
+              className="text-sm font-bold tracking-[0.12em] uppercase mb-2"
+              style={{ color: '#e8d5a0', fontFamily: "'Cinzel', serif" }}
+            >
+              Aguardando Aprovação
+            </h2>
+            <p className="text-[11px] leading-relaxed" style={{ color: '#9a7a40' }}>
+              Sua conta foi criada com sucesso. Um administrador precisa aprovar seu acesso à vila. Você será notificado em breve.
+            </p>
+          </div>
+          <button
+            onClick={viewModel.logout}
+            className="text-[10px] font-mono uppercase tracking-widest cursor-pointer transition-colors"
+            style={{ color: '#6a5028' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#c8860a')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#6a5028')}
+          >
+            Usar outra conta
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (visibleScreen === 'rejected') {
+    return (
+      <div className={`${windowClass} flex flex-col items-center justify-center`} style={windowTransition}>
+        {titlebarClose}
+        <div style={contentStyle} className="flex flex-col items-center gap-5 px-10 text-center max-w-sm">
+          <div
+            className="w-16 h-16 rounded-full border border-red-800/40 flex items-center justify-center"
+            style={{ background: 'rgba(120,20,20,0.1)' }}
+          >
+            <XCircle size={28} style={{ color: '#e07070' }} />
+          </div>
+          <div>
+            <h2
+              className="text-sm font-bold tracking-[0.12em] uppercase mb-2"
+              style={{ color: '#e07070', fontFamily: "'Cinzel', serif" }}
+            >
+              Acesso Recusado
+            </h2>
+            <p className="text-[11px] leading-relaxed" style={{ color: '#9a7a40' }}>
+              Seu acesso à vila foi recusado por um administrador. Entre em contato com a gestão para mais informações.
+            </p>
+          </div>
+          <button
+            onClick={viewModel.logout}
+            className="text-[10px] font-mono uppercase tracking-widest cursor-pointer transition-colors"
+            style={{ color: '#6a5028' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#c8860a')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#6a5028')}
+          >
+            Usar outra conta
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className={`h-screen w-screen bg-[#0f0b04] flex relative rounded-xl border border-[#4a2f0a] overflow-hidden text-slate-300 transition-all duration-300 ease-out font-sans select-none ${isMounted && !isClosing ? 'opacity-100 scale-100 blur-none' : 'opacity-0 scale-95 blur-sm'}`}>
-      
+    <div className={`${windowClass} flex`} style={windowTransition}>
+
       {/* Absolute Titlebar Overlay */}
-      <div className="absolute top-0 left-0 right-0 h-8 flex items-center justify-end select-none z-50" style={{ WebkitAppRegion: 'drag' } as any}>
+      <div
+        className="absolute top-0 left-0 right-0 h-8 flex items-center justify-end select-none z-50"
+        style={{ WebkitAppRegion: 'drag' } as any}
+      >
         <div className="flex items-center h-full">
-          <button 
-            onClick={() => window.ipcRenderer?.send('window-control', 'minimize')} 
+          <button
+            onClick={() => window.ipcRenderer?.send('window-control', 'minimize')}
             className="h-full w-11 hover:bg-white/5 transition flex items-center justify-center cursor-pointer text-slate-400 hover:text-white"
             style={{ WebkitAppRegion: 'no-drag' } as any}
             title="Minimizar"
@@ -52,8 +178,8 @@ export const LoginScreen = () => {
               <line x1="1" y1="5" x2="9" y2="5" />
             </svg>
           </button>
-          <button 
-            onClick={handleClose} 
+          <button
+            onClick={handleClose}
             className="h-full w-11 hover:bg-red-600 hover:text-white transition flex items-center justify-center text-slate-400 cursor-pointer"
             style={{ WebkitAppRegion: 'no-drag' } as any}
             title="Fechar"
@@ -66,17 +192,15 @@ export const LoginScreen = () => {
       </div>
 
       {/* Left Form Column */}
-      <div className="w-[360px] flex-none bg-[#0f0b04] flex flex-col px-8 pt-7 pb-4 justify-between border-r border-[#2e1f08] h-full relative">
-        
-        {/* Main Content Area (Logo + Form) centered together */}
+      <div
+        className="w-[360px] flex-none bg-[#0c0c0c] flex flex-col px-8 pt-7 pb-4 justify-between border-r border-[#1a1a1a] h-full relative"
+        style={contentStyle}
+      >
+        {/* Main Content Area */}
         <div className="flex-1 flex flex-col justify-center gap-7 my-auto w-full">
-          {/* Logo and Subtitle Section matching Mockup */}
           <div className="flex flex-col items-center">
             <SunagakureLogo width={76} height={76} className="drop-shadow-[0_4px_16px_rgba(200,134,10,0.15)]" />
-
             <p className="text-[#9a7a40] text-[0.6rem] tracking-[0.2em] font-mono font-black uppercase mt-1">Explore. Descubra. Domine.</p>
-
-            {/* Custom Horizontal Line with Mini Shuriken SVG */}
             <div className="flex items-center justify-center gap-3 w-full mt-3">
               <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-[#c8860a]/30"></div>
               <div className="animate-[spin_20s_linear_infinite] flex-none">
@@ -86,7 +210,6 @@ export const LoginScreen = () => {
             </div>
           </div>
 
-          {/* Form */}
           <div className="w-full flex flex-col">
             {viewModel.isRegisterMode ? (
               <RegisterForm viewModel={viewModel} />
@@ -94,20 +217,18 @@ export const LoginScreen = () => {
               <LoginForm viewModel={viewModel} rememberMe={rememberMe} setRememberMe={setRememberMe} />
             )}
 
-            {/* Divider */}
             <div className="flex items-center gap-2.5 my-3.5">
-              <div className="h-[1px] flex-1 bg-slate-800/85"></div>
-              <span className="text-[#9a7a40] text-[0.55rem] font-black font-mono uppercase tracking-[0.15em]">ou continue com</span>
-              <div className="h-[1px] flex-1 bg-slate-800/85"></div>
+              <div className="h-[1px] flex-1" style={{ background: 'linear-gradient(90deg, transparent, #1e1e1e)' }}></div>
+              <span className="text-[#6a5028] text-[0.55rem] font-black font-mono uppercase tracking-[0.15em]">ou continue com</span>
+              <div className="h-[1px] flex-1" style={{ background: 'linear-gradient(90deg, #1e1e1e, transparent)' }}></div>
             </div>
 
-            {/* OAuth Buttons */}
             <div className="grid grid-cols-2 gap-3">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => handleOAuth('google')}
                 disabled={viewModel.authLoading}
-                className="bg-[#1a1105] hover:bg-[#2a1b08] border border-[#4a2f0a] rounded-[2px] py-2.5 px-4 flex items-center justify-center gap-2 text-[0.65rem] font-black font-mono uppercase tracking-widest text-[#c8860a] hover:text-[#f0d9a0] transition-all cursor-pointer"
+                className="bg-[#1a1105] hover:bg-[#2a1b08] border border-[#282828] rounded-[2px] py-2.5 px-4 flex items-center justify-center gap-2 text-[0.65rem] font-black font-mono uppercase tracking-widest text-[#c8860a] hover:text-[#f0d9a0] transition-all cursor-pointer"
                 style={{ WebkitAppRegion: 'no-drag' } as any}
               >
                 <svg className="w-4 h-4 flex-none" viewBox="0 0 24 24" fill="none">
@@ -118,11 +239,11 @@ export const LoginScreen = () => {
                 </svg>
                 <span>Google</span>
               </button>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => handleOAuth('discord')}
                 disabled={viewModel.authLoading}
-                className="bg-[#1a1105] hover:bg-[#2a1b08] border border-[#4a2f0a] rounded-[2px] py-2.5 px-4 flex items-center justify-center gap-2 text-[0.65rem] font-black font-mono uppercase tracking-widest text-[#c8860a] hover:text-[#f0d9a0] transition-all cursor-pointer"
+                className="bg-[#1a1105] hover:bg-[#2a1b08] border border-[#282828] rounded-[2px] py-2.5 px-4 flex items-center justify-center gap-2 text-[0.65rem] font-black font-mono uppercase tracking-widest text-[#c8860a] hover:text-[#f0d9a0] transition-all cursor-pointer"
                 style={{ WebkitAppRegion: 'no-drag' } as any}
               >
                 <svg className="w-4 h-4 text-[#5865F2] flex-none" viewBox="0 0 127.14 96.36" fill="currentColor">
@@ -139,7 +260,7 @@ export const LoginScreen = () => {
           {viewModel.isRegisterMode ? (
             <p>
               Já tem uma conta?{' '}
-              <span 
+              <span
                 onClick={() => viewModel.setIsRegisterMode(false)}
                 className="text-[#c8860a] font-semibold hover:underline cursor-pointer transition-colors"
                 style={{ WebkitAppRegion: 'no-drag' } as any}
@@ -150,7 +271,7 @@ export const LoginScreen = () => {
           ) : (
             <p>
               Não tem uma conta?{' '}
-              <span 
+              <span
                 onClick={() => viewModel.setIsRegisterMode(true)}
                 className="text-[#c8860a] font-semibold hover:underline cursor-pointer transition-colors"
                 style={{ WebkitAppRegion: 'no-drag' } as any}
@@ -161,13 +282,13 @@ export const LoginScreen = () => {
           )}
         </div>
 
-        {/* Absolute Floating Error Alert */}
+        {/* Floating Error */}
         {viewModel.generalError && (
           <div className="absolute bottom-16 left-8 right-8 bg-[#1C0F13] border border-[#3D1A22] text-red-400 text-xs py-2.5 px-3.5 rounded-[2px] text-center shadow-2xl z-50 flex items-center justify-between gap-2">
             <span className="flex-1 text-center font-medium leading-relaxed">{viewModel.generalError}</span>
-            <button 
-              type="button" 
-              onClick={() => viewModel.setGeneralError('')} 
+            <button
+              type="button"
+              onClick={() => viewModel.setGeneralError('')}
               className="text-red-400 hover:text-red-300 font-bold text-xs cursor-pointer flex-none px-1"
               style={{ WebkitAppRegion: 'no-drag' } as any}
             >
@@ -176,13 +297,13 @@ export const LoginScreen = () => {
           </div>
         )}
 
-        {/* Absolute Floating Success Alert */}
+        {/* Floating Success */}
         {viewModel.resetSuccess && (
-          <div className="absolute bottom-16 left-8 right-8 bg-[#0f0b04] border border-[#4a2f0a] text-[#c8860a] text-xs py-2.5 px-3.5 rounded-[2px] text-center shadow-2xl z-50 flex items-center justify-between gap-2 animate-in fade-in slide-in-from-bottom-2">
+          <div className="absolute bottom-16 left-8 right-8 bg-[#0c0c0c] border border-[#282828] text-[#c8860a] text-xs py-2.5 px-3.5 rounded-[2px] text-center shadow-2xl z-50 flex items-center justify-between gap-2 animate-in fade-in slide-in-from-bottom-2">
             <span className="flex-1 text-center font-medium leading-relaxed">{viewModel.resetSuccess}</span>
-            <button 
-              type="button" 
-              onClick={() => viewModel.setResetSuccess('')} 
+            <button
+              type="button"
+              onClick={() => viewModel.setResetSuccess('')}
               className="text-[#c8860a] hover:text-teal-300 font-bold text-xs cursor-pointer flex-none px-1"
               style={{ WebkitAppRegion: 'no-drag' } as any}
             >
@@ -190,12 +311,14 @@ export const LoginScreen = () => {
             </button>
           </div>
         )}
-
       </div>
 
-      {/* Right Image/Banner Column */}
-      <div className="flex-1 bg-cover bg-[85%_center] select-none relative max-[500px]:hidden h-full" style={{ backgroundImage: "url('./images/background.webp')" }}>
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0f0b04] via-transparent to-transparent w-24"></div>
+      {/* Right Image Column */}
+      <div
+        className="flex-1 bg-cover bg-[85%_center] select-none relative max-[500px]:hidden h-full"
+        style={{ backgroundImage: "url('./images/background.webp')", ...contentStyle }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0c0c0c] via-transparent to-transparent w-24"></div>
       </div>
 
     </div>

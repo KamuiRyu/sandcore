@@ -1,7 +1,9 @@
-import React from 'react'
-import { Map, LogOut, Users, Settings, BarChart2, Hammer } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Map, LogOut, Users, Settings, BarChart2, Hammer, Scroll, Shield, Building2, KeyRound, UserCircle } from 'lucide-react'
+import { pb } from '../../../../lib/pocketbase'
+import { appStorage } from '../../../../lib/storage'
 
-type TabType = 'groups' | 'map' | 'stats' | 'details' | 'settings' | 'crafting'
+type TabType = 'groups' | 'map' | 'stats' | 'details' | 'settings' | 'crafting' | 'missions' | 'ninja-card' | 'admin' | 'manager' | 'profile'
 
 interface SidebarScreenProps {
   activeTab: string | null
@@ -11,9 +13,44 @@ interface SidebarScreenProps {
 const NOISE_SVG = `url("./images/noise.svg")`
 
 import { SunagakureLogo } from '../../../app/ui/components/SunagakureLogo'
-import { appStorage } from '../../../../lib/storage';
+
+const SIDEBAR_HIDDEN_KEY = 'shinobi-map-sidebar-hidden'
+
+function loadHidden(): Set<string> {
+  try {
+    const raw = appStorage.getItem(SIDEBAR_HIDDEN_KEY)
+    return new Set(raw ? JSON.parse(raw) : [])
+  } catch {
+    return new Set()
+  }
+}
 
 export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
+  const user = pb.authStore.model
+  const role = user?.role || 'ninja'
+  const isAdmin = role === 'admin'
+  const isManager = role === 'manager' || role === 'admin'
+
+  const [hiddenItems, setHiddenItems] = useState<Set<string>>(loadHidden)
+
+  useEffect(() => {
+    const handler = (_event: unknown, { hiddenItems }: { hiddenItems: string[] }) => {
+      setHiddenItems(new Set(hiddenItems))
+    }
+    window.ipcRenderer?.on('sidebar-hidden-updated', handler)
+    return () => { window.ipcRenderer?.off('sidebar-hidden-updated', handler) }
+  }, [])
+
+  // Resize the Electron window to fit visible items
+  useEffect(() => {
+    const visibleMain  = mainMenuItems.filter(item => !hiddenItems.has(item.id)).length
+    const visibleAdmin = [
+      ...(isManager ? ['manager'] : []),
+      ...(isAdmin   ? ['admin']   : []),
+    ].filter(id => !hiddenItems.has(id)).length
+    window.ipcRenderer?.send('resize-sidebar', { visibleMain, visibleAdmin })
+  }, [hiddenItems, isManager, isAdmin])
+
   const handleTabClick = (tabId: TabType) => {
     const nextTab = activeTab === tabId ? null : tabId
     window.ipcRenderer?.send('toggle-panel-window', nextTab)
@@ -25,18 +62,25 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
     onLogout()
   }
 
-  const menuItems = [
-    { id: 'groups',   icon: Users,     label: 'Grupos'       },
-    { id: 'map',      icon: Map,       label: 'Mapa'         },
-    { id: 'stats',    icon: BarChart2, label: 'Estatísticas' },
-    { id: 'crafting', icon: Hammer,    label: 'Crafting'     },
+  const mainMenuItems = [
+    { id: 'map', icon: Map, label: 'Mapa' },
+    { id: 'missions', icon: Scroll, label: 'Missões' },
+    { id: 'ninja-card', icon: Shield, label: 'Carteirinha' },
+    { id: 'groups', icon: Users, label: 'Grupos' },
+    { id: 'stats', icon: BarChart2, label: 'Estatísticas' },
+    { id: 'crafting', icon: Hammer, label: 'Crafting' },
   ] as const
+
+  const adminItems = [
+    ...(isManager ? [{ id: 'manager' as const, icon: Building2, label: 'Organização' }] : []),
+    ...(isAdmin ? [{ id: 'admin' as const, icon: KeyRound, label: 'Admin' }] : []),
+  ]
 
   return (
     <div
       className="w-full h-full select-none"
       style={{
-        background: 'linear-gradient(180deg, #0e0b05 0%, #090704 100%)',
+        background: 'linear-gradient(180deg, #0a0a0a 0%, #080808 100%)',
         border: '1px solid rgba(255,221,102,0.4)',
         borderRadius: 8,
         WebkitAppRegion: 'drag',
@@ -60,12 +104,12 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
           </div>
         </div>
 
-        {/* Divider logo → nav */}
+        {/* Divider */}
         <div style={{ width: 28, height: 1, background: 'linear-gradient(90deg, transparent, rgba(200,134,10,0.4), transparent)', margin: '4px 0', flexShrink: 0 }} />
 
         {/* Main nav */}
-        <div className="flex flex-col items-center w-full" style={{ padding: '10px 0', gap: 2, flexShrink: 0 }}>
-          {menuItems.map((item) => {
+        <div className="flex flex-col items-center w-full flex-1 py-2" style={{ gap: 2 }}>
+          {mainMenuItems.filter(item => !hiddenItems.has(item.id)).map((item) => {
             const Icon = item.icon
             const isActive = activeTab === item.id
             return (
@@ -77,8 +121,19 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
         </div>
 
         {/* Bottom nav */}
-        <div className="flex flex-col items-center w-full" style={{ marginTop: 'auto', padding: '10px 0', gap: 2 }}>
+        <div className="flex flex-col items-center w-full" style={{ padding: '10px 0', gap: 2 }}>
           <div style={{ width: 28, height: 1, background: 'linear-gradient(90deg, transparent, rgba(200,134,10,0.4), transparent)', margin: '0 0 6px', flexShrink: 0 }} />
+          {adminItems.filter(item => !hiddenItems.has(item.id)).map(item => {
+            const Icon = item.icon
+            return (
+              <NavItem key={item.id} isActive={activeTab === item.id} label={item.label} onClick={() => handleTabClick(item.id)}>
+                <Icon size={18} />
+              </NavItem>
+            )
+          })}
+          <NavItem isActive={activeTab === 'profile'} label="Perfil" onClick={() => handleTabClick('profile')}>
+            <UserCircle size={18} />
+          </NavItem>
           <NavItem isActive={activeTab === 'settings'} label="Configurações" onClick={() => handleTabClick('settings')}>
             <Settings size={18} />
           </NavItem>
@@ -102,8 +157,8 @@ interface NavItemProps {
 }
 
 const NavItem = ({ isActive, isExit = false, label, onClick, children }: NavItemProps) => {
-  const baseColor   = isExit ? '#7a3020'             : '#6a5028'
-  const hoverBg     = isExit ? 'rgba(120,48,32,0.2)' : 'rgba(74,47,10,0.35)'
+  const baseColor   = isExit ? '#8a3828'             : '#9a7a40'
+  const hoverBg     = isExit ? 'rgba(120,48,32,0.2)' : 'rgba(40,40,40,0.35)'
   const hoverBorder = isExit ? 'rgba(180,80,50,0.4)' : 'rgba(200,134,10,0.3)'
   const hoverColor  = isExit ? '#e07060'             : '#c8a040'
 
@@ -113,11 +168,12 @@ const NavItem = ({ isActive, isExit = false, label, onClick, children }: NavItem
         onClick={onClick}
         title={label}
         style={{
-          width: 40, height: 40,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 44, height: 44,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          gap: 2,
           borderRadius: 3, cursor: 'pointer', position: 'relative',
           border: isActive ? '1px solid rgba(200,134,10,0.35)' : '1px solid transparent',
-          background: isActive ? 'rgba(74,47,10,0.4)' : 'transparent',
+          background: isActive ? 'rgba(200,134,10,0.08)' : 'transparent',
           color: isActive ? '#e8b840' : baseColor,
           transition: 'all .2s',
           WebkitAppRegion: 'no-drag',
@@ -142,12 +198,19 @@ const NavItem = ({ isActive, isExit = false, label, onClick, children }: NavItem
         {isActive && (
           <div style={{
             position: 'absolute',
-            left: -1, top: '20%', bottom: '20%', width: 2,
-            background: 'linear-gradient(180deg, transparent, #ff6600, transparent)',
+            left: 0, top: '15%', bottom: '15%', width: 2,
+            background: 'linear-gradient(180deg, transparent, #c8860a, transparent)',
             borderRadius: '0 1px 1px 0',
           }} />
         )}
         {children}
+        <span style={{
+          fontSize: 7, fontFamily: "'Orbitron', sans-serif", fontWeight: 700,
+          letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase',
+          color: 'inherit', pointerEvents: 'none',
+        }}>
+          {label.length > 6 ? label.slice(0, 6) : label}
+        </span>
       </button>
     </div>
   )

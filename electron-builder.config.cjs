@@ -13,10 +13,17 @@ module.exports = {
     {
       provider: "github",
       owner: "KamuiRyu",
-      repo: "sandcore"
-    }
+      repo: "sandcore",
+    },
   ],
   files: ["dist/**/*", "dist-electron/**/*", "package.json"],
+
+  extraResources: [
+    {
+      from: "build/updater/SandCoreUpdater.exe",
+      to: "SandCoreUpdater.exe",
+    },
+  ],
 
   win: {
     icon: "public/icon.ico",
@@ -27,6 +34,10 @@ module.exports = {
       },
       {
         target: "portable",
+        arch: ["x64"],
+      },
+      {
+        target: "zip",
         arch: ["x64"],
       },
     ],
@@ -42,5 +53,9 @@ module.exports = {
 
   portable: {
     artifactName: "SandCore_" + versionStr + "_portable.${ext}",
+  },
+
+  zip: {
+    artifactName: "SandCore-${version}-win.zip",
   },
 };

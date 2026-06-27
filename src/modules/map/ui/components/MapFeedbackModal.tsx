@@ -92,7 +92,7 @@ export function MapFeedbackModal({ isOpen, onClose, target, onSubmit }: MapFeedb
             type="submit"
             form="feedback-form"
             disabled={isSubmitting || !isFormValid()}
-            className="flex items-center gap-2 px-6 py-2 rounded-lg bg-[#c8860a] hover:bg-[#ffdd66] hover:text-[#0f0b04] text-white font-bold transition active:scale-95 disabled:opacity-50 disabled:scale-100"
+            className="flex items-center gap-2 px-6 py-2 rounded-lg bg-[#c8860a] hover:bg-[#ffdd66] hover:text-[#0c0c0c] text-white font-bold transition active:scale-95 disabled:opacity-50 disabled:scale-100"
           >
             {isSubmitting ? (
               <Loader2 className="animate-spin" size={18} />

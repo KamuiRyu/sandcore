@@ -21,7 +21,7 @@ export const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
         <div className="relative w-full">
           {/* Left Icon */}
           {Icon && (
-            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#c8860a]">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#6a5028]">
               <Icon size={15} />
             </span>
           )}
@@ -30,13 +30,13 @@ export const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
           <input
             ref={ref}
             type={actualType}
-            className={`w-full bg-[#1a1105] text-slate-200 placeholder-slate-500 text-sm rounded-[2px] border transition-all py-2.5 focus:ring-0 focus:outline-none 
-              ${Icon ? 'pl-10' : 'pl-3.5'} 
-              ${isPassword ? 'pr-14' : hasError ? 'pr-9' : 'pr-3.5'} 
-              ${hasError 
-                ? 'border-red-500/50 focus:border-red-500' 
-                : 'border-[#4a2f0a] focus:border-[#c8860a]'
-              } 
+            className={`w-full bg-[#080808] text-[#e8d5a0] placeholder-[#6a5028] text-sm rounded-[2px] border transition-all py-2.5 focus:ring-0 focus:outline-none
+              ${Icon ? 'pl-10' : 'pl-3.5'}
+              ${isPassword ? 'pr-14' : hasError ? 'pr-9' : 'pr-3.5'}
+              ${hasError
+                ? 'border-red-800/60 focus:border-red-600'
+                : 'border-[#1e1e1e] focus:border-[#c8860a]/60'
+              }
               ${className}
             `}
             {...props}
@@ -49,7 +49,7 @@ export const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer p-0.5"
+                className="text-[#6a5028] hover:text-[#c8860a] transition-colors cursor-pointer p-0.5"
                 title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
               >
                 {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}

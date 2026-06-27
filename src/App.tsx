@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Loader2 } from 'lucide-react'
 import { useAuthViewModel } from './modules/authentication/ui/viewModels/useAuth.viewModel'
 import { LoginScreen } from './modules/authentication/ui/screens/LoginScreen'
@@ -99,12 +99,12 @@ function App() {
 
   // If windowType is explicitly set to login
   if (windowType === 'login') {
-    return <LoginScreen />
+    return <LoginScreen viewModel={viewModel} />
   }
 
   // If windowType is sidebar or fallback, and user is not logged in, render login
   if (!viewModel.isLoggedIn) {
-    return <LoginScreen />
+    return <LoginScreen viewModel={viewModel} />
   }
 
   // Render only the Sidebar window

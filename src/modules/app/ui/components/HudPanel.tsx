@@ -67,9 +67,9 @@ export const HudPanel = memo(function HudPanel({
           >
             {/* Container — Sunagakure */}
             <div
-              className="relative flex h-full w-full flex-col overflow-hidden rounded-[2px] border border-[#4a2f0a]"
+              className="relative flex h-full w-full flex-col overflow-hidden rounded-[2px] border border-[#282828]"
               style={{
-                background: "linear-gradient(160deg,#0e0b05 0%,#090704 100%)",
+                background: "linear-gradient(160deg,#0a0a0a 0%,#080808 100%)",
                 border: "1px solid rgba(255, 221, 102, 0.4)",
               }}
             >
@@ -78,7 +78,7 @@ export const HudPanel = memo(function HudPanel({
                 className="absolute top-0 left-0 right-0 h-[3px] pointer-events-none z-10"
                 style={{
                   background:
-                    "linear-gradient(90deg, transparent 0%, #4a2f0a 15%, #c8860a 40%, #e8a820 50%, #c8860a 60%, #4a2f0a 85%, transparent 100%)",
+                    "linear-gradient(90deg, transparent 0%, #282828 15%, #c8860a 40%, #e8a820 50%, #c8860a 60%, #282828 85%, transparent 100%)",
                 }}
               />
 
@@ -93,7 +93,7 @@ export const HudPanel = memo(function HudPanel({
               {/* Header */}
               {!hideHeader && (
                 <header
-                  className="relative flex items-center justify-between px-4 py-[10px] border-b border-[#4a2f0a] shrink-0 z-20"
+                  className="relative flex items-center justify-between px-4 py-[10px] border-b border-[#282828] shrink-0 z-20"
                   style={{
                     background: "transparent",
                   }}
@@ -126,19 +126,19 @@ export const HudPanel = memo(function HudPanel({
 
                   <button
                     onClick={onClose}
-                    className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#4a2f0a] transition-all cursor-pointer"
-                    style={{ background: "#2e1f08", color: "#9a7a40" }}
+                    className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#282828] transition-all cursor-pointer"
+                    style={{ background: "#1a1a1a", color: "#9a7a40" }}
                     onMouseEnter={(e) => {
                       const el = e.currentTarget;
                       el.style.borderColor = "#c8860a";
                       el.style.color = "#c8860a";
-                      el.style.background = "#4a2f0a";
+                      el.style.background = "#282828";
                     }}
                     onMouseLeave={(e) => {
                       const el = e.currentTarget;
-                      el.style.borderColor = "#4a2f0a";
+                      el.style.borderColor = "#282828";
                       el.style.color = "#9a7a40";
-                      el.style.background = "#2e1f08";
+                      el.style.background = "#1a1a1a";
                     }}
                   >
                     <X size={11} />
@@ -159,8 +159,8 @@ export const HudPanel = memo(function HudPanel({
               {/* Footer */}
               {footer && (
                 <footer
-                  className="px-5 py-3 border-t border-[#4a2f0a] relative shrink-0 z-10"
-                  style={{ background: "rgba(13,10,5,0.4)" }}
+                  className="px-5 py-3 border-t border-[#282828] relative shrink-0 z-10"
+                  style={{ background: "rgba(8,8,8,0.4)" }}
                 >
                   {footer}
                 </footer>

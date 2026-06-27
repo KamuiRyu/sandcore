@@ -9,6 +9,18 @@ export class PocketBaseAuthAdapter implements AuthRepository {
       id: record.id,
       email: record.email,
       name: record.name || record.username || '',
+      avatar: record.avatar || '',
+      push_token: record.push_token || '',
+      status: record.status || 'pending',
+      role: record.role || 'ninja',
+      ninja_rank: record.ninja_rank || '',
+      level: record.level || 0,
+      title_points: record.title_points || 0,
+      current_title: record.current_title || '',
+      daily_points_used: record.daily_points_used || 0,
+      last_points_reset: record.last_points_reset || '',
+      approved_by: record.approved_by || '',
+      approved_at: record.approved_at || '',
       created: record.created,
       updated: record.updated,
     }
@@ -16,8 +28,9 @@ export class PocketBaseAuthAdapter implements AuthRepository {
 
   async login(email: string, password: string): Promise<Result<User, Error>> {
     try {
-      const authData = await pb.collection('users').authWithPassword(email.trim(), password)
-      return ok(this.mapToUser(authData.record))
+      await pb.collection('users').authWithPassword(email.trim(), password)
+      const refreshed = await pb.collection('users').authRefresh()
+      return ok(this.mapToUser(refreshed.record))
     } catch (err: any) {
       if (err.status === 400 || err.status === 401) {
         return fail(new Error('E-mail ou senha incorretos.'))
@@ -56,11 +69,17 @@ export class PocketBaseAuthAdapter implements AuthRepository {
 
   async authWithOAuth2(provider: 'google' | 'discord'): Promise<Result<User, Error>> {
     try {
-      const authData = await pb.collection('users').authWithOAuth2({ provider })
+      const authData = await pb.collection('users').authWithOAuth2({
+        provider,
+        urlCallback: (url) => {
+          window.ipcRenderer?.send('open-external-url', url)
+        },
+      })
       if (!authData.record) {
         return fail(new Error('Falha na autenticação social.'))
       }
-      return ok(this.mapToUser(authData.record))
+      const refreshed = await pb.collection('users').authRefresh()
+      return ok(this.mapToUser(refreshed.record ?? authData.record))
     } catch (err: any) {
       return fail(new Error(err.message || 'Erro no login social. Tente novamente.'))
     }
@@ -84,6 +103,42 @@ export class PocketBaseAuthAdapter implements AuthRepository {
 
   isLoggedIn(): boolean {
     return pb.authStore.isValid
+  }
+
+  async updateCurrentUser(data: { name?: string; avatar?: File | null }): Promise<Result<User, Error>> {
+    try {
+      const model = pb.authStore.model
+      if (!model) return fail(new Error('Usuário não autenticado.'))
+      const formData = new FormData()
+      if (data.name !== undefined) formData.append('name', data.name.trim())
+      if (data.avatar !== undefined) {
+        if (data.avatar === null) formData.append('avatar', '')
+        else formData.append('avatar', data.avatar)
+      }
+      const updated = await pb.collection('users').update(model.id, formData)
+      await pb.collection('users').authRefresh()
+      return ok(this.mapToUser(updated))
+    } catch (err: any) {
+      return fail(new Error(err.message || 'Erro ao atualizar perfil.'))
+    }
+  }
+
+  async listExternalAuths(): Promise<{ provider: string }[]> {
+    const model = pb.authStore.model
+    if (!model) return []
+    const auths = await pb.collection('users').listExternalAuths(model.id)
+    return auths.map(a => ({ provider: a.provider }))
+  }
+
+  async unlinkExternalAuth(provider: string): Promise<Result<void, Error>> {
+    try {
+      const model = pb.authStore.model
+      if (!model) return fail(new Error('Usuário não autenticado.'))
+      await pb.collection('users').unlinkExternalAuth(model.id, provider)
+      return ok(undefined)
+    } catch (err: any) {
+      return fail(new Error(err.message || 'Erro ao desvincular conta.'))
+    }
   }
 }
 export const pbAuthRepository = new PocketBaseAuthAdapter()

@@ -1,8 +1,9 @@
-import { app, BrowserWindow, ipcMain, screen, globalShortcut } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, globalShortcut, shell } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fs from 'node:fs'
-import { autoUpdater } from 'electron-updater'
+import https from 'node:https'
+import { execSync, spawn } from 'node:child_process'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -15,8 +16,11 @@ process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(process.
 let splashWin: BrowserWindow | null = null
 let loginWin: BrowserWindow | null = null
 let sidebarWin: BrowserWindow | null = null
+let oauthInProgress = false
 let currentLayoutSide: 'left' | 'right' = 'right'
 let currentAlignSide: 'top' | 'bottom' = 'top'
+let lastVisibleMain = 6
+let lastVisibleAdmin = 2
 
 // Config management
 const configPath = path.join(app.getPath('userData'), 'config.json')
@@ -254,6 +258,13 @@ function createLoginWindow() {
     loginWin.loadFile(path.join(process.env.DIST!, 'index.html'), { query: { windowType: 'login' } })
   }
 
+  loginWin.on('minimize', () => {
+    if (oauthInProgress && loginWin && !loginWin.isDestroyed()) {
+      loginWin.restore()
+      loginWin.focus()
+    }
+  })
+
   loginWin.on('closed', () => {
     loginWin = null
     if (!sidebarWin || sidebarWin.isDestroyed()) {
@@ -294,17 +305,24 @@ function setupMoveListeners(win: BrowserWindow) {
 
 function forcePanelToFront() {
   if (panelWin && !panelWin.isDestroyed() && currentTabId) {
-    if (process.platform === 'win32') {
-      panelWin.hide()
-    }
     if (appConfig.alwaysOnTop) {
       panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
-    } else {
-      panelWin.setAlwaysOnTop(true)
-      panelWin.setAlwaysOnTop(false)
     }
     panelWin.showInactive()
+    panelWin.moveTop()
   }
+}
+
+function getStorageValue(key: string): string | null {
+  const filePath = path.join(app.getPath('userData'), `storage_${key}.json`)
+  try {
+    if (fs.existsSync(filePath)) {
+      return fs.readFileSync(filePath, 'utf-8')
+    }
+  } catch (e) {
+    console.error('Failed to read storage', key, e)
+  }
+  return null
 }
 
 function createSidebarWindow() {
@@ -317,8 +335,40 @@ function createSidebarWindow() {
   currentTabId = null
   const zoom = (appConfig.uiScale || 100) / 100
 
+  // Calculate dynamic initial height based on user settings and roles
+  const hiddenItemsRaw = getStorageValue('shinobi-map-sidebar-hidden')
+  const hiddenItems = new Set<string>()
+  if (hiddenItemsRaw) {
+    try {
+      const parsed = JSON.parse(hiddenItemsRaw)
+      if (Array.isArray(parsed)) {
+        parsed.forEach(item => hiddenItems.add(String(item)))
+      }
+    } catch (e) {
+      console.error('Failed to parse hidden items', e)
+    }
+  }
+
+  const role = appAuth?.model?.role || 'ninja'
+  const isAdmin = role === 'admin'
+  const isManager = role === 'manager' || role === 'admin'
+
+  const mainMenuItemIds = ['map', 'missions', 'ninja-card', 'groups', 'stats', 'crafting']
+  const visibleMain = mainMenuItemIds.filter(id => !hiddenItems.has(id)).length
+
+  const visibleAdmin = [
+    ...(isManager ? ['manager'] : []),
+    ...(isAdmin ? ['admin'] : [])
+  ].filter(id => !hiddenItems.has(id)).length
+
+  lastVisibleMain = visibleMain
+  lastVisibleAdmin = visibleAdmin
+
+  const ITEM_H = 42
+  const BASE_H = 192
+  const rawH = BASE_H + visibleMain * ITEM_H + visibleAdmin * ITEM_H
+  const height = Math.round(Math.max(rawH, 180) * zoom)
   const width = Math.round(56 * zoom)
-  const height = Math.round(420 * zoom)
 
   let x: number | undefined
   let y: number | undefined
@@ -338,7 +388,7 @@ function createSidebarWindow() {
     transparent: true,
     hasShadow: false,
     backgroundColor: '#00000000',
-    minimizable: false,
+    minimizable: !appConfig.alwaysOnTop,
     alwaysOnTop: appConfig.alwaysOnTop,
     skipTaskbar: false,
     focusable: true,
@@ -466,7 +516,8 @@ function createPanelWindow() {
   })
 
   panelWin.setMenu(null)
-
+  panelWin.setFullScreenable(false)
+  panelWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
 
   if (appConfig.alwaysOnTop) {
     panelWin.setAlwaysOnTop(true, 'screen-saver', 1)
@@ -576,14 +627,12 @@ function openPanel(tabId: string, immediate = false) {
   const [curX, curY] = sidebarWin.getPosition()
 
   const physicalSidebarW = Math.round(60 * zoom)
-  const physicalSidebarH = Math.round(360 * zoom)
+  const physicalSidebarH = Math.round(580 * zoom)
 
-  let panelLogicalW = 450
-  let panelLogicalH = 550
-  if (tabId === 'map') {
-    panelLogicalW = 1200
-    panelLogicalH = 800
-  }
+  const largeTabs = ['map', 'admin', 'manager']
+  const isLargeTab = largeTabs.includes(tabId)
+  let panelLogicalW = isLargeTab ? 1200 : 450
+  let panelLogicalH = isLargeTab ? 800 : 550
 
   const physicalPanelW = Math.round(panelLogicalW * zoom)
   const physicalPanelH = Math.round(panelLogicalH * zoom)
@@ -639,7 +688,6 @@ function openPanel(tabId: string, immediate = false) {
 
   // Force Z-order elevation before showing
   if (appConfig.alwaysOnTop) {
-    panel.setAlwaysOnTop(false)
     panel.setAlwaysOnTop(true, 'screen-saver', 1)
   } else {
     panel.setAlwaysOnTop(false)
@@ -647,6 +695,7 @@ function openPanel(tabId: string, immediate = false) {
 
   // Force show unconditionally
   panel.showInactive()
+  panel.moveTop()
 
   const payload = { tabId, layoutSide: nextLayoutSide, alignSide: nextAlignSide }
   sidebarWin.webContents.send('layout-updated', payload)
@@ -710,6 +759,10 @@ function handleWindowMoved(win: BrowserWindow) {
 }
 
 // IPC Handlers
+ipcMain.on('open-external-url', (_event, url: string) => {
+  shell.openExternal(url)
+})
+
 ipcMain.handle('get-config', () => appConfig)
 ipcMain.handle('get-app-version', () => app.getVersion())
 
@@ -749,99 +802,116 @@ ipcMain.on('set-storage', (event, key, value) => {
 })
 
 
-// Auto Updater IPC / Logic
+// ── Auto Updater (GitHub Releases + GoshiUpdater) ────────────────────────────
+
+const GITHUB_OWNER = 'KamuiRyu'
+const GITHUB_REPO = 'sandcore'
+
+function fetchLatestRelease(): Promise<{ version: string; releaseNotes: string }> {
+  return new Promise((resolve, reject) => {
+    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`
+    https.get(url, { headers: { 'User-Agent': 'sandcore-app' } }, (res) => {
+      if (res.statusCode === 302 || res.statusCode === 301) {
+        return reject(new Error(`Redirect inesperado: ${res.headers.location}`))
+      }
+      if (res.statusCode !== 200) return reject(new Error(`HTTP ${res.statusCode}`))
+      let data = ''
+      res.on('data', (chunk: Buffer) => (data += chunk))
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data)
+          const version = ((json.tag_name as string) || '').replace(/^v/, '')
+          const releaseNotes = (json.body as string) || ''
+          resolve({ version, releaseNotes })
+        } catch {
+          reject(new Error('Resposta inválida da API do GitHub'))
+        }
+      })
+      res.on('error', reject)
+    }).on('error', reject)
+  })
+}
+
+function getInstallDir(): string | null {
+  const appId = 'com.hyoou.sandcore'
+  const regKeys = [
+    `HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${appId}`,
+    `HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${appId}`,
+    `HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${appId}`,
+  ]
+  for (const key of regKeys) {
+    try {
+      const result = execSync(`reg query "${key}" /v InstallLocation`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+      const match = result.match(/InstallLocation\s+REG_SZ\s+(.+)/)
+      if (match) return match[1].trim()
+    } catch { /* chave não existe, tenta a próxima */ }
+  }
+  return null
+}
+
+function broadcastUpdateStatus(payload: object) {
+  BrowserWindow.getAllWindows().forEach((win) => {
+    if (!win.isDestroyed() && win.webContents) {
+      win.webContents.send('update-status', payload)
+    }
+  })
+}
+
 ipcMain.on('check-for-updates', (event) => {
-  // If in dev mode, we can simulate an update flow to test the React UI
   if (!app.isPackaged) {
     event.sender.send('update-status', { status: 'checking' })
     setTimeout(() => {
       event.sender.send('update-status', {
         status: 'available',
-        version: '1.3.0',
-        releaseNotes: 'Esta é uma simulação de nova versão em desenvolvimento.'
+        version: '99.0.0',
+        releaseNotes: 'Simulação de update em desenvolvimento.',
       })
-
-      // Simulate download progress
-      let percent = 0
-      const interval = setInterval(() => {
-        percent += 20
-        event.sender.send('update-progress', { percent })
-        if (percent >= 100) {
-          clearInterval(interval)
-          event.sender.send('update-status', { status: 'downloaded', version: '1.3.0' })
-        }
-      }, 1000)
     }, 1500)
     return
   }
 
-  // Real auto updater check
-  autoUpdater.checkForUpdatesAndNotify().catch((err) => {
-    event.sender.send('update-status', { status: 'error', message: err?.message || 'Erro desconhecido' })
-  })
+  broadcastUpdateStatus({ status: 'checking' })
+
+  fetchLatestRelease()
+    .then(({ version, releaseNotes }) => {
+      const current = app.getVersion()
+      if (version && version !== current) {
+        broadcastUpdateStatus({ status: 'available', version, releaseNotes })
+      } else {
+        broadcastUpdateStatus({ status: 'not-available' })
+      }
+    })
+    .catch((err) => {
+      broadcastUpdateStatus({ status: 'error', message: err?.message || 'Erro de conexão' })
+    })
 })
 
 ipcMain.on('quit-and-install-update', () => {
-  if (app.isPackaged) {
-    autoUpdater.quitAndInstall()
-  } else {
-    console.log('Simulando reinicialização para instalar atualização (modo desenvolvimento).')
-    app.relaunch()
+  if (!app.isPackaged) {
+    console.log('Simulando lançamento do GoshiUpdater (modo desenvolvimento).')
     app.exit(0)
+    return
   }
-})
 
-// Real Auto Updater Events
-autoUpdater.on('checking-for-update', () => {
-  BrowserWindow.getAllWindows().forEach((win) => {
-    if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send('update-status', { status: 'checking' })
-    }
-  })
-})
+  const installDir = getInstallDir()
+  if (!installDir) {
+    broadcastUpdateStatus({ status: 'error', message: 'Não foi possível localizar o diretório de instalação no registro.' })
+    return
+  }
 
-autoUpdater.on('update-available', (info) => {
-  BrowserWindow.getAllWindows().forEach((win) => {
-    if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send('update-status', {
-        status: 'available',
-        version: info.version,
-        releaseNotes: info.releaseNotes
-      })
-    }
-  })
-})
+  const updaterPath = path.join(process.resourcesPath, 'GoshiUpdater.exe')
+  if (!fs.existsSync(updaterPath)) {
+    broadcastUpdateStatus({ status: 'error', message: 'GoshiUpdater.exe não encontrado nos recursos do app.' })
+    return
+  }
 
-autoUpdater.on('update-not-available', () => {
-  BrowserWindow.getAllWindows().forEach((win) => {
-    if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send('update-status', { status: 'not-available' })
-    }
+  const child = spawn(updaterPath, ['--install-dir', installDir], {
+    detached: true,
+    stdio: 'ignore',
   })
-})
+  child.unref()
 
-autoUpdater.on('error', (err) => {
-  BrowserWindow.getAllWindows().forEach((win) => {
-    if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send('update-status', { status: 'error', message: err?.message || 'Erro de conexão' })
-    }
-  })
-})
-
-autoUpdater.on('download-progress', (progressObj) => {
-  BrowserWindow.getAllWindows().forEach((win) => {
-    if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send('update-progress', { percent: Math.round(progressObj.percent) })
-    }
-  })
-})
-
-autoUpdater.on('update-downloaded', (info) => {
-  BrowserWindow.getAllWindows().forEach((win) => {
-    if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send('update-status', { status: 'downloaded', version: info.version })
-    }
-  })
+  app.exit(0)
 })
 
 ipcMain.handle('register-shortcut', (_event, { type, shortcut }) => {
@@ -851,6 +921,43 @@ ipcMain.handle('register-shortcut', (_event, { type, shortcut }) => {
     return { success: updateShortcutSettings(shortcut) }
   }
   return { success: false }
+})
+
+function applySidebarResize(visibleMain: number, visibleAdmin: number) {
+  if (!sidebarWin || sidebarWin.isDestroyed()) return
+  const zoom = (appConfig.uiScale || 100) / 100
+  const ITEM_H = 46   // 44px button height + 2px flex gap
+  const BASE_H = 252  // logo(56) + top-divider(9) + main-nav-padding(16) + bottom-nav(163) + buffer(8)
+  const rawH = BASE_H + visibleMain * ITEM_H + visibleAdmin * ITEM_H
+  const newHeight = Math.round(Math.max(rawH, 180) * zoom)
+  const newWidth = Math.round(56 * zoom)
+  const [curX, curY] = sidebarWin.getPosition()
+  sidebarWin.setBounds({ x: curX, y: curY, width: newWidth, height: newHeight })
+}
+
+ipcMain.on('resize-sidebar', (_event, { visibleMain, visibleAdmin }: { visibleMain: number; visibleAdmin: number }) => {
+  lastVisibleMain = visibleMain
+  lastVisibleAdmin = visibleAdmin
+  applySidebarResize(visibleMain, visibleAdmin)
+})
+
+ipcMain.on('update-sidebar-hidden', (_event, { hiddenItems }: { hiddenItems: string[] }) => {
+  const role = appAuth?.model?.role || 'ninja'
+  const isAdmin = role === 'admin'
+  const isManager = role === 'manager' || role === 'admin'
+  const hidden = new Set(hiddenItems)
+  const mainMenuItemIds = ['map', 'missions', 'ninja-card', 'groups', 'stats', 'crafting']
+  const visibleMain = mainMenuItemIds.filter(id => !hidden.has(id)).length
+  const visibleAdmin = [
+    ...(isManager ? ['manager'] : []),
+    ...(isAdmin ? ['admin'] : []),
+  ].filter(id => !hidden.has(id)).length
+  lastVisibleMain = visibleMain
+  lastVisibleAdmin = visibleAdmin
+  applySidebarResize(visibleMain, visibleAdmin)
+  if (sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.webContents.send('sidebar-hidden-updated', { hiddenItems })
+  }
 })
 
 ipcMain.on('set-config', (_event, newConfig) => {
@@ -877,6 +984,7 @@ ipcMain.on('set-config', (_event, newConfig) => {
 
   if ('alwaysOnTop' in newConfig) {
     if (sidebarWin && !sidebarWin.isDestroyed()) {
+      sidebarWin.setMinimizable(!newConfig.alwaysOnTop)
       if (newConfig.alwaysOnTop) {
         sidebarWin.setAlwaysOnTop(true, 'screen-saver', 1)
       } else {
@@ -904,7 +1012,10 @@ ipcMain.on('set-config', (_event, newConfig) => {
       sidebarWin.webContents.setZoomFactor(zoom)
       const [curX, curY] = sidebarWin.getPosition()
       const newW = Math.round(56 * zoom)
-      const newH = Math.round(420 * zoom)
+      const ITEM_H = 46
+      const BASE_H = 252
+      const rawH = BASE_H + lastVisibleMain * ITEM_H + lastVisibleAdmin * ITEM_H
+      const newH = Math.round(Math.max(rawH, 180) * zoom)
       sidebarWin.setBounds({ x: curX, y: curY, width: newW, height: newH })
     }
     if (panelWin && !panelWin.isDestroyed()) {
@@ -991,6 +1102,16 @@ ipcMain.on('window-control', (event, action) => {
         panelWin.close()
       }
     }
+  } else if (action === 'oauth-start') {
+    oauthInProgress = true
+  } else if (action === 'oauth-end') {
+    oauthInProgress = false
+  } else if (action === 'focus') {
+    oauthInProgress = false
+    if (loginWin && !loginWin.isDestroyed()) {
+      if (loginWin.isMinimized()) loginWin.restore()
+      loginWin.focus()
+    }
   } else if (action === 'login-success') {
     createSidebarWindow()
     if (loginWin && !loginWin.isDestroyed()) {
@@ -1075,6 +1196,11 @@ app.on('browser-window-created', (event, window) => {
           }
         }
       })
+      // Traz a janela de login para frente após fechar o popup OAuth
+      if (loginWin && !loginWin.isDestroyed()) {
+        if (loginWin.isMinimized()) loginWin.restore()
+        loginWin.focus()
+      }
     })
   }
 })

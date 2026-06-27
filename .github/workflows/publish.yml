@@ -3,18 +3,18 @@ name: Build and Publish Release
 on:
   push:
     tags:
-      - "v*" # Dispara ao empurrar tags como v1.0.0, v1.1.0, etc.
-  workflow_dispatch: # Permite disparar manualmente pela interface do GitHub
+      - "v*"
+  workflow_dispatch:
 
 permissions:
-  contents: write # Essencial para permitir o upload dos assets para o GitHub Releases
+  contents: write
 
 jobs:
   publish:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout sandcore
         uses: actions/checkout@v7
 
       - name: Setup Node.js
@@ -23,10 +23,10 @@ jobs:
           node-version: 26
           cache: "npm"
 
-      - name: Install dependencies
+      - name: Install sandcore dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build and package sandcore
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_ENV: ${{ secrets.NODE_ENV }}
@@ -46,7 +46,6 @@ jobs:
         with:
           files: |
             release/*.exe
-            release/*.blockmap
-            release/latest.yml
+            release/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

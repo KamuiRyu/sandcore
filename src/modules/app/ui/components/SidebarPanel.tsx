@@ -39,9 +39,9 @@ export const SidebarPanel = memo(function SidebarPanel({
       )}
     >
       <aside 
-        className="relative flex h-full w-full flex-col overflow-hidden rounded-[2px] border border-[#4a2f0a] shadow-[0_32px_80px_rgba(0,0,0,0.6)] group/panel"
+        className="relative flex h-full w-full flex-col overflow-hidden rounded-[2px] border border-[#282828] shadow-[0_32px_80px_rgba(0,0,0,0.6)] group/panel"
         style={{
-          background: "linear-gradient(160deg,#161008 0%,#0f0b04 100%)",
+          background: "linear-gradient(160deg,#111111 0%,#0c0c0c 100%)",
           border: "1px solid rgba(255, 221, 102, 0.4)",
         }}
       >
@@ -50,7 +50,7 @@ export const SidebarPanel = memo(function SidebarPanel({
           className="absolute top-0 left-0 right-0 h-[3px] pointer-events-none z-10"
           style={{
             background:
-              "linear-gradient(90deg, transparent 0%, #4a2f0a 15%, #c8860a 40%, #e8a820 50%, #c8860a 60%, #4a2f0a 85%, transparent 100%)",
+              "linear-gradient(90deg, transparent 0%, #282828 15%, #c8860a 40%, #e8a820 50%, #c8860a 60%, #282828 85%, transparent 100%)",
           }}
         />
 
@@ -65,9 +65,9 @@ export const SidebarPanel = memo(function SidebarPanel({
         <div className="flex h-full flex-col relative z-10">
           {/* Header */}
           <div 
-            className="flex items-center justify-between px-4 py-[10px] border-b border-[#4a2f0a] shrink-0"
+            className="flex items-center justify-between px-4 py-[10px] border-b border-[#282828] shrink-0"
             style={{
-              background: "linear-gradient(90deg, #2e1f08 0%, #1a1007 100%)",
+              background: "linear-gradient(90deg, #1a1a1a 0%, #111111 100%)",
             }}
           >
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -91,7 +91,7 @@ export const SidebarPanel = memo(function SidebarPanel({
                 }}
               >
                 <span style={{ color: "#c8860a" }}>SandCore</span>
-                <span style={{ color: "#4a2f0a" }}>›</span>
+                <span style={{ color: "#282828" }}>›</span>
                 <span>{title}</span>
               </div>
 
@@ -107,19 +107,19 @@ export const SidebarPanel = memo(function SidebarPanel({
             
             <button
               onClick={onClose}
-              className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#4a2f0a] transition-all cursor-pointer"
-              style={{ background: "#2e1f08", color: "#9a7a40" }}
+              className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#282828] transition-all cursor-pointer"
+              style={{ background: "#1a1a1a", color: "#9a7a40" }}
               onMouseEnter={(e) => {
                 const el = e.currentTarget;
                 el.style.borderColor = "#c8860a";
                 el.style.color = "#c8860a";
-                el.style.background = "#4a2f0a";
+                el.style.background = "#282828";
               }}
               onMouseLeave={(e) => {
                 const el = e.currentTarget;
-                el.style.borderColor = "#4a2f0a";
+                el.style.borderColor = "#282828";
                 el.style.color = "#9a7a40";
-                el.style.background = "#2e1f08";
+                el.style.background = "#1a1a1a";
               }}
             >
               <X size={11} />
@@ -137,8 +137,8 @@ export const SidebarPanel = memo(function SidebarPanel({
           {/* Footer if provided */}
           {footer && (
             <div 
-              className="px-5 py-3 border-t border-[#4a2f0a] relative shrink-0 z-10"
-              style={{ background: "rgba(13,10,5,0.4)" }}
+              className="px-5 py-3 border-t border-[#282828] relative shrink-0 z-10"
+              style={{ background: "rgba(8,8,8,0.4)" }}
             >
               {footer}
             </div>
