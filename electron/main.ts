@@ -2,7 +2,8 @@ import { app, BrowserWindow, ipcMain, screen, globalShortcut, shell } from 'elec
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fs from 'node:fs'
-import { autoUpdater } from 'electron-updater'
+import https from 'node:https'
+import { execSync, spawn } from 'node:child_process'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -801,99 +802,116 @@ ipcMain.on('set-storage', (event, key, value) => {
 })
 
 
-// Auto Updater IPC / Logic
+// ── Auto Updater (GitHub Releases + GoshiUpdater) ────────────────────────────
+
+const GITHUB_OWNER = 'KamuiRyu'
+const GITHUB_REPO = 'sandcore'
+
+function fetchLatestRelease(): Promise<{ version: string; releaseNotes: string }> {
+  return new Promise((resolve, reject) => {
+    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`
+    https.get(url, { headers: { 'User-Agent': 'sandcore-app' } }, (res) => {
+      if (res.statusCode === 302 || res.statusCode === 301) {
+        return reject(new Error(`Redirect inesperado: ${res.headers.location}`))
+      }
+      if (res.statusCode !== 200) return reject(new Error(`HTTP ${res.statusCode}`))
+      let data = ''
+      res.on('data', (chunk: Buffer) => (data += chunk))
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data)
+          const version = ((json.tag_name as string) || '').replace(/^v/, '')
+          const releaseNotes = (json.body as string) || ''
+          resolve({ version, releaseNotes })
+        } catch {
+          reject(new Error('Resposta inválida da API do GitHub'))
+        }
+      })
+      res.on('error', reject)
+    }).on('error', reject)
+  })
+}
+
+function getInstallDir(): string | null {
+  const appId = 'com.hyoou.sandcore'
+  const regKeys = [
+    `HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${appId}`,
+    `HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${appId}`,
+    `HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${appId}`,
+  ]
+  for (const key of regKeys) {
+    try {
+      const result = execSync(`reg query "${key}" /v InstallLocation`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+      const match = result.match(/InstallLocation\s+REG_SZ\s+(.+)/)
+      if (match) return match[1].trim()
+    } catch { /* chave não existe, tenta a próxima */ }
+  }
+  return null
+}
+
+function broadcastUpdateStatus(payload: object) {
+  BrowserWindow.getAllWindows().forEach((win) => {
+    if (!win.isDestroyed() && win.webContents) {
+      win.webContents.send('update-status', payload)
+    }
+  })
+}
+
 ipcMain.on('check-for-updates', (event) => {
-  // If in dev mode, we can simulate an update flow to test the React UI
   if (!app.isPackaged) {
     event.sender.send('update-status', { status: 'checking' })
     setTimeout(() => {
       event.sender.send('update-status', {
         status: 'available',
-        version: '1.3.0',
-        releaseNotes: 'Esta é uma simulação de nova versão em desenvolvimento.'
+        version: '99.0.0',
+        releaseNotes: 'Simulação de update em desenvolvimento.',
       })
-
-      // Simulate download progress
-      let percent = 0
-      const interval = setInterval(() => {
-        percent += 20
-        event.sender.send('update-progress', { percent })
-        if (percent >= 100) {
-          clearInterval(interval)
-          event.sender.send('update-status', { status: 'downloaded', version: '1.3.0' })
-        }
-      }, 1000)
     }, 1500)
     return
   }
 
-  // Real auto updater check
-  autoUpdater.checkForUpdatesAndNotify().catch((err) => {
-    event.sender.send('update-status', { status: 'error', message: err?.message || 'Erro desconhecido' })
-  })
+  broadcastUpdateStatus({ status: 'checking' })
+
+  fetchLatestRelease()
+    .then(({ version, releaseNotes }) => {
+      const current = app.getVersion()
+      if (version && version !== current) {
+        broadcastUpdateStatus({ status: 'available', version, releaseNotes })
+      } else {
+        broadcastUpdateStatus({ status: 'not-available' })
+      }
+    })
+    .catch((err) => {
+      broadcastUpdateStatus({ status: 'error', message: err?.message || 'Erro de conexão' })
+    })
 })
 
 ipcMain.on('quit-and-install-update', () => {
-  if (app.isPackaged) {
-    autoUpdater.quitAndInstall()
-  } else {
-    console.log('Simulando reinicialização para instalar atualização (modo desenvolvimento).')
-    app.relaunch()
+  if (!app.isPackaged) {
+    console.log('Simulando lançamento do GoshiUpdater (modo desenvolvimento).')
     app.exit(0)
+    return
   }
-})
 
-// Real Auto Updater Events
-autoUpdater.on('checking-for-update', () => {
-  BrowserWindow.getAllWindows().forEach((win) => {
-    if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send('update-status', { status: 'checking' })
-    }
-  })
-})
+  const installDir = getInstallDir()
+  if (!installDir) {
+    broadcastUpdateStatus({ status: 'error', message: 'Não foi possível localizar o diretório de instalação no registro.' })
+    return
+  }
 
-autoUpdater.on('update-available', (info) => {
-  BrowserWindow.getAllWindows().forEach((win) => {
-    if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send('update-status', {
-        status: 'available',
-        version: info.version,
-        releaseNotes: info.releaseNotes
-      })
-    }
-  })
-})
+  const updaterPath = path.join(process.resourcesPath, 'GoshiUpdater.exe')
+  if (!fs.existsSync(updaterPath)) {
+    broadcastUpdateStatus({ status: 'error', message: 'GoshiUpdater.exe não encontrado nos recursos do app.' })
+    return
+  }
 
-autoUpdater.on('update-not-available', () => {
-  BrowserWindow.getAllWindows().forEach((win) => {
-    if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send('update-status', { status: 'not-available' })
-    }
+  const child = spawn(updaterPath, ['--install-dir', installDir], {
+    detached: true,
+    stdio: 'ignore',
   })
-})
+  child.unref()
 
-autoUpdater.on('error', (err) => {
-  BrowserWindow.getAllWindows().forEach((win) => {
-    if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send('update-status', { status: 'error', message: err?.message || 'Erro de conexão' })
-    }
-  })
-})
-
-autoUpdater.on('download-progress', (progressObj) => {
-  BrowserWindow.getAllWindows().forEach((win) => {
-    if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send('update-progress', { percent: Math.round(progressObj.percent) })
-    }
-  })
-})
-
-autoUpdater.on('update-downloaded', (info) => {
-  BrowserWindow.getAllWindows().forEach((win) => {
-    if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send('update-status', { status: 'downloaded', version: info.version })
-    }
-  })
+  app.exit(0)
 })
 
 ipcMain.handle('register-shortcut', (_event, { type, shortcut }) => {
