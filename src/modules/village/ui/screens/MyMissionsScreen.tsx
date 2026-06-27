@@ -275,7 +275,7 @@ const AssignmentCard = ({
 export const MyMissionsScreen = () => {
   const vm = useMissionsViewModel()
   const [expandedAssignmentId, setExpandedAssignmentId] = useState<string | null>(null)
-  const pgCompleted = usePagination(vm.completedAssignments)
+  const pgCompleted = usePagination(vm.completedAssignments, 5)
 
   if (vm.loading) {
     return (

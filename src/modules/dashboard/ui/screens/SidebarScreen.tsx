@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { Map, LogOut, Users, Settings, BarChart2, Hammer, Scroll, Shield, Building2 } from 'lucide-react'
+import { Map, LogOut, Users, Settings, BarChart2, Hammer, Scroll, Shield, Building2, KeyRound, UserCircle } from 'lucide-react'
 import { pb } from '../../../../lib/pocketbase'
 import { appStorage } from '../../../../lib/storage'
 
-type TabType = 'groups' | 'map' | 'stats' | 'details' | 'settings' | 'crafting' | 'missions' | 'ninja-card' | 'admin' | 'manager'
+type TabType = 'groups' | 'map' | 'stats' | 'details' | 'settings' | 'crafting' | 'missions' | 'ninja-card' | 'admin' | 'manager' | 'profile'
 
 interface SidebarScreenProps {
   activeTab: string | null
@@ -73,7 +73,7 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
 
   const adminItems = [
     ...(isManager ? [{ id: 'manager' as const, icon: Building2, label: 'Organização' }] : []),
-    ...(isAdmin ? [{ id: 'admin' as const, icon: Settings, label: 'Admin' }] : []),
+    ...(isAdmin ? [{ id: 'admin' as const, icon: KeyRound, label: 'Admin' }] : []),
   ]
 
   return (
@@ -131,6 +131,9 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
               </NavItem>
             )
           })}
+          <NavItem isActive={activeTab === 'profile'} label="Perfil" onClick={() => handleTabClick('profile')}>
+            <UserCircle size={18} />
+          </NavItem>
           <NavItem isActive={activeTab === 'settings'} label="Configurações" onClick={() => handleTabClick('settings')}>
             <Settings size={18} />
           </NavItem>
@@ -154,7 +157,7 @@ interface NavItemProps {
 }
 
 const NavItem = ({ isActive, isExit = false, label, onClick, children }: NavItemProps) => {
-  const baseColor   = isExit ? '#7a3020'             : '#6a5028'
+  const baseColor   = isExit ? '#8a3828'             : '#9a7a40'
   const hoverBg     = isExit ? 'rgba(120,48,32,0.2)' : 'rgba(40,40,40,0.35)'
   const hoverBorder = isExit ? 'rgba(180,80,50,0.4)' : 'rgba(200,134,10,0.3)'
   const hoverColor  = isExit ? '#e07060'             : '#c8a040'
@@ -165,11 +168,12 @@ const NavItem = ({ isActive, isExit = false, label, onClick, children }: NavItem
         onClick={onClick}
         title={label}
         style={{
-          width: 40, height: 40,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 44, height: 44,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          gap: 2,
           borderRadius: 3, cursor: 'pointer', position: 'relative',
           border: isActive ? '1px solid rgba(200,134,10,0.35)' : '1px solid transparent',
-          background: isActive ? 'rgba(40,40,40,0.4)' : 'transparent',
+          background: isActive ? 'rgba(200,134,10,0.08)' : 'transparent',
           color: isActive ? '#e8b840' : baseColor,
           transition: 'all .2s',
           WebkitAppRegion: 'no-drag',
@@ -194,12 +198,19 @@ const NavItem = ({ isActive, isExit = false, label, onClick, children }: NavItem
         {isActive && (
           <div style={{
             position: 'absolute',
-            left: -1, top: '20%', bottom: '20%', width: 2,
-            background: 'linear-gradient(180deg, transparent, #ff6600, transparent)',
+            left: 0, top: '15%', bottom: '15%', width: 2,
+            background: 'linear-gradient(180deg, transparent, #c8860a, transparent)',
             borderRadius: '0 1px 1px 0',
           }} />
         )}
         {children}
+        <span style={{
+          fontSize: 7, fontFamily: "'Orbitron', sans-serif", fontWeight: 700,
+          letterSpacing: '0.04em', lineHeight: 1, textTransform: 'uppercase',
+          color: 'inherit', pointerEvents: 'none',
+        }}>
+          {label.length > 6 ? label.slice(0, 6) : label}
+        </span>
       </button>
     </div>
   )

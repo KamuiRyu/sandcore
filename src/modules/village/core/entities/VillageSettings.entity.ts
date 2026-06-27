@@ -1,4 +1,5 @@
 export type DonationPeriod = 'weekly' | 'monthly'
+export type TaxPeriod = 'weekly' | 'monthly'
 export type MissionRank = 'D' | 'C' | 'B' | 'A' | 'S'
 
 export interface VillageSettings {
@@ -10,6 +11,7 @@ export interface VillageSettings {
   min_level_required: Record<MissionRank, number>;
   min_donation_amount: number;
   donation_period: DonationPeriod;
+  tax_period: TaxPeriod;
   bank_balance: number;
   updated: string;
 }

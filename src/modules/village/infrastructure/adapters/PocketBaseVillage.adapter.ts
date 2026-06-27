@@ -127,6 +127,22 @@ export async function removeOrgMember(id: string): Promise<void> {
   await pb.collection('organization_members').delete(id)
 }
 
+export async function getLatestOrgMemberRecord(userId: string, org: OrganizationType): Promise<OrganizationMember | null> {
+  try {
+    const records = await pb.collection('organization_members').getFullList({
+      filter: `user="${userId}" && organization="${org}"`,
+      sort: '-week_start,-created',
+    })
+    return records[0] as unknown as OrganizationMember || null
+  } catch {
+    return null
+  }
+}
+
+export async function updateOrgMemberTaxPaid(id: string, date: string, amount: number): Promise<OrganizationMember> {
+  return await pb.collection('organization_members').update(id, { last_tax_paid: date, tax_amount: amount }) as unknown as OrganizationMember
+}
+
 // ─── Tax & Donations ─────────────────────────────────────────────────────────
 
 export async function getTaxRecord(userId: string, period: string): Promise<TaxRecord | null> {

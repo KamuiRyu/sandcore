@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Users,
   Scroll,
@@ -214,6 +214,7 @@ const EditUserModal = ({
   const [role, setRole] = useState<string>(user.role);
   const [ninja_rank, setNinjaRank] = useState<string>(user.ninja_rank || "");
   const [level, setLevel] = useState(String(user.level || 0));
+  const [organization, setOrganization] = useState<string>(user.organization || "");
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
@@ -222,6 +223,7 @@ const EditUserModal = ({
       role: role as any,
       ninja_rank: ninja_rank as any,
       level: parseInt(level) || 0,
+      organization: role === "manager" ? (organization as any) : undefined,
     });
     setSaving(false);
     onClose();
@@ -278,6 +280,26 @@ const EditUserModal = ({
               <option value="admin">Admin</option>
             </VillageSelect>
           </div>
+          {role === "manager" && (
+            <div>
+              <div
+                style={{
+                  fontSize: 9,
+                  color: "#9a7a40",
+                  marginBottom: 4,
+                  fontFamily: "'Orbitron', sans-serif",
+                }}
+              >
+                ORGANIZAÇÃO
+              </div>
+              <VillageSelect value={organization} onChange={setOrganization}>
+                <option value="">– Nenhuma –</option>
+                <option value="policia">Polícia</option>
+                <option value="hospital">Hospital</option>
+                <option value="assistente">Assistentes</option>
+              </VillageSelect>
+            </div>
+          )}
           <div>
             <div
               style={{
@@ -1017,7 +1039,110 @@ const ReviewsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   );
 };
 
+// ─── SearchableSelect ─────────────────────────────────────────────────────────
+
+interface SearchableOption { id: string; label: string; meta?: string; eligible?: boolean }
+
+const SearchableSelect = ({
+  options, value, onChange, placeholder, label,
+}: {
+  options: SearchableOption[];
+  value: string;
+  onChange: (id: string) => void;
+  placeholder: string;
+  label: string;
+}) => {
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filtered = options.filter(o =>
+    o.label.toLowerCase().includes(search.toLowerCase()) ||
+    (o.meta || "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  const selected = options.find(o => o.id === value);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <div style={{ fontSize: 9, color: "#9a7a40", marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>
+        {label}
+      </div>
+      <div
+        onClick={() => setOpen(v => !v)}
+        style={{
+          padding: "7px 10px", background: "rgba(8,8,8,0.8)", border: `1px solid ${open ? "#c8860a" : "#1e1e1e"}`,
+          borderRadius: 3, cursor: "pointer", fontSize: 12, color: selected ? "#e8d5a0" : "#4a3a20",
+          fontFamily: "'Orbitron', sans-serif", display: "flex", justifyContent: "space-between", alignItems: "center",
+        }}
+      >
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {selected ? selected.label : placeholder}
+        </span>
+        <span style={{ fontSize: 9, color: "#9a7a40", marginLeft: 6, flexShrink: 0 }}>▾</span>
+      </div>
+      {open && (
+        <div style={{
+          position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50,
+          background: "#0a0a0a", border: "1px solid #2a2a2a", borderRadius: 3,
+          marginTop: 2, maxHeight: 200, display: "flex", flexDirection: "column",
+        }}>
+          <div style={{ padding: "6px 8px", borderBottom: "1px solid #1e1e1e" }}>
+            <input
+              autoFocus
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Pesquisar..."
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: "100%", background: "transparent", border: "none", outline: "none",
+                fontSize: 11, color: "#e8d5a0", fontFamily: "'Orbitron', sans-serif",
+              }}
+            />
+          </div>
+          <div style={{ overflowY: "auto", maxHeight: 150 }}>
+            {filtered.length === 0 ? (
+              <div style={{ padding: "10px 12px", fontSize: 11, color: "#4a3a20", fontFamily: "'Orbitron', sans-serif" }}>
+                Nenhum resultado
+              </div>
+            ) : filtered.map(o => (
+              <div
+                key={o.id}
+                onClick={() => { onChange(o.id); setOpen(false); setSearch(""); }}
+                style={{
+                  padding: "8px 12px", cursor: "pointer", fontSize: 11,
+                  color: o.eligible === false ? "#6a4040" : o.id === value ? "#c8860a" : "#e8d5a0",
+                  background: o.id === value ? "rgba(200,134,10,0.08)" : "transparent",
+                  fontFamily: "'Orbitron', sans-serif",
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(200,134,10,0.05)")}
+                onMouseLeave={e => (e.currentTarget.style.background = o.id === value ? "rgba(200,134,10,0.08)" : "transparent")}
+              >
+                <span>{o.label}</span>
+                {o.meta && <span style={{ fontSize: 9, color: "#6a5028", marginLeft: 8 }}>{o.meta}</span>}
+                {o.eligible === false && <span style={{ fontSize: 9, color: "#7a3030" }}>✗</span>}
+                {o.eligible === true && <span style={{ fontSize: 9, color: "#3a7a4a" }}>✓</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Atribuir Tab ──────────────────────────────────────────────────────────────
+
+const RANK_ORDER: Record<string, number> = { genin: 1, chunin: 2, jonin: 3, anbu: 4, kage: 5 };
 
 const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   const [selectedUser, setSelectedUser] = useState("");
@@ -1025,17 +1150,29 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   const [day, setDay] = useState(() => {
     const now = new Date();
     if (now.getHours() < 12) now.setDate(now.getDate() - 1);
-    return now.toLocaleDateString("sv"); // YYYY-MM-DD
+    return now.toLocaleDateString("sv");
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const activeTemplates = vm.templates.filter((t) => t.is_active);
+  const selectedTpl = activeTemplates.find(t => t.id === selectedTemplate);
+
+  const userEligible = (u: User): boolean => {
+    if (!selectedTpl) return true;
+    if (selectedTpl.min_level && (u.level || 0) < selectedTpl.min_level) return false;
+    if (selectedTpl.min_ninja_rank) {
+      const req = RANK_ORDER[selectedTpl.min_ninja_rank] ?? 0;
+      const has = RANK_ORDER[u.ninja_rank || ""] ?? 0;
+      if (has < req) return false;
+    }
+    return true;
+  };
 
   const handleAssign = async () => {
     if (!selectedUser || !selectedTemplate || !day) {
-      setError("Selecione o membro, a missão e a data.");
+      setError("Selecione a missão, o membro e a data.");
       return;
     }
     setError("");
@@ -1053,104 +1190,109 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
     }
   };
 
+  const templateOptions: SearchableOption[] = activeTemplates.map(t => ({
+    id: t.id,
+    label: t.title,
+    meta: `Rank ${t.rank}`,
+  }));
+
+  const userOptions: SearchableOption[] = vm.assignableUsers.map(u => ({
+    id: u.id,
+    label: u.name,
+    meta: `${u.ninja_rank || "–"} Nv.${u.level || 0}`,
+    eligible: selectedTpl ? userEligible(u) : undefined,
+  }));
+
   const pg = usePagination(vm.assignments);
 
   return (
     <div className="space-y-3">
       <VillageSection label="Atribuir Missão" />
       <VillageCard>
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <div
-              style={{
-                fontSize: 9,
-                color: "#9a7a40",
-                marginBottom: 5,
-                fontFamily: "'Orbitron', sans-serif",
-              }}
-            >
-              MEMBRO
+        {/* Step 1: Missão */}
+        <SearchableSelect
+          label="1. MISSÃO"
+          options={templateOptions}
+          value={selectedTemplate}
+          onChange={v => { setSelectedTemplate(v); setSelectedUser(""); }}
+          placeholder="Selecione a missão..."
+        />
+
+        {/* Requirements panel */}
+        {selectedTpl && (
+          <div style={{
+            marginTop: 10, padding: "10px 12px",
+            background: "rgba(200,134,10,0.05)", border: "1px solid #2a1e08", borderRadius: 3,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <MissionRankBadge rank={selectedTpl.rank as MissionRank} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#e8d5a0", fontFamily: "'Cinzel', serif" }}>
+                {selectedTpl.title}
+              </span>
             </div>
-            <VillageSelect value={selectedUser} onChange={setSelectedUser}>
-              <option value="">Selecione...</option>
-              {vm.approvedUsers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name} [{u.role}]
-                </option>
-              ))}
-            </VillageSelect>
-          </div>
-          <div>
-            <div
-              style={{
-                fontSize: 9,
-                color: "#9a7a40",
-                marginBottom: 5,
-                fontFamily: "'Orbitron', sans-serif",
-              }}
-            >
-              MISSÃO
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, fontSize: 11, fontFamily: "'Orbitron', sans-serif" }}>
+              <div>
+                <div style={{ color: "#6a5028", marginBottom: 2 }}>POSTO MÍN.</div>
+                <div style={{ color: "#e8d5a0" }}>{selectedTpl.min_ninja_rank || "–"}</div>
+              </div>
+              <div>
+                <div style={{ color: "#6a5028", marginBottom: 2 }}>NÍVEL MÍN.</div>
+                <div style={{ color: "#e8d5a0" }}>{selectedTpl.min_level || "–"}</div>
+              </div>
+              <div>
+                <div style={{ color: "#6a5028", marginBottom: 2 }}>RECOMP.</div>
+                <div style={{ color: "#c8a030" }}>
+                  {selectedTpl.reward_yens > 0 ? `${selectedTpl.reward_yens}¥` : ""}
+                  {selectedTpl.reward_points > 0 ? ` ${selectedTpl.reward_points}pts` : ""}
+                  {!selectedTpl.reward_yens && !selectedTpl.reward_points ? "–" : ""}
+                </div>
+              </div>
             </div>
-            <VillageSelect
-              value={selectedTemplate}
-              onChange={setSelectedTemplate}
-            >
-              <option value="">Selecione...</option>
-              {activeTemplates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  [Rank {t.rank}] {t.title}
-                </option>
-              ))}
-            </VillageSelect>
+            {selectedTpl.description && (
+              <div style={{ marginTop: 6, fontSize: 11, color: "#6a5028", fontFamily: "'Orbitron', sans-serif" }}>
+                {selectedTpl.description}
+              </div>
+            )}
           </div>
-          <div>
-            <div
-              style={{
-                fontSize: 9,
-                color: "#9a7a40",
-                marginBottom: 5,
-                fontFamily: "'Orbitron', sans-serif",
-              }}
-            >
-              DATA (AAAA-MM-DD)
+        )}
+
+        {/* Step 2: Ninja */}
+        <div style={{ marginTop: 12 }}>
+          <SearchableSelect
+            label="2. NINJA"
+            options={userOptions}
+            value={selectedUser}
+            onChange={setSelectedUser}
+            placeholder={selectedTpl ? "Selecione o ninja..." : "Selecione uma missão primeiro"}
+          />
+          {selectedTpl && (
+            <div style={{ fontSize: 9, color: "#6a5028", marginTop: 4, fontFamily: "'Orbitron', sans-serif" }}>
+              ✓ elegível · ✗ não atende os requisitos
             </div>
-            <VillageInput
-              value={day}
-              onChange={setDay}
-              placeholder="Ex: 2026-06-26"
-            />
+          )}
+        </div>
+
+        {/* Step 3: Data */}
+        <div style={{ marginTop: 12 }}>
+          <div style={{ fontSize: 9, color: "#9a7a40", marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>
+            3. DATA (AAAA-MM-DD)
           </div>
+          <VillageInput value={day} onChange={setDay} placeholder="Ex: 2026-06-26" />
         </div>
 
         {error && (
-          <div
-            style={{
-              color: "#f87171",
-              fontSize: 10,
-              marginTop: 10,
-              fontFamily: "'Orbitron', sans-serif",
-            }}
-          >
+          <div style={{ color: "#f87171", fontSize: 10, marginTop: 10, fontFamily: "'Orbitron', sans-serif" }}>
             ⚠️ {error}
           </div>
         )}
         {success && (
-          <div
-            style={{
-              color: "#34d399",
-              fontSize: 10,
-              marginTop: 10,
-              fontFamily: "'Orbitron', sans-serif",
-            }}
-          >
+          <div style={{ color: "#34d399", fontSize: 10, marginTop: 10, fontFamily: "'Orbitron', sans-serif" }}>
             ✅ Missão atribuída com sucesso!
           </div>
         )}
 
-        <div
-          style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}
-        >
-          <VillagePrimaryButton onClick={handleAssign} disabled={loading}>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
+          <VillagePrimaryButton onClick={handleAssign} disabled={loading || !selectedTemplate || !selectedUser}>
             {loading ? "Atribuindo..." : "Atribuir Missão"}
           </VillagePrimaryButton>
         </div>
@@ -1161,15 +1303,7 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
       <VillageSection label="Missões em Andamento" />
       <div className="space-y-2">
         {vm.assignments.length === 0 ? (
-          <div
-            style={{
-              color: "#282828",
-              fontSize: 10,
-              textAlign: "center",
-              padding: "20px 0",
-              fontFamily: "'Orbitron', sans-serif",
-            }}
-          >
+          <div style={{ color: "#282828", fontSize: 10, textAlign: "center", padding: "20px 0", fontFamily: "'Orbitron', sans-serif" }}>
             Nenhuma missão em andamento
           </div>
         ) : (
@@ -1178,64 +1312,29 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
             const ninja = a.expand?.assigned_to;
             return (
               <VillageCard key={a.id}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 6 }}
-                    >
-                      {tpl && (
-                        <MissionRankBadge rank={tpl.rank as MissionRank} />
-                      )}
-                      <span
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: "#e8d5a0",
-                        }}
-                      >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                  <div className="flex-1 min-w-0">
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {tpl && <MissionRankBadge rank={tpl.rank as MissionRank} />}
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#e8d5a0" }}>
                         {tpl?.title || "Missão excluída"}
                       </span>
                     </div>
-                    <div
-                      style={{ fontSize: 10, color: "#9a7a40", marginTop: 3 }}
-                    >
-                      Atribuído a:{" "}
-                      <span style={{ color: "#c8a030" }}>
-                        {ninja?.name || "Desconhecido"}
-                      </span>{" "}
-                      · Dia: {a.day}
+                    <div style={{ fontSize: 10, color: "#9a7a40", marginTop: 3 }}>
+                      Atribuído a: <span style={{ color: "#c8a030" }}>{ninja?.name || "Desconhecido"}</span> · Dia: {a.day}
                     </div>
                   </div>
-                  <div>
-                    <span
-                      style={{
-                        fontSize: 9,
-                        fontFamily: "'Orbitron', sans-serif",
-                        fontWeight: 700,
-                        padding: "2px 6px",
-                        borderRadius: 2,
-                        background:
-                          a.status === "pending_review"
-                            ? "rgba(200,160,48,0.15)"
-                            : "rgba(100,100,100,0.15)",
-                        border:
-                          a.status === "pending_review"
-                            ? "1px solid rgba(200,160,48,0.4)"
-                            : "1px solid rgba(100,100,100,0.4)",
-                        color:
-                          a.status === "pending_review" ? "#c8a030" : "#999999",
-                      }}
-                    >
-                      {a.status === "pending_review"
-                        ? "AVALIAÇÃO PENDENTE"
-                        : "EM ANDAMENTO"}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                    <span style={{
+                      fontSize: 9, fontFamily: "'Orbitron', sans-serif", fontWeight: 700,
+                      padding: "2px 6px", borderRadius: 2,
+                      background: a.status === "pending_review" ? "rgba(200,160,48,0.15)" : "rgba(100,100,100,0.15)",
+                      border: a.status === "pending_review" ? "1px solid rgba(200,160,48,0.4)" : "1px solid rgba(100,100,100,0.4)",
+                      color: a.status === "pending_review" ? "#c8a030" : "#999999",
+                    }}>
+                      {a.status === "pending_review" ? "AVALIAÇÃO PENDENTE" : "EM ANDAMENTO"}
                     </span>
+                    <VillageIconButton icon={Trash2} danger onClick={() => vm.removeAssignment(a.id)} title="Remover missão" />
                   </div>
                 </div>
               </VillageCard>
@@ -1243,12 +1342,7 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
           })
         )}
       </div>
-      <Pagination
-        page={pg.page}
-        totalPages={pg.totalPages}
-        total={pg.total}
-        onPage={pg.setPage}
-      />
+      <Pagination page={pg.page} totalPages={pg.totalPages} total={pg.total} onPage={pg.setPage} />
     </div>
   );
 };
@@ -1604,97 +1698,138 @@ const SettingsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
 
 const BankTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   const balance = vm.settings?.bank_balance ?? 0;
-  const typeLabel = {
+  const [showDonationForm, setShowDonationForm] = useState(false);
+  const [donationUser, setDonationUser] = useState("");
+  const [donationAmount, setDonationAmount] = useState("");
+  const donationPeriodType = vm.settings?.donation_period ?? "monthly";
+  const defaultDonationPeriod = (() => {
+    const d = new Date();
+    if (donationPeriodType === "weekly") {
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(new Date().setDate(diff));
+      return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
+    }
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  })();
+  const [donationPeriod, setDonationPeriod] = useState(defaultDonationPeriod);
+  const [donationSaving, setDonationSaving] = useState(false);
+  const [donationError, setDonationError] = useState("");
+
+  const typeLabel: Record<string, string> = {
     reward_payout: "Pagamento",
     tax_income: "Imposto",
     donation_income: "Doação",
   };
   const pg = usePagination(vm.transactions);
 
+  const handleDonation = async () => {
+    if (!donationUser || !donationAmount || !donationPeriod) {
+      setDonationError("Preencha todos os campos.");
+      return;
+    }
+    setDonationError("");
+    setDonationSaving(true);
+    try {
+      await vm.addDonation(donationUser, parseFloat(donationAmount), donationPeriod);
+      setDonationAmount("");
+      setDonationUser("");
+      setShowDonationForm(false);
+    } catch (e: any) {
+      setDonationError(e.message || "Erro ao registrar doação.");
+    } finally {
+      setDonationSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <VillageCard>
         <div style={{ textAlign: "center", padding: "8px 0" }}>
-          <div
-            style={{
-              fontSize: 9,
-              color: "#9a7a40",
-              fontFamily: "'Orbitron', sans-serif",
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-            }}
-          >
+          <div style={{ fontSize: 9, color: "#9a7a40", fontFamily: "'Orbitron', sans-serif", letterSpacing: "0.12em", textTransform: "uppercase" }}>
             Saldo do Banco da Vila
           </div>
-          <div
-            style={{
-              fontSize: 32,
-              fontWeight: 700,
-              color: "#c8860a",
-              fontFamily: "'Cinzel', serif",
-              marginTop: 6,
-            }}
-          >
+          <div style={{ fontSize: 32, fontWeight: 700, color: "#c8860a", fontFamily: "'Cinzel', serif", marginTop: 6 }}>
             {balance.toLocaleString("pt-BR")} ¥
           </div>
         </div>
       </VillageCard>
-      <VillageSection label="Últimas Transações" />
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <VillageSection label="Últimas Transações" />
+        <VillagePrimaryButton small onClick={() => setShowDonationForm(v => !v)}>
+          <Plus size={10} /> Doação
+        </VillagePrimaryButton>
+      </div>
+
+      {showDonationForm && (
+        <VillageCard>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#c8860a", marginBottom: 12, fontFamily: "'Cinzel', serif" }}>
+            Registrar Doação
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <div style={{ fontSize: 9, color: "#9a7a40", marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>NINJA</div>
+              <VillageSelect value={donationUser} onChange={setDonationUser}>
+                <option value="">Selecione...</option>
+                {vm.approvedUsers.map(u => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </VillageSelect>
+            </div>
+            <div>
+              <div style={{ fontSize: 9, color: "#9a7a40", marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>VALOR (¥)</div>
+              <VillageInput type="number" value={donationAmount} onChange={setDonationAmount} placeholder="0" />
+            </div>
+            <div>
+              <div style={{ fontSize: 9, color: "#9a7a40", marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>
+                {donationPeriodType === "weekly" ? "PERÍODO (AAAA-MM-DD)" : "PERÍODO (AAAA-MM)"}
+              </div>
+              <VillageInput value={donationPeriod} onChange={setDonationPeriod} placeholder={donationPeriodType === "weekly" ? "2026-06-23" : "2026-06"} />
+            </div>
+          </div>
+          {donationError && (
+            <div style={{ color: "#f87171", fontSize: 10, marginTop: 8, fontFamily: "'Orbitron', sans-serif" }}>⚠️ {donationError}</div>
+          )}
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <VillagePrimaryButton onClick={handleDonation} disabled={donationSaving}>
+              {donationSaving ? "Salvando..." : "Confirmar Doação"}
+            </VillagePrimaryButton>
+            <VillageSecondaryButton onClick={() => { setShowDonationForm(false); setDonationError(""); }}>
+              Cancelar
+            </VillageSecondaryButton>
+          </div>
+        </VillageCard>
+      )}
+
       <div className="space-y-1">
         {pg.paged.map((t) => (
-          <div
-            key={t.id}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "10px 14px",
-              background: "rgba(8,8,8,0.7)",
-              border: "1px solid #1e1204",
-              borderRadius: 3,
-            }}
-          >
+          <div key={t.id} style={{
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            padding: "10px 14px", background: "rgba(8,8,8,0.7)", border: "1px solid #1e1204", borderRadius: 3,
+          }}>
             <div>
-              <div style={{ fontSize: 12, color: "#e8d5a0" }}>
-                {t.description || typeLabel[t.type]}
-              </div>
+              <div style={{ fontSize: 12, color: "#e8d5a0" }}>{t.description || typeLabel[t.type] || t.type}</div>
               <div style={{ fontSize: 11, color: "#9a7a40", marginTop: 2 }}>
                 {new Date(t.created).toLocaleString("pt-BR")}
               </div>
             </div>
-            <span
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                fontFamily: "'Orbitron', sans-serif",
-                color: t.type === "reward_payout" ? "#e07070" : "#5ac87a",
-              }}
-            >
+            <span style={{
+              fontSize: 13, fontWeight: 700, fontFamily: "'Orbitron', sans-serif",
+              color: t.type === "reward_payout" ? "#e07070" : "#5ac87a",
+            }}>
               {t.type === "reward_payout" ? "-" : "+"}
               {t.amount.toLocaleString("pt-BR")}¥
             </span>
           </div>
         ))}
         {vm.transactions.length === 0 && (
-          <div
-            style={{
-              color: "#282828",
-              fontSize: 12,
-              textAlign: "center",
-              padding: "30px 0",
-              fontFamily: "'Orbitron', sans-serif",
-            }}
-          >
+          <div style={{ color: "#282828", fontSize: 12, textAlign: "center", padding: "30px 0", fontFamily: "'Orbitron', sans-serif" }}>
             Nenhuma transação registrada
           </div>
         )}
       </div>
-      <Pagination
-        page={pg.page}
-        totalPages={pg.totalPages}
-        total={pg.total}
-        onPage={pg.setPage}
-      />
+      <Pagination page={pg.page} totalPages={pg.totalPages} total={pg.total} onPage={pg.setPage} />
     </div>
   );
 };

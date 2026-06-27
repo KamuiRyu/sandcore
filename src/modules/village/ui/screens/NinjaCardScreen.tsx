@@ -63,20 +63,25 @@ interface NinjaCardScreenProps {
 export const NinjaCardScreen = ({
   onClose,
 }: NinjaCardScreenProps) => {
-  const user = pb.authStore.model as unknown as User | null;
+  const [user, setUser] = useState<User | null>(pb.authStore.model as unknown as User | null);
   const [completed, setCompleted] = useState<MissionAssignment[]>([]);
   const [titles, setTitles] = useState<Title[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
-    Promise.all([getMyAssignments(user.id), getTitles()])
-      .then(([a, t]) => {
-        setCompleted(a.filter((x) => x.status === "completed"));
-        setTitles(t);
+    const id = (pb.authStore.model as any)?.id;
+    if (!id) { setLoading(false); return; }
+    setLoading(true);
+    Promise.all([
+      pb.collection('users').authRefresh().then(r => setUser(r.record as unknown as User)).catch(() => {}),
+      getMyAssignments(id),
+      getTitles(),
+    ]).then(([, a, t]) => {
+        setCompleted((a as MissionAssignment[]).filter((x) => x.status === "completed"));
+        setTitles(t as Title[]);
       })
       .finally(() => setLoading(false));
-  }, [user?.id]);
+  }, []);
 
   if (!user) return null;
 
@@ -89,7 +94,7 @@ export const NinjaCardScreen = ({
   );
 
   const totalPoints = user.title_points || 0;
-  const currentTitle = titles.find((t) => t.id === user.current_title);
+  const currentTitle = titles.find((t) => t.name === user.current_title);
   const nextTitle = titles.find((t) => t.min_points > totalPoints);
   const progressPts = nextTitle?.min_points ?? (totalPoints || 1);
   const progress = Math.min(100, Math.round((totalPoints / progressPts) * 100));

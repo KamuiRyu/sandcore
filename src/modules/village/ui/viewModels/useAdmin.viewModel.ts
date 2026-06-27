@@ -26,6 +26,7 @@ import {
   updateOrganizationRole,
   deleteOrganizationRole,
   getBankTransactions,
+  createDonationRecord,
 } from '../../infrastructure/adapters/PocketBaseVillage.adapter'
 import { BankTransaction } from '../../core/entities/TaxRecord.entity'
 
@@ -37,6 +38,7 @@ export const useAdminViewModel = () => {
   const [settings, setSettings] = useState<VillageSettings | null>(null)
   const [orgRoles, setOrgRoles] = useState<OrganizationRole[]>([])
   const [transactions, setTransactions] = useState<BankTransaction[]>([])
+  const [taxPaidUserIds, setTaxPaidUserIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -60,6 +62,37 @@ export const useAdminViewModel = () => {
       setSettings(cfg)
       setOrgRoles(roles)
       setTransactions(tx)
+
+      // Load latest organization_members per user to check tax payment
+      const taxPeriod = cfg?.tax_period ?? 'weekly'
+      const now = new Date()
+      const weekStart = (() => {
+        const d = new Date(now)
+        const day = d.getDay()
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+        d.setDate(diff)
+        return d.toISOString().split('T')[0]
+      })()
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
+      try {
+        const allMembers = await pb.collection('organization_members').getFullList({
+          sort: '-week_start,-created',
+        }) as any[]
+        const latestByUser: Record<string, any> = {}
+        allMembers.forEach(m => { if (!latestByUser[m.user]) latestByUser[m.user] = m })
+        const paid = new Set<string>()
+        Object.entries(latestByUser).forEach(([userId, m]) => {
+          const ltp: string | null = m.last_tax_paid ?? null
+          if (!ltp) return
+          const date = ltp.slice(0, 10)
+          if (taxPeriod === 'weekly' && date >= weekStart) paid.add(userId)
+          else if (taxPeriod === 'monthly' && date.slice(0, 7) === currentMonth) paid.add(userId)
+        })
+        setTaxPaidUserIds(paid)
+      } catch {
+        setTaxPaidUserIds(new Set())
+      }
     } catch (e: any) {
       setError(e.message || 'Erro ao carregar dados admin')
     } finally {
@@ -165,6 +198,11 @@ export const useAdminViewModel = () => {
     await loadAssignments('status!="completed"')
   }
 
+  const removeAssignment = async (assignmentId: string) => {
+    await pb.collection('mission_assignments').delete(assignmentId)
+    await loadAssignments('status!="completed"')
+  }
+
   const assignMission = async (templateId: string, userId: string, day: string) => {
     const tpl = templates.find(t => t.id === templateId)
     if (tpl && settings) {
@@ -207,6 +245,23 @@ export const useAdminViewModel = () => {
     await loadAssignments('status!="completed"')
   }
 
+  // ─── Bank ─────────────────────────────────────────────────────────────────
+
+  const addDonation = async (userId: string, amount: number, period: string) => {
+    await createDonationRecord({
+      user: userId,
+      amount,
+      period,
+      registered_by: adminId,
+    })
+    const [tx, cfg] = await Promise.all([
+      getBankTransactions().catch(() => []),
+      getVillageSettings().catch(() => null),
+    ])
+    setTransactions(tx)
+    if (cfg) setSettings(cfg)
+  }
+
   // ─── Org Roles ────────────────────────────────────────────────────────────
 
   const addOrgRole = async (data: Omit<OrganizationRole, 'id'>) => {
@@ -226,13 +281,14 @@ export const useAdminViewModel = () => {
 
   const pendingUsers = users.filter(u => u.status === 'pending')
   const approvedUsers = users.filter(u => u.status === 'approved')
+  const assignableUsers = approvedUsers.filter(u => !u.organization || taxPaidUserIds.has(u.id))
   const pendingReviews = assignments.filter(a => a.status === 'pending_review')
 
   const getOrgRolesByType = (org: OrganizationType) =>
     orgRoles.filter(r => r.organization === org)
 
   return {
-    users, pendingUsers, approvedUsers,
+    users, pendingUsers, approvedUsers, assignableUsers,
     titles, templates,
     assignments, pendingReviews,
     settings, orgRoles, transactions,
@@ -244,8 +300,9 @@ export const useAdminViewModel = () => {
     saveSettings,
     approveAssignment, rejectAssignment,
     loadAssignments,
-    assignMission,
+    assignMission, removeAssignment,
     addOrgRole, editOrgRole, removeOrgRole,
     getOrgRolesByType,
+    addDonation,
   }
 }

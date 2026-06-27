@@ -16,6 +16,7 @@ import {
   Shield,
   Award,
   Award as MyMissionsIcon,
+  UserCircle,
 } from "lucide-react";
 import { GroupsScreen } from "../../../groups/ui/screens/GroupsScreen";
 import { MapScreen } from "../../../map/ui/screens/MapScreen";
@@ -28,6 +29,7 @@ import { MyMissionsScreen } from "../../../village/ui/screens/MyMissionsScreen";
 import { NinjaCardScreen } from "../../../village/ui/screens/NinjaCardScreen";
 import { AdminPanelScreen } from "../../../village/ui/screens/AdminPanelScreen";
 import { ManagerScreen } from "../../../village/ui/screens/ManagerScreen";
+import { ProfileEditScreen } from "../../../authentication/ui/screens/ProfileEditScreen";
 import { HudPanel } from "../../../app/ui/components/HudPanel";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { SunagakureLogo } from "../../../app/ui/components/SunagakureLogo";
@@ -42,6 +44,7 @@ const TAB_META: Record<string, { label: string; icon: LucideIcon }> = {
   "ninja-card": { label: "Carteirinha", icon: Shield },
   admin: { label: "Admin", icon: Settings },
   manager: { label: "Organização", icon: Users },
+  profile: { label: "Perfil", icon: UserCircle },
 };
 
 interface ContentPanelScreenProps {
@@ -261,6 +264,7 @@ export const ContentPanelScreen = ({
         )}
         {!isMapTab && lastActiveTab === "admin" && <AdminPanelScreen />}
         {!isMapTab && lastActiveTab === "manager" && <ManagerScreen />}
+        {!isMapTab && lastActiveTab === "profile" && <ProfileEditScreen />}
       </HudPanel>}
     </div>
   );

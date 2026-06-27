@@ -18,6 +18,7 @@ export interface User {
   last_points_reset?: string;
   approved_by?: string;
   approved_at?: string;
+  organization?: string;
   created: string;
   updated: string;
 }

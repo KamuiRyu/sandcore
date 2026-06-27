@@ -104,5 +104,41 @@ export class PocketBaseAuthAdapter implements AuthRepository {
   isLoggedIn(): boolean {
     return pb.authStore.isValid
   }
+
+  async updateCurrentUser(data: { name?: string; avatar?: File | null }): Promise<Result<User, Error>> {
+    try {
+      const model = pb.authStore.model
+      if (!model) return fail(new Error('Usuário não autenticado.'))
+      const formData = new FormData()
+      if (data.name !== undefined) formData.append('name', data.name.trim())
+      if (data.avatar !== undefined) {
+        if (data.avatar === null) formData.append('avatar', '')
+        else formData.append('avatar', data.avatar)
+      }
+      const updated = await pb.collection('users').update(model.id, formData)
+      await pb.collection('users').authRefresh()
+      return ok(this.mapToUser(updated))
+    } catch (err: any) {
+      return fail(new Error(err.message || 'Erro ao atualizar perfil.'))
+    }
+  }
+
+  async listExternalAuths(): Promise<{ provider: string }[]> {
+    const model = pb.authStore.model
+    if (!model) return []
+    const auths = await pb.collection('users').listExternalAuths(model.id)
+    return auths.map(a => ({ provider: a.provider }))
+  }
+
+  async unlinkExternalAuth(provider: string): Promise<Result<void, Error>> {
+    try {
+      const model = pb.authStore.model
+      if (!model) return fail(new Error('Usuário não autenticado.'))
+      await pb.collection('users').unlinkExternalAuth(model.id, provider)
+      return ok(undefined)
+    } catch (err: any) {
+      return fail(new Error(err.message || 'Erro ao desvincular conta.'))
+    }
+  }
 }
 export const pbAuthRepository = new PocketBaseAuthAdapter()

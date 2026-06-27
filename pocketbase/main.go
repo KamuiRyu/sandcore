@@ -1,9 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net"
+	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -255,6 +260,44 @@ func main() {
 		}
 	})
 
+	formatYens := func(amount float64) string {
+		n := int64(amount)
+		s := fmt.Sprintf("%d", n)
+		result := ""
+		for i, c := range s {
+			if i > 0 && (len(s)-i)%3 == 0 {
+				result += "."
+			}
+			result += string(c)
+		}
+		return result + " Yens"
+	}
+
+	sendDiscordWebhook := func(context string, message string) {
+		webhookURL := os.Getenv("DISCORD_WEBHOOK_URL")
+		if webhookURL == "" {
+			log.Printf("[Discord/%s] DISCORD_WEBHOOK_URL não configurada, mensagem ignorada", context)
+			return
+		}
+		log.Printf("[Discord/%s] Enviando mensagem para webhook...", context)
+		payload, err := json.Marshal(map[string]string{"content": message})
+		if err != nil {
+			log.Printf("[Discord/%s] ERRO: Falha ao serializar payload: %v", context, err)
+			return
+		}
+		resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(payload))
+		if err != nil {
+			log.Printf("[Discord/%s] ERRO: Falha na requisição HTTP: %v", context, err)
+			return
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			log.Printf("[Discord/%s] Mensagem enviada com sucesso (HTTP %d)", context, resp.StatusCode)
+		} else {
+			log.Printf("[Discord/%s] ERRO: Webhook retornou HTTP %d", context, resp.StatusCode)
+		}
+	}
+
 	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
 		respawns := []*core.Record{}
 		_ = app.RecordQuery("map_respawns").
@@ -280,7 +323,7 @@ func main() {
 		})
 
 		// Hook: protege campos sensíveis de users contra edição pelo próprio usuário
-		app.OnRecordBeforeUpdateRequest("users").BindFunc(func(e *core.RecordRequestEvent) error {
+		app.OnRecordUpdateRequest("users").BindFunc(func(e *core.RecordRequestEvent) error {
 			authRecord := e.Auth
 			if authRecord == nil {
 				return e.Next()
@@ -329,6 +372,36 @@ func main() {
 			return e.Next()
 		})
 
+		// Hook: ao atualizar title_points, recalcula current_title
+		app.OnRecordAfterUpdateSuccess("users").BindFunc(func(e *core.RecordEvent) error {
+			newPoints := e.Record.GetInt("title_points")
+			oldPoints := e.Record.Original().GetInt("title_points")
+			if newPoints == oldPoints {
+				return e.Next()
+			}
+			titles := []*core.Record{}
+			err := app.RecordQuery("titles").
+				AndWhere(dbx.NewExp("min_points <= {:pts}", dbx.Params{"pts": newPoints})).
+				OrderBy("min_points DESC").
+				Limit(1).
+				All(&titles)
+			if err != nil {
+				log.Printf("ERRO: Falha ao buscar títulos: %v", err)
+				return e.Next()
+			}
+			var titleName string
+			if len(titles) > 0 {
+				titleName = titles[0].GetString("name")
+			}
+			if e.Record.GetString("current_title") != titleName {
+				e.Record.Set("current_title", titleName)
+				if err := app.Save(e.Record); err != nil {
+					log.Printf("ERRO: Falha ao atualizar current_title: %v", err)
+				}
+			}
+			return e.Next()
+		})
+
 		// Hook: ao remover membro da organização, limpa user.organization
 		app.OnRecordAfterDeleteSuccess("organization_members").BindFunc(func(e *core.RecordEvent) error {
 			userId := e.Record.GetString("user")
@@ -341,6 +414,137 @@ func main() {
 			if err := app.Save(user); err != nil {
 				log.Printf("ERRO: Falha ao limpar organization do user: %v", err)
 			}
+			return e.Next()
+		})
+
+		addToBankBalance := func(app core.App, amount float64, txType string, userId string, description string) float64 {
+			settings, err := app.FindFirstRecordByFilter("village_settings", "id != ''", dbx.Params{})
+			if err != nil {
+				log.Printf("[Banco] ERRO: Não foi possível buscar village_settings: %v", err)
+				return -1
+			}
+			currentBalance := settings.GetFloat("bank_balance")
+			newBalance := currentBalance + amount
+			settings.Set("bank_balance", newBalance)
+			if err := app.Save(settings); err != nil {
+				log.Printf("[Banco] ERRO: Falha ao atualizar bank_balance: %v", err)
+				return -1
+			}
+			log.Printf("[Banco] Saldo atualizado: %.2f → %.2f (%s)", currentBalance, newBalance, txType)
+
+			txCollection, err := app.FindCollectionByNameOrId("bank_transactions")
+			if err != nil {
+				log.Printf("[Banco] ERRO: Coleção bank_transactions não encontrada: %v", err)
+				return newBalance
+			}
+			tx := core.NewRecord(txCollection)
+			tx.Set("type", txType)
+			tx.Set("amount", amount)
+			tx.Set("user", userId)
+			tx.Set("description", description)
+			if err := app.Save(tx); err != nil {
+				log.Printf("[Banco] ERRO: Falha ao criar bank_transaction: %v", err)
+			}
+			return newBalance
+		}
+
+		app.OnRecordAfterCreateSuccess("donation_records").BindFunc(func(e *core.RecordEvent) error {
+			userId := e.Record.GetString("user")
+			amount := e.Record.GetFloat("amount")
+			period := e.Record.GetString("period")
+			createdAt := e.Record.GetDateTime("created").Time().In(time.FixedZone("BRT", -3*60*60))
+			dateStr := createdAt.Format("02/01/2006")
+			log.Printf("[Discord/doação] Nova doação: user=%s, amount=%.2f, period=%s, date=%s", userId, amount, period, dateStr)
+			userName := userId
+			if u, err := app.FindRecordById("users", userId); err == nil {
+				userName = u.GetString("name")
+			} else {
+				log.Printf("[Discord/doação] AVISO: Não foi possível buscar nome do usuário %s: %v", userId, err)
+			}
+			newBalance := addToBankBalance(app, amount, "donation_income", userId, fmt.Sprintf("Doação de %s — %s", userName, dateStr))
+			balanceStr := formatYens(newBalance)
+			if newBalance < 0 {
+				balanceStr = "indisponível"
+			}
+			balanceLine := fmt.Sprintf("Saldo atual: **%s**.", balanceStr)
+			if newBalance < 0 {
+				balanceLine = "Saldo atual: indisponível."
+			}
+			msg := fmt.Sprintf(">>> 💰 O ninja **%s** doou **%s** para o banco da vila.\n%s", userName, formatYens(amount), balanceLine)
+			sendDiscordWebhook("doação", msg)
+			return e.Next()
+		})
+
+		app.OnRecordAfterCreateSuccess("tax_records").BindFunc(func(e *core.RecordEvent) error {
+			userId := e.Record.GetString("user")
+			amount := e.Record.GetFloat("amount")
+			period := e.Record.GetString("period")
+			log.Printf("[Discord/taxa] Nova taxa: user=%s, amount=%.2f, period=%s", userId, amount, period)
+			userName := userId
+			if u, err := app.FindRecordById("users", userId); err == nil {
+				userName = u.GetString("name")
+			} else {
+				log.Printf("[Discord/taxa] AVISO: Não foi possível buscar nome do usuário %s: %v", userId, err)
+			}
+			newBalance := addToBankBalance(app, amount, "tax_income", userId, fmt.Sprintf("Taxa de %s — período %s", userName, period))
+			balanceStr := formatYens(newBalance)
+			if newBalance < 0 {
+				balanceStr = "indisponível"
+			}
+			balanceLine := fmt.Sprintf("Saldo atual: **%s**.", balanceStr)
+			if newBalance < 0 {
+				balanceLine = "Saldo atual: indisponível."
+			}
+			msg := fmt.Sprintf(">>> 🏦 O ninja **%s** pagou **%s** de taxa para o banco da vila.\n%s", userName, formatYens(amount), balanceLine)
+			sendDiscordWebhook("taxa", msg)
+			return e.Next()
+		})
+
+		app.OnRecordAfterUpdateSuccess("mission_assignments").BindFunc(func(e *core.RecordEvent) error {
+			if e.Record.GetString("status") != "completed" {
+				return e.Next()
+			}
+			if e.Record.Original().GetString("status") == "completed" {
+				return e.Next()
+			}
+
+			templateId := e.Record.GetString("template")
+			userId := e.Record.GetString("assigned_to")
+
+			template, err := app.FindRecordById("mission_templates", templateId)
+			if err != nil {
+				log.Printf("[Banco/missão] ERRO: Template %s não encontrado: %v", templateId, err)
+				return e.Next()
+			}
+
+			rewardYens := template.GetFloat("reward_yens")
+			rewardPoints := template.GetInt("reward_points")
+			missionName := template.GetString("title")
+
+			// Creditar title_points no usuário (isso também dispara recálculo de current_title)
+			if rewardPoints > 0 {
+				ninja, err := app.FindRecordById("users", userId)
+				if err == nil {
+					ninja.Set("title_points", ninja.GetInt("title_points")+rewardPoints)
+					if err := app.Save(ninja); err != nil {
+						log.Printf("[Missão] ERRO: Falha ao creditar title_points para %s: %v", userId, err)
+					}
+				}
+			}
+
+			if rewardYens <= 0 {
+				return e.Next()
+			}
+
+			userName := userId
+			if u, err := app.FindRecordById("users", userId); err == nil {
+				userName = u.GetString("name")
+			}
+
+			desc := fmt.Sprintf("Recompensa de missão: %s — ninja %s", missionName, userName)
+			addToBankBalance(app, -rewardYens, "reward_payout", userId, desc)
+			log.Printf("[Banco/missão] Descontado %.2f Yens pela missão '%s' do ninja %s", rewardYens, missionName, userName)
+
 			return e.Next()
 		})
 

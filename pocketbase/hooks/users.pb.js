@@ -2,6 +2,8 @@ onRecordBeforeUpdateRequest((e) => {
   const authId = e.httpContext.get("authRecord")?.id;
   if (!authId) return;
 
+  if (authId !== e.record.id) return; // only protect when editing own profile
+
   const requestingUser = $app.dao().findAuthRecordById("users", authId);
   const isAdmin = requestingUser.get("role") === "admin";
   if (isAdmin) return; // admin pode tudo
