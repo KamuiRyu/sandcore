@@ -899,9 +899,9 @@ ipcMain.on('quit-and-install-update', () => {
     return
   }
 
-  const updaterPath = path.join(process.resourcesPath, 'GoshiUpdater.exe')
+  const updaterPath = path.join(path.dirname(app.getPath('exe')), 'SandCoreUpdater.exe')
   if (!fs.existsSync(updaterPath)) {
-    broadcastUpdateStatus({ status: 'error', message: 'GoshiUpdater.exe não encontrado nos recursos do app.' })
+    broadcastUpdateStatus({ status: 'error', message: 'SandCoreUpdater.exe não encontrado no diretório de instalação.' })
     return
   }
 

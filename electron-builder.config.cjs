@@ -18,7 +18,7 @@ module.exports = {
   ],
   files: ["dist/**/*", "dist-electron/**/*", "package.json"],
 
-  extraResources: [
+  extraFiles: [
     {
       from: "build/updater/SandCoreUpdater.exe",
       to: "SandCoreUpdater.exe",
