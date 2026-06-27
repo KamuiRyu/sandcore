@@ -11,6 +11,7 @@ export interface MissionTemplate {
   reward_items?: string;
   reward_points: number;
   is_active: boolean;
+  location_image?: string | string[];
   created_by: string;
   created: string;
   updated: string;

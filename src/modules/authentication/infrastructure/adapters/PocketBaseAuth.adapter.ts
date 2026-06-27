@@ -17,6 +17,8 @@ export class PocketBaseAuthAdapter implements AuthRepository {
       level: record.level || 0,
       title_points: record.title_points || 0,
       current_title: record.current_title || '',
+      daily_points_used: record.daily_points_used || 0,
+      last_points_reset: record.last_points_reset || '',
       approved_by: record.approved_by || '',
       approved_at: record.approved_at || '',
       created: record.created,

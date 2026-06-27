@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Search, RefreshCw, CheckCircle2, Package, Star, Coins, Zap } from 'lucide-react'
+import { pb } from '../../../../lib/pocketbase'
 import { useMissionsViewModel } from '../viewModels/useMissions.viewModel'
 import { MissionRankBadge } from '../components/MissionRankBadge'
-import { VillageSection } from '../components/VillageSection'
+import { VillageSection, VillagePrimaryButton, VillageSecondaryButton } from '../components/VillageSection'
 import { MissionRank } from '../../core/entities/VillageSettings.entity'
+import { MissionTemplate } from '../../core/entities/MissionTemplate.entity'
 
 const RANKS: MissionRank[] = ['D', 'C', 'B', 'A', 'S']
 
@@ -11,6 +13,7 @@ export const MissionBoardScreen = () => {
   const vm = useMissionsViewModel()
   const [search, setSearch] = useState('')
   const [filterRank, setFilterRank] = useState<MissionRank | 'all'>('all')
+  const [expandedTplId, setExpandedTplId] = useState<string | null>(null)
   const maxPoints = vm.settings?.daily_points_per_ninja ?? 0
   const remainingPoints = Math.max(0, maxPoints - vm.usedPoints)
   const pointsPct = maxPoints > 0 ? Math.min(100, (vm.usedPoints / maxPoints) * 100) : 0
@@ -109,75 +112,163 @@ export const MissionBoardScreen = () => {
             <div className="space-y-2">
               {list.map(t => {
                 const isAssigned = vm.assignedTemplateIds.has(t.id)
+                const isExpanded = expandedTplId === t.id
                 return (
                   <div
                     key={t.id}
+                    onClick={() => setExpandedTplId(isExpanded ? null : t.id)}
                     style={{
                       background: isAssigned ? 'rgba(40,90,56,0.12)' : 'rgba(8,8,8,0.8)',
-                      border: `1px solid ${isAssigned ? '#285a38' : '#1e1e1e'}`,
+                      border: `1px solid ${isAssigned ? '#285a38' : (isExpanded ? '#c8860a' : '#1e1e1e')}`,
                       borderRadius: 3,
-                      padding: '14px 16px',
+                      padding: '12px 16px',
                       display: 'flex',
-                      alignItems: 'center',
-                      gap: 16,
+                      flexDirection: 'column',
+                      gap: isExpanded ? 14 : 0,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
                     }}
+                    onMouseEnter={e => { if (!isExpanded && !isAssigned) e.currentTarget.style.borderColor = '#c8860a' }}
+                    onMouseLeave={e => { if (!isExpanded && !isAssigned) e.currentTarget.style.borderColor = '#1e1e1e' }}
                   >
-                    {/* Rank badge */}
-                    <div style={{ flexShrink: 0 }}>
-                      <MissionRankBadge rank={t.rank as MissionRank} />
+                    {/* Compact row (always visible) */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+                        <MissionRankBadge rank={t.rank as MissionRank} />
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#e8d5a0', fontFamily: "'Cinzel', serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {t.title}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+                        {!isExpanded && (
+                          <div style={{ display: 'flex', gap: 8, fontSize: 11, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>
+                            {t.reward_yens > 0 && <span>💰 {t.reward_yens.toLocaleString('pt-BR')}¥</span>}
+                            {t.reward_points > 0 && <span>⭐ {t.reward_points}pts</span>}
+                          </div>
+                        )}
+                        {vm.settings && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>
+                            <Zap size={11} />
+                            {vm.settings.points_cost[t.rank as MissionRank] ?? 0} pts
+                          </div>
+                        )}
+                        {isAssigned ? (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#5ac87a', fontFamily: "'Orbitron', sans-serif", fontWeight: 700 }}>
+                            <CheckCircle2 size={13} /> Atribuída
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 10, color: '#c8a840', textDecoration: 'underline', fontFamily: "'Orbitron', sans-serif" }}>
+                            {isExpanded ? 'Recolher' : 'Detalhes'}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Title + description */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#e8d5a0', marginBottom: 3, fontFamily: "'Cinzel', serif" }}>{t.title}</div>
-                      {t.description && (
-                        <div style={{ fontSize: 11, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif", lineHeight: 1.5 }}>{t.description}</div>
-                      )}
-                      {(t.min_level > 0 || t.min_ninja_rank) && (
-                        <div style={{ display: 'flex', gap: 12, marginTop: 5, fontSize: 11, color: '#7a6030', fontFamily: "'Orbitron', sans-serif" }}>
-                          {t.min_ninja_rank && <span>Posto mín.: <span style={{ color: '#c8a030' }}>{t.min_ninja_rank}</span></span>}
-                          {t.min_level > 0 && <span>Nível mín.: <span style={{ color: '#c8a030' }}>{t.min_level}</span></span>}
-                        </div>
-                      )}
-                    </div>
+                    {/* Expanded details */}
+                    {isExpanded && (
+                      <div
+                        onClick={(e) => e.stopPropagation()} // Prevent clicking inner elements from collapsing card
+                        style={{ borderTop: '1px solid #1e1e1e', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 14 }}
+                      >
+                        {/* Description */}
+                        {t.description && (
+                          <div>
+                            <div style={{ fontSize: 10, color: '#c8a030', fontFamily: "'Orbitron', sans-serif", marginBottom: 6, fontWeight: 700, letterSpacing: '0.05em' }}>
+                              DESCRIÇÃO DA MISSÃO:
+                            </div>
+                            <div style={{ fontSize: 12, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif", lineHeight: 1.6 }}>
+                              {t.description}
+                            </div>
+                          </div>
+                        )}
 
-                    {/* Rewards */}
-                    <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 5, alignItems: 'flex-end' }}>
-                      {t.reward_yens > 0 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#c8a030', fontFamily: "'Orbitron', sans-serif", fontWeight: 700 }}>
-                          <Coins size={13} />
-                          {t.reward_yens.toLocaleString('pt-BR')} yens
-                        </div>
-                      )}
-                      {t.reward_points > 0 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#e8b840', fontFamily: "'Orbitron', sans-serif", fontWeight: 700 }}>
-                          <Star size={13} />
-                          {t.reward_points} pts
-                        </div>
-                      )}
-                      {t.reward_items && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>
-                          <Package size={12} />
-                          {t.reward_items}
-                        </div>
-                      )}
-                    </div>
+                        {/* Location Images */}
+                        {t.location_image && (
+                          <div>
+                            <div style={{ fontSize: 10, color: '#c8a030', fontFamily: "'Orbitron', sans-serif", marginBottom: 6, fontWeight: 700, letterSpacing: '0.05em' }}>
+                              📍 IMAGEM(NS) DE LOCALIZAÇÃO / REFERÊNCIA:
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                              {(Array.isArray(t.location_image) ? t.location_image : [t.location_image]).map((imgName, i) => {
+                                if (!imgName) return null;
+                                const fileUrl = pb.files.getUrl(t, imgName);
+                                return (
+                                  <a
+                                    key={i}
+                                    href={fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ display: 'inline-block', border: '1px solid #c8860a', borderRadius: 3, overflow: 'hidden', background: '#000', cursor: 'zoom-in' }}
+                                  >
+                                    <img
+                                      src={fileUrl}
+                                      alt={`Localização ${i + 1}`}
+                                      style={{ maxHeight: 120, maxWidth: 140, objectFit: 'contain', display: 'block' }}
+                                    />
+                                  </a>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
 
-                    {/* Cost + status */}
-                    <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-                      {vm.settings && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>
-                          <Zap size={11} />
-                          {vm.settings.points_cost[t.rank as MissionRank] ?? 0} pts
+                        {/* Requirements & Energy cost */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, borderTop: '1px solid #1e1e1e', paddingTop: 12 }}>
+                          <div>
+                            <div style={{ fontSize: 10, color: '#c8a030', fontFamily: "'Orbitron', sans-serif", marginBottom: 4, fontWeight: 700 }}>REQUISITOS:</div>
+                            <div style={{ fontSize: 11, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>
+                              {t.min_ninja_rank && <div>Posto: <span style={{ color: '#e8d5a0' }}>{t.min_ninja_rank}</span></div>}
+                              {t.min_level > 0 ? <div>Nível: <span style={{ color: '#e8d5a0' }}>{t.min_level}</span></div> : null}
+                              {!t.min_ninja_rank && t.min_level === 0 && <div style={{ color: '#666' }}>Sem requisitos</div>}
+                            </div>
+                          </div>
+
+                          <div>
+                            <div style={{ fontSize: 10, color: '#c8a030', fontFamily: "'Orbitron', sans-serif", marginBottom: 4, fontWeight: 700 }}>CUSTO DIÁRIO:</div>
+                            <div style={{ fontSize: 11, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>
+                              {vm.settings ? `${vm.settings.points_cost[t.rank as MissionRank] ?? 0} pts de energia` : '–'}
+                            </div>
+                          </div>
                         </div>
-                      )}
-                      {isAssigned && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#5ac87a', fontFamily: "'Orbitron', sans-serif", fontWeight: 700 }}>
-                          <CheckCircle2 size={14} />
-                          Atribuída
+
+                        {/* Rewards */}
+                        <div style={{ borderTop: '1px solid #1e1e1e', paddingTop: 12 }}>
+                          <div style={{ fontSize: 10, color: '#c8a030', fontFamily: "'Orbitron', sans-serif", marginBottom: 6, fontWeight: 700 }}>RECOMPENSAS:</div>
+                          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                            {t.reward_yens > 0 && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#c8a030', fontFamily: "'Orbitron', sans-serif", fontWeight: 700 }}>
+                                <Coins size={14} /> {t.reward_yens.toLocaleString('pt-BR')} yens
+                              </div>
+                            )}
+                            {t.reward_points > 0 && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#e8b840', fontFamily: "'Orbitron', sans-serif", fontWeight: 700 }}>
+                                <Star size={14} /> {t.reward_points} pts
+                              </div>
+                            )}
+                            {t.reward_items && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>
+                                <Package size={13} /> {t.reward_items}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
+
+                        {/* Action buttons */}
+                        {!vm.assignedTemplateIds.has(t.id) && (
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, borderTop: '1px solid #1e1e1e', paddingTop: 12 }}>
+                            <VillagePrimaryButton
+                              small
+                              disabled={!vm.checkEligibility(t.id).eligible}
+                              onClick={async () => {
+                                await vm.assignMission(t.id);
+                              }}
+                            >
+                              {vm.checkEligibility(t.id).eligible ? 'Aceitar Missão' : vm.checkEligibility(t.id).reason}
+                            </VillagePrimaryButton>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )
               })}

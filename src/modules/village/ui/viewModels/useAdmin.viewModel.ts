@@ -17,6 +17,7 @@ import {
   createMissionTemplate,
   updateMissionTemplate,
   getAllAssignments,
+  createAssignment,
   updateAssignment,
   getVillageSettings,
   updateVillageSettings,
@@ -114,12 +115,19 @@ export const useAdminViewModel = () => {
 
   // ─── Templates ────────────────────────────────────────────────────────────
 
-  const addTemplate = async (data: Omit<MissionTemplate, 'id' | 'created' | 'updated'>) => {
-    await createMissionTemplate({ ...data, created_by: adminId })
+  const addTemplate = async (data: any) => {
+    if (data instanceof FormData) {
+      if (adminId && !data.has('created_by')) {
+        data.append('created_by', adminId)
+      }
+      await createMissionTemplate(data)
+    } else {
+      await createMissionTemplate({ ...data, created_by: adminId })
+    }
     setTemplates(await getMissionTemplates(false))
   }
 
-  const editTemplate = async (id: string, data: Partial<MissionTemplate>) => {
+  const editTemplate = async (id: string, data: any) => {
     await updateMissionTemplate(id, data)
     setTemplates(await getMissionTemplates(false))
   }
@@ -154,6 +162,48 @@ export const useAdminViewModel = () => {
       admin_notes: notes,
       reviewed_by: adminId,
     } as any)
+    await loadAssignments('status!="completed"')
+  }
+
+  const assignMission = async (templateId: string, userId: string, day: string) => {
+    const tpl = templates.find(t => t.id === templateId)
+    if (tpl && settings) {
+      let costMap = settings.points_cost
+      if (typeof costMap === 'string') {
+        try {
+          costMap = JSON.parse(costMap)
+        } catch {}
+      }
+      if (costMap) {
+        const upperRank = tpl.rank.toUpperCase()
+        let cost = 0
+        for (const [key, val] of Object.entries(costMap)) {
+          if (key.toUpperCase() === upperRank) {
+            cost = Number(val) || 0
+            break
+          }
+        }
+        if (cost > 0) {
+          try {
+            const u = await pb.collection('users').getOne(userId) as any
+            const currentUsed = u.daily_points_used || 0
+            await pb.collection('users').update(userId, {
+              daily_points_used: currentUsed + cost,
+            })
+          } catch (e) {
+            console.error('Error updating target user daily points:', e)
+          }
+        }
+      }
+    }
+
+    await createAssignment({
+      template: templateId,
+      assigned_to: userId,
+      status: 'in_progress',
+      day,
+      assigned_at: new Date().toISOString(),
+    })
     await loadAssignments('status!="completed"')
   }
 
@@ -194,6 +244,7 @@ export const useAdminViewModel = () => {
     saveSettings,
     approveAssignment, rejectAssignment,
     loadAssignments,
+    assignMission,
     addOrgRole, editOrgRole, removeOrgRole,
     getOrgRolesByType,
   }

@@ -248,6 +248,13 @@ func main() {
 		}
 	})
 
+	// Reset de pontos diários dos usuários às 12:00 BRT (15:00 UTC)
+	app.Cron().Add("resetDailyPoints", "0 15 * * *", func() {
+		if _, err := app.DB().NewQuery("UPDATE users SET daily_points_used = 0").Execute(); err != nil {
+			log.Printf("ERRO: Falha no reset diário de daily_points_used: %v", err)
+		}
+	})
+
 	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
 		respawns := []*core.Record{}
 		_ = app.RecordQuery("map_respawns").

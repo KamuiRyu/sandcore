@@ -20,11 +20,17 @@ function currentWeekStart(): string {
   const day = d.getDay()
   const diff = d.getDate() - day + (day === 0 ? -6 : 1)
   const monday = new Date(d.setDate(diff))
-  return monday.toISOString().split('T')[0]
+  const year = monday.getFullYear()
+  const month = String(monday.getMonth() + 1).padStart(2, '0')
+  const date = String(monday.getDate()).padStart(2, '0')
+  return `${year}-${month}-${date}`
 }
 
 function currentMonth(): string {
-  return new Date().toISOString().slice(0, 7)
+  const d = new Date()
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  return `${year}-${month}`
 }
 
 export const useManagerViewModel = () => {

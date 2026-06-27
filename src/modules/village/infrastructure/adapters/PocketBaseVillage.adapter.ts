@@ -44,11 +44,11 @@ export async function getMissionTemplates(activeOnly = true): Promise<MissionTem
   return await pb.collection('mission_templates').getFullList({ filter, sort: 'rank' }) as unknown as MissionTemplate[]
 }
 
-export async function createMissionTemplate(data: Omit<MissionTemplate, 'id' | 'created' | 'updated'>): Promise<MissionTemplate> {
+export async function createMissionTemplate(data: any): Promise<MissionTemplate> {
   return await pb.collection('mission_templates').create(data) as unknown as MissionTemplate
 }
 
-export async function updateMissionTemplate(id: string, data: Partial<MissionTemplate>): Promise<MissionTemplate> {
+export async function updateMissionTemplate(id: string, data: any): Promise<MissionTemplate> {
   return await pb.collection('mission_templates').update(id, data) as unknown as MissionTemplate
 }
 

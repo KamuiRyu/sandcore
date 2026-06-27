@@ -14,6 +14,8 @@ export interface User {
   level: number;
   title_points: number;
   current_title?: string;
+  daily_points_used?: number;
+  last_points_reset?: string;
   approved_by?: string;
   approved_at?: string;
   created: string;

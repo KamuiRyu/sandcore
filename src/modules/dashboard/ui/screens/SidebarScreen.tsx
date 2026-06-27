@@ -108,7 +108,7 @@ export const SidebarScreen = ({ activeTab, onLogout }: SidebarScreenProps) => {
         <div style={{ width: 28, height: 1, background: 'linear-gradient(90deg, transparent, rgba(200,134,10,0.4), transparent)', margin: '4px 0', flexShrink: 0 }} />
 
         {/* Main nav */}
-        <div className="flex flex-col items-center w-full overflow-y-auto flex-1 py-2" style={{ gap: 2 }}>
+        <div className="flex flex-col items-center w-full overflow-y-auto no-scrollbar flex-1 py-2" style={{ gap: 2 }}>
           {mainMenuItems.filter(item => !hiddenItems.has(item.id)).map((item) => {
             const Icon = item.icon
             const isActive = activeTab === item.id

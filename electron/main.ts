@@ -18,6 +18,8 @@ let sidebarWin: BrowserWindow | null = null
 let oauthInProgress = false
 let currentLayoutSide: 'left' | 'right' = 'right'
 let currentAlignSide: 'top' | 'bottom' = 'top'
+let lastVisibleMain = 6
+let lastVisibleAdmin = 2
 
 // Config management
 const configPath = path.join(app.getPath('userData'), 'config.json')
@@ -310,6 +312,18 @@ function forcePanelToFront() {
   }
 }
 
+function getStorageValue(key: string): string | null {
+  const filePath = path.join(app.getPath('userData'), `storage_${key}.json`)
+  try {
+    if (fs.existsSync(filePath)) {
+      return fs.readFileSync(filePath, 'utf-8')
+    }
+  } catch (e) {
+    console.error('Failed to read storage', key, e)
+  }
+  return null
+}
+
 function createSidebarWindow() {
   if (sidebarWin && !sidebarWin.isDestroyed()) {
     sidebarWin.focus()
@@ -320,8 +334,40 @@ function createSidebarWindow() {
   currentTabId = null
   const zoom = (appConfig.uiScale || 100) / 100
 
+  // Calculate dynamic initial height based on user settings and roles
+  const hiddenItemsRaw = getStorageValue('shinobi-map-sidebar-hidden')
+  const hiddenItems = new Set<string>()
+  if (hiddenItemsRaw) {
+    try {
+      const parsed = JSON.parse(hiddenItemsRaw)
+      if (Array.isArray(parsed)) {
+        parsed.forEach(item => hiddenItems.add(String(item)))
+      }
+    } catch (e) {
+      console.error('Failed to parse hidden items', e)
+    }
+  }
+
+  const role = appAuth?.model?.role || 'ninja'
+  const isAdmin = role === 'admin'
+  const isManager = role === 'manager' || role === 'admin'
+
+  const mainMenuItemIds = ['map', 'missions', 'ninja-card', 'groups', 'stats', 'crafting']
+  const visibleMain = mainMenuItemIds.filter(id => !hiddenItems.has(id)).length
+
+  const visibleAdmin = [
+    ...(isManager ? ['manager'] : []),
+    ...(isAdmin ? ['admin'] : [])
+  ].filter(id => !hiddenItems.has(id)).length
+
+  lastVisibleMain = visibleMain
+  lastVisibleAdmin = visibleAdmin
+
+  const ITEM_H = 42
+  const BASE_H = 192
+  const rawH = BASE_H + visibleMain * ITEM_H + visibleAdmin * ITEM_H
+  const height = Math.round(Math.max(rawH, 180) * zoom)
   const width = Math.round(56 * zoom)
-  const height = Math.round(580 * zoom)
 
   let x: number | undefined
   let y: number | undefined
@@ -861,12 +907,12 @@ ipcMain.handle('register-shortcut', (_event, { type, shortcut }) => {
 
 ipcMain.on('resize-sidebar', (_event, { visibleMain, visibleAdmin }: { visibleMain: number; visibleAdmin: number }) => {
   if (!sidebarWin || sidebarWin.isDestroyed()) return
+  lastVisibleMain = visibleMain
+  lastVisibleAdmin = visibleAdmin
   const zoom = (appConfig.uiScale || 100) / 100
   const ITEM_H = 42   // height per nav button + gap
-  const TOP    = 70   // logo + top divider
-  const SEP    = 16   // separator before admin/bottom section
-  const BOTTOM = 88   // settings + logout + padding
-  const rawH = TOP + visibleMain * ITEM_H + SEP + visibleAdmin * ITEM_H + BOTTOM
+  const BASE_H = 192  // exact base height for borders, padding, logo, dividers, settings, logout + safety buffer
+  const rawH = BASE_H + visibleMain * ITEM_H + visibleAdmin * ITEM_H
   const newHeight = Math.round(Math.max(rawH, 180) * zoom)
   const newWidth  = Math.round(56 * zoom)
   sidebarWin.setSize(newWidth, newHeight)
@@ -924,7 +970,10 @@ ipcMain.on('set-config', (_event, newConfig) => {
       sidebarWin.webContents.setZoomFactor(zoom)
       const [curX, curY] = sidebarWin.getPosition()
       const newW = Math.round(56 * zoom)
-      const newH = Math.round(580 * zoom)
+      const ITEM_H = 42
+      const BASE_H = 192
+      const rawH = BASE_H + lastVisibleMain * ITEM_H + lastVisibleAdmin * ITEM_H
+      const newH = Math.round(Math.max(rawH, 180) * zoom)
       sidebarWin.setBounds({ x: curX, y: curY, width: newW, height: newH })
     }
     if (panelWin && !panelWin.isDestroyed()) {
