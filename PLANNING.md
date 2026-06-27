@@ -54,5 +54,3 @@ _Objetivo: Garantir que o aplicativo seja otimizado (baixo consumo) e possa ser 
 - [ ] **Ícones e Metadados:** Configurar ícones oficiais para a barra de tarefas e bandeja do sistema (system tray).
 - [ ] **Configuração de Build:** Configurar o `electron-builder` no `package.json` para gerar os instaladores (Windows `.exe`, Linux `.AppImage`/`.deb`, etc).
 - [ ] **Teste de Produção:** Gerar o executável e testar o app rodando de forma estritamente independente.
-
-WEBHOOK: https://discord.com/api/webhooks/1520245683234275378/dTZxbKPcZkaZSVhR2Gtry3hEHx4xLD1HWecRG4Y2akg9LxScK9bYrZyprCpGdatoQBdF
