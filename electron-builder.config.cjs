@@ -18,21 +18,29 @@ module.exports = {
   ],
   files: ["dist/**/*", "dist-electron/**/*", "package.json"],
 
-  extraFiles: [
-    {
-      from: "build/updater/SandCoreUpdater.exe",
-      to: "SandCoreUpdater.exe",
-    },
-  ],
-
   win: {
     icon: "public/icon.ico",
     target: [
       {
-        target: "zip",
+        target: "nsis",
+        arch: ["x64"],
+      },
+      {
+        target: "portable",
         arch: ["x64"],
       },
     ],
-    artifactName: "${productName}-${version}-win.${ext}",
+  },
+
+  nsis: {
+    oneClick: false,
+    allowToChangeInstallationDirectory: true,
+    createDesktopShortcut: true,
+    include: "build/nsis/installer.nsh",
+    artifactName: "SandCore_" + versionStr + "_setup.${ext}",
+  },
+
+  portable: {
+    artifactName: "SandCore_" + versionStr + "_portable.${ext}",
   },
 };

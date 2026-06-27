@@ -14,19 +14,19 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout sandcore
-        uses: actions/checkout@v7
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
-          node-version: 26
+          node-version: 20
           cache: "npm"
 
-      - name: Install sandcore dependencies
+      - name: Install dependencies
         run: npm ci
 
-      - name: Build and package sandcore
+      - name: Build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_ENV: ${{ secrets.NODE_ENV }}
@@ -42,10 +42,11 @@ jobs:
         run: npm run build
 
       - name: Publish Release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             release/*.exe
-            release/*.zip
+            release/*.blockmap
+            release/latest.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

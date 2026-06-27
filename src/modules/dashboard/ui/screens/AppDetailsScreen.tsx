@@ -63,9 +63,12 @@ export const AppDetailsScreen = () => {
     | "checking"
     | "available"
     | "not-available"
+    | "downloading"
+    | "downloaded"
     | "error"
   >("idle");
   const [updateVersion, setUpdateVersion] = useState("");
+  const [downloadPercent, setDownloadPercent] = useState(0);
   const [updaterError, setUpdaterError] = useState("");
 
   const [confirmModal, setConfirmModal] = useState<{
@@ -115,9 +118,15 @@ export const AppDetailsScreen = () => {
         if (status === "not-available")
           setTimeout(() => setUpdateStatus("idle"), 3000);
       };
+      const handleUpdateProgress = (_event: any, data: { percent: number }) => {
+        setUpdateStatus("downloading");
+        setDownloadPercent(data.percent);
+      };
       window.ipcRenderer.on("update-status", handleUpdateStatus);
+      window.ipcRenderer.on("update-progress", handleUpdateProgress);
       return () => {
         window.ipcRenderer?.off("update-status", handleUpdateStatus);
+        window.ipcRenderer?.off("update-progress", handleUpdateProgress);
       };
     }
   }, []);
@@ -498,6 +507,64 @@ export const AppDetailsScreen = () => {
               </div>
             )}
             {updateStatus === "available" && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <RefreshCw
+                  size={14}
+                  style={{
+                    color: "#c8860a",
+                    animation: "spin 1s linear infinite",
+                  }}
+                />
+                <div>
+                  <div
+                    style={{ fontSize: 11, fontWeight: 700, color: "#c8860a" }}
+                  >
+                    Nova versão {updateVersion}!
+                  </div>
+                  <div style={{ fontSize: 9, color: "#7a8060", marginTop: 2 }}>
+                    Iniciando download automático...
+                  </div>
+                </div>
+              </div>
+            )}
+            {updateStatus === "downloading" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: 9,
+                    fontFamily: "'Orbitron', sans-serif",
+                    color: "#7a8060",
+                  }}
+                >
+                  <span>Baixando ({updateVersion})...</span>
+                  <span style={{ color: "#c8860a", fontWeight: 700 }}>
+                    {downloadPercent}%
+                  </span>
+                </div>
+                <div
+                  style={{
+                    width: "100%",
+                    height: 4,
+                    borderRadius: 2,
+                    background: "#1e1e0e",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${downloadPercent}%`,
+                      background: "linear-gradient(90deg,#b87a08,#e8a820)",
+                      borderRadius: 2,
+                      transition: "width 0.3s",
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+            {updateStatus === "downloaded" && (
               <div
                 style={{
                   display: "flex",
@@ -508,12 +575,12 @@ export const AppDetailsScreen = () => {
               >
                 <div>
                   <div
-                    style={{ fontSize: 11, fontWeight: 700, color: "#c8860a" }}
+                    style={{ fontSize: 11, fontWeight: 700, color: "#4caf50" }}
                   >
-                    Nova versão {updateVersion} disponível!
+                    Atualização {updateVersion} pronta!
                   </div>
                   <div style={{ fontSize: 9, color: "#7a8060", marginTop: 2 }}>
-                    O app será fechado e o atualizador iniciará
+                    Reinicie para aplicar
                   </div>
                 </div>
                 <button
@@ -529,10 +596,9 @@ export const AppDetailsScreen = () => {
                     cursor: "pointer",
                     letterSpacing: "0.08em",
                     border: "none",
-                    whiteSpace: "nowrap",
                   }}
                 >
-                  ATUALIZAR
+                  REINICIAR
                 </button>
               </div>
             )}
