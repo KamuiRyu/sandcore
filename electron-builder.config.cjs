@@ -41,6 +41,7 @@ module.exports = {
         arch: ["x64"],
       },
     ],
+    artifactName: "${productName}-${version}-win.${ext}",
   },
 
   nsis: {
@@ -55,7 +56,4 @@ module.exports = {
     artifactName: "SandCore_" + versionStr + "_portable.${ext}",
   },
 
-  zip: {
-    artifactName: "SandCore-${version}-win.zip",
-  },
 };
