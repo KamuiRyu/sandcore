@@ -24,77 +24,48 @@ let lastVisibleAdmin = 2
 // Config management
 const configPath = path.join(app.getPath('userData'), 'config.json')
 
-let registeredShortcutMap: string | null = null
-let registeredShortcutSettings: string | null = null
+const registeredShortcuts = new Map<string, string>() // tabId → accelerator
 
-function updateShortcutMap(newShortcut: string): boolean {
-  if (registeredShortcutMap === newShortcut) return true
+function updateShortcut(tabId: string, shortcut: string): boolean {
+  const current = registeredShortcuts.get(tabId)
+  if (current === shortcut) return true
 
-  if (registeredShortcutMap) {
-    globalShortcut.unregister(registeredShortcutMap)
-    registeredShortcutMap = null
+  if (current) {
+    globalShortcut.unregister(current)
+    registeredShortcuts.delete(tabId)
   }
 
-  if (!newShortcut) return true
+  if (!shortcut) return true
 
   try {
-    const success = globalShortcut.register(newShortcut, () => {
-      if (sidebarWin && !sidebarWin.isDestroyed()) {
-        if (sidebarWin.isMinimized()) {
-          sidebarWin.restore()
-          sidebarWin.focus()
-          togglePanel('map')
-        } else if (sidebarWin.isFocused() && currentTabId === 'map') {
-          togglePanel(null)
-        } else {
-          sidebarWin.focus()
-          togglePanel('map')
-        }
+    const success = globalShortcut.register(shortcut, () => {
+      if (!sidebarWin || sidebarWin.isDestroyed()) return
+
+      const wasMinimized = sidebarWin.isMinimized()
+      if (wasMinimized) sidebarWin.restore()
+
+      // Forçar foco no Windows (win.focus() sozinho não rouba o foreground de outra app)
+      sidebarWin.setAlwaysOnTop(true, 'screen-saver', 1)
+      sidebarWin.show()
+      sidebarWin.moveTop()
+      sidebarWin.focus()
+      if (!appConfig.alwaysOnTop) {
+        setTimeout(() => {
+          if (sidebarWin && !sidebarWin.isDestroyed()) sidebarWin.setAlwaysOnTop(false)
+        }, 150)
+      }
+
+      if (!wasMinimized && currentTabId === tabId) {
+        togglePanel(null)
+      } else {
+        togglePanel(tabId)
       }
     })
 
-    if (success) {
-      registeredShortcutMap = newShortcut
-    }
+    if (success) registeredShortcuts.set(tabId, shortcut)
     return success
   } catch (err) {
-    console.error('Failed to register map shortcut:', err)
-    return false
-  }
-}
-
-function updateShortcutSettings(newShortcut: string): boolean {
-  if (registeredShortcutSettings === newShortcut) return true
-
-  if (registeredShortcutSettings) {
-    globalShortcut.unregister(registeredShortcutSettings)
-    registeredShortcutSettings = null
-  }
-
-  if (!newShortcut) return true
-
-  try {
-    const success = globalShortcut.register(newShortcut, () => {
-      if (sidebarWin && !sidebarWin.isDestroyed()) {
-        if (sidebarWin.isMinimized()) {
-          sidebarWin.restore()
-          sidebarWin.focus()
-          togglePanel('settings')
-        } else if (sidebarWin.isFocused() && currentTabId === 'settings') {
-          togglePanel(null)
-        } else {
-          sidebarWin.focus()
-          togglePanel('settings')
-        }
-      }
-    })
-
-    if (success) {
-      registeredShortcutSettings = newShortcut
-    }
-    return success
-  } catch (err) {
-    console.error('Failed to register settings shortcut:', err)
+    console.error(`Failed to register shortcut for ${tabId}:`, err)
     return false
   }
 }
@@ -109,8 +80,18 @@ function loadConfig() {
     layoutSide: 'right',
     sidebarOpacity: 95,
     uiScale: 100,
-    shortcutMap: 'CommandOrControl+Alt+M',
-    shortcutSettings: 'CommandOrControl+Alt+S',
+    shortcuts: {
+      map: 'CommandOrControl+Alt+M',
+      missions: '',
+      'ninja-card': '',
+      groups: '',
+      stats: '',
+      crafting: '',
+      settings: 'CommandOrControl+Alt+S',
+      manager: '',
+      admin: '',
+      details: '',
+    },
     loginPosition: null,
     sidebarPosition: null
   }
@@ -896,13 +877,8 @@ autoUpdater.on('update-downloaded', (info) => {
   })
 })
 
-ipcMain.handle('register-shortcut', (_event, { type, shortcut }) => {
-  if (type === 'map') {
-    return { success: updateShortcutMap(shortcut) }
-  } else if (type === 'settings') {
-    return { success: updateShortcutSettings(shortcut) }
-  }
-  return { success: false }
+ipcMain.handle('register-shortcut', (_event, { tabId, shortcut }: { tabId: string; shortcut: string }) => {
+  return { success: updateShortcut(tabId, shortcut) }
 })
 
 function applySidebarResize(visibleMain: number, visibleAdmin: number) {
@@ -943,7 +919,12 @@ ipcMain.on('update-sidebar-hidden', (_event, { hiddenItems }: { hiddenItems: str
 })
 
 ipcMain.on('set-config', (_event, newConfig) => {
-  appConfig = { ...appConfig, ...newConfig }
+  // Merge shortcuts separadamente para não perder chaves não enviadas no patch
+  const { shortcuts: shortcutsPatch, ...rest } = newConfig
+  appConfig = { ...appConfig, ...rest }
+  if (shortcutsPatch) {
+    appConfig.shortcuts = { ...appConfig.shortcuts, ...shortcutsPatch }
+  }
   saveConfig(appConfig)
 
   if (sidebarWin && !sidebarWin.isDestroyed()) {
@@ -953,11 +934,10 @@ ipcMain.on('set-config', (_event, newConfig) => {
     panelWin.webContents.send('config-updated', appConfig)
   }
 
-  if ('shortcutMap' in newConfig) {
-    updateShortcutMap(newConfig.shortcutMap)
-  }
-  if ('shortcutSettings' in newConfig) {
-    updateShortcutSettings(newConfig.shortcutSettings)
+  if (shortcutsPatch) {
+    for (const [tabId, shortcut] of Object.entries(shortcutsPatch as Record<string, string>)) {
+      updateShortcut(tabId, shortcut)
+    }
   }
 
   if ('sidebarOpacity' in newConfig && sidebarWin && !sidebarWin.isDestroyed()) {
@@ -1156,11 +1136,8 @@ if (!gotTheLock) {
 
   app.whenReady().then(() => {
     createSplashWindow()
-    if (appConfig.shortcutMap) {
-      updateShortcutMap(appConfig.shortcutMap)
-    }
-    if (appConfig.shortcutSettings) {
-      updateShortcutSettings(appConfig.shortcutSettings)
+    for (const [tabId, shortcut] of Object.entries(appConfig.shortcuts as Record<string, string>)) {
+      if (shortcut) updateShortcut(tabId, shortcut)
     }
   })
 }

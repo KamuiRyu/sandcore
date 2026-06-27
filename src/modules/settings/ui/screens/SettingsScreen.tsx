@@ -5,6 +5,19 @@ import { appStorage } from '../../../../lib/storage'
 
 const SIDEBAR_HIDDEN_KEY = 'shinobi-map-sidebar-hidden'
 
+const SHORTCUT_TABS = [
+  { id: 'map',        label: 'Mapa' },
+  { id: 'missions',   label: 'Missões' },
+  { id: 'ninja-card', label: 'Carteirinha' },
+  { id: 'groups',     label: 'Grupos' },
+  { id: 'stats',      label: 'Estatísticas' },
+  { id: 'crafting',   label: 'Crafting' },
+  { id: 'settings',   label: 'Configurações' },
+  { id: 'details',    label: 'App Details' },
+  { id: 'manager',    label: 'Organização' },
+  { id: 'admin',      label: 'Admin' },
+] as const
+
 const SIDEBAR_ITEMS = [
   { id: 'map',        label: 'Mapa',          icon: Map },
   { id: 'missions',   label: 'Missões',        icon: Scroll },
@@ -138,9 +151,19 @@ export const SettingsScreen = () => {
     }
   };
 
-  const [shortcutMap, setShortcutMap] = useState('CommandOrControl+Alt+M')
-  const [shortcutSettings, setShortcutSettings] = useState('CommandOrControl+Alt+S')
-  const [recordingType, setRecordingType] = useState<'map' | 'settings' | null>(null)
+  const [shortcuts, setShortcuts] = useState<Record<string, string>>({
+    map: 'CommandOrControl+Alt+M',
+    missions: '',
+    'ninja-card': '',
+    groups: '',
+    stats: '',
+    crafting: '',
+    settings: 'CommandOrControl+Alt+S',
+    manager: '',
+    admin: '',
+    details: '',
+  })
+  const [recordingTab, setRecordingTab] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [activeSubTab, setActiveSubTab] = useState<'general' | 'keybinds' | 'sidebar'>('general')
   const [hiddenSidebarItems, setHiddenSidebarItems] = useState<Set<string>>(() => {
@@ -171,8 +194,7 @@ export const SettingsScreen = () => {
           if ('layoutSide' in config) setLayoutSide(config.layoutSide || 'right')
           if ('sidebarOpacity' in config) setSidebarOpacity(config.sidebarOpacity)
           if ('uiScale' in config) setUiScale(config.uiScale || 100)
-          if ('shortcutMap' in config) setShortcutMap(config.shortcutMap || '')
-          if ('shortcutSettings' in config) setShortcutSettings(config.shortcutSettings || '')
+          if ('shortcuts' in config) setShortcuts(s => ({ ...s, ...config.shortcuts }))
         }
       }
       window.ipcRenderer.getConfig().then((config) => handleConfig(null, config))
@@ -182,7 +204,7 @@ export const SettingsScreen = () => {
   }, [])
 
   useEffect(() => {
-    if (!recordingType) return
+    if (!recordingTab) return
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       e.preventDefault(); e.stopPropagation()
       const key = e.key
@@ -191,13 +213,13 @@ export const SettingsScreen = () => {
       const shift = e.shiftKey || key === 'Shift'
       const meta = e.metaKey || key === 'Meta'
       const isModifierOnly = ['Control', 'Alt', 'Shift', 'Meta'].includes(key)
-      if (key === 'Escape' && !ctrl && !alt && !shift && !meta) { setRecordingType(null); setErrorMessage(''); return }
+      if (key === 'Escape' && !ctrl && !alt && !shift && !meta) { setRecordingTab(null); setErrorMessage(''); return }
       if (key === 'Backspace' && !ctrl && !alt && !shift && !meta) {
-        window.ipcRenderer?.invoke('register-shortcut', { type: recordingType, shortcut: '' }).then((res: any) => {
+        window.ipcRenderer?.invoke('register-shortcut', { tabId: recordingTab, shortcut: '' }).then((res: any) => {
           if (res?.success) {
-            if (recordingType === 'map') { setShortcutMap(''); window.ipcRenderer?.send('set-config', { shortcutMap: '' }) }
-            else { setShortcutSettings(''); window.ipcRenderer?.send('set-config', { shortcutSettings: '' }) }
-            setRecordingType(null); setErrorMessage('')
+            setShortcuts(s => ({ ...s, [recordingTab]: '' }))
+            window.ipcRenderer?.send('set-config', { shortcuts: { [recordingTab]: '' } })
+            setRecordingTab(null); setErrorMessage('')
           }
         }); return
       }
@@ -220,20 +242,20 @@ export const SettingsScreen = () => {
       if (mainKey) {
         parts.push(mainKey)
         const finalShortcut = parts.join('+')
-        if (recordingType === 'map' && finalShortcut === shortcutSettings) { setErrorMessage('Este atalho conflita com o atalho de Configurações.'); return }
-        if (recordingType === 'settings' && finalShortcut === shortcutMap) { setErrorMessage('Este atalho conflita com o atalho do Mapa.'); return }
-        window.ipcRenderer?.invoke('register-shortcut', { type: recordingType, shortcut: finalShortcut }).then((res: any) => {
+        const conflict = Object.entries(shortcuts).find(([id, sc]) => id !== recordingTab && sc === finalShortcut)
+        if (conflict) { setErrorMessage(`Conflito com o atalho de "${SHORTCUT_TABS.find(t => t.id === conflict[0])?.label ?? conflict[0]}".`); return }
+        window.ipcRenderer?.invoke('register-shortcut', { tabId: recordingTab, shortcut: finalShortcut }).then((res: any) => {
           if (res?.success) {
-            if (recordingType === 'map') { setShortcutMap(finalShortcut); window.ipcRenderer?.send('set-config', { shortcutMap: finalShortcut }) }
-            else { setShortcutSettings(finalShortcut); window.ipcRenderer?.send('set-config', { shortcutSettings: finalShortcut }) }
-            setRecordingType(null); setErrorMessage('')
+            setShortcuts(s => ({ ...s, [recordingTab]: finalShortcut }))
+            window.ipcRenderer?.send('set-config', { shortcuts: { [recordingTab]: finalShortcut } })
+            setRecordingTab(null); setErrorMessage('')
           } else { setErrorMessage('Este atalho já está em uso ou é inválido.') }
         })
       }
     }
     window.addEventListener('keydown', handleGlobalKeyDown, true)
     return () => { window.removeEventListener('keydown', handleGlobalKeyDown, true) }
-  }, [recordingType, shortcutMap, shortcutSettings])
+  }, [recordingTab, shortcuts])
 
   const toggleAlwaysOnTop = () => { const v = !alwaysOnTop; setAlwaysOnTop(v); window.ipcRenderer?.send('set-config', { alwaysOnTop: v }) }
   const toggleInGameNotifs = () => { const v = !inGameNotifs; setInGameNotifs(v); window.ipcRenderer?.send('set-config', { inGameNotifs: v }) }
@@ -404,87 +426,56 @@ export const SettingsScreen = () => {
               <SL>Atalhos de Teclado</SL>
 
               <ListContainer>
-                {/* Map shortcut */}
-                <ListItem vertical>
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-semibold flex items-center gap-1.5" style={{ color: '#e8d5a0' }}>
-                        <Keyboard size={13} style={{ color: '#9a7a40' }} /> Abrir Mapa
-                      </span>
-                      <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Exibe e foca a tela de Mapa</span>
-                    </div>
-                    <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
-                      {shortcutMap && (
-                        <button
-                          onClick={() => { window.ipcRenderer?.invoke('register-shortcut', { type: 'map', shortcut: '' }).then((res: any) => { if (res?.success) { setShortcutMap(''); window.ipcRenderer?.send('set-config', { shortcutMap: '' }); setErrorMessage('') } }) }}
-                          className="p-1.5 rounded-[3px] transition-all cursor-pointer border"
-                          style={{ color: '#e07070', background: 'rgba(120,20,20,0.1)', borderColor: '#7a1414' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.3)' }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.1)' }}
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      )}
-                      {recordingType === 'map' ? (
-                        <PrimaryButton>PRESSIONE...</PrimaryButton>
-                      ) : (
-                        <SecondaryButton onClick={() => { setRecordingType('map'); setErrorMessage('') }}>GRAVAR NOVO</SecondaryButton>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between pt-1 w-full">
-                    <div className="flex items-center gap-1">
-                      {shortcutMap
-                        ? shortcutMap.split('+').map((p, i) => <KbdKey key={i} k={p} />)
-                        : <span className="text-[10px] italic" style={{ color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>Nenhum atalho</span>
-                      }
-                    </div>
-                    {recordingType === 'map' && (
-                      <span className="text-[8.5px] italic animate-pulse" style={{ color: '#c8a030' }}>Esc cancelar · Backspace limpar</span>
-                    )}
-                  </div>
-                </ListItem>
-
-                {/* Settings shortcut */}
-                <ListItem vertical isLast>
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-semibold flex items-center gap-1.5" style={{ color: '#e8d5a0' }}>
-                        <Keyboard size={13} style={{ color: '#9a7a40' }} /> Abrir Configurações
-                      </span>
-                      <span className="text-[9px] mt-0.5" style={{ color: '#9a7a40' }}>Exibe e foca a tela de Configurações</span>
-                    </div>
-                    <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
-                      {shortcutSettings && (
-                        <button
-                          onClick={() => { window.ipcRenderer?.invoke('register-shortcut', { type: 'settings', shortcut: '' }).then((res: any) => { if (res?.success) { setShortcutSettings(''); window.ipcRenderer?.send('set-config', { shortcutSettings: '' }); setErrorMessage('') } }) }}
-                          className="p-1.5 rounded-[3px] transition-all cursor-pointer border"
-                          style={{ color: '#e07070', background: 'rgba(120,20,20,0.1)', borderColor: '#7a1414' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.3)' }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.1)' }}
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      )}
-                      {recordingType === 'settings' ? (
-                        <PrimaryButton>PRESSIONE...</PrimaryButton>
-                      ) : (
-                        <SecondaryButton onClick={() => { setRecordingType('settings'); setErrorMessage('') }}>GRAVAR NOVO</SecondaryButton>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between pt-1 w-full">
-                    <div className="flex items-center gap-1">
-                      {shortcutSettings
-                        ? shortcutSettings.split('+').map((p, i) => <KbdKey key={i} k={p} />)
-                        : <span className="text-[10px] italic" style={{ color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>Nenhum atalho</span>
-                      }
-                    </div>
-                    {recordingType === 'settings' && (
-                      <span className="text-[8.5px] italic animate-pulse" style={{ color: '#c8a030' }}>Esc cancelar · Backspace limpar</span>
-                    )}
-                  </div>
-                </ListItem>
+                {SHORTCUT_TABS.map((tab, i) => {
+                  const sc = shortcuts[tab.id] || ''
+                  const isRecording = recordingTab === tab.id
+                  const isLast = i === SHORTCUT_TABS.length - 1
+                  return (
+                    <ListItem key={tab.id} vertical isLast={isLast}>
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-xs font-semibold flex items-center gap-1.5" style={{ color: '#e8d5a0' }}>
+                          <Keyboard size={13} style={{ color: '#9a7a40' }} /> {tab.label}
+                        </span>
+                        <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                          {sc && (
+                            <button
+                              onClick={() => {
+                                window.ipcRenderer?.invoke('register-shortcut', { tabId: tab.id, shortcut: '' }).then((res: any) => {
+                                  if (res?.success) {
+                                    setShortcuts(s => ({ ...s, [tab.id]: '' }))
+                                    window.ipcRenderer?.send('set-config', { shortcuts: { [tab.id]: '' } })
+                                    setErrorMessage('')
+                                  }
+                                })
+                              }}
+                              className="p-1.5 rounded-[3px] transition-all cursor-pointer border"
+                              style={{ color: '#e07070', background: 'rgba(120,20,20,0.1)', borderColor: '#7a1414' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.3)' }}
+                              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.1)' }}
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          )}
+                          {isRecording
+                            ? <PrimaryButton>PRESSIONE...</PrimaryButton>
+                            : <SecondaryButton onClick={() => { setRecordingTab(tab.id); setErrorMessage('') }}>GRAVAR</SecondaryButton>
+                          }
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between pt-1 w-full">
+                        <div className="flex items-center gap-1">
+                          {sc
+                            ? sc.split('+').map((p, j) => <KbdKey key={j} k={p} />)
+                            : <span className="text-[10px] italic" style={{ color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>Nenhum atalho</span>
+                          }
+                        </div>
+                        {isRecording && (
+                          <span className="text-[8.5px] italic animate-pulse" style={{ color: '#c8a030' }}>Esc cancelar · Backspace limpar</span>
+                        )}
+                      </div>
+                    </ListItem>
+                  )
+                })}
               </ListContainer>
             </div>
 

@@ -57,7 +57,7 @@ export const AppDetailsScreen = () => {
   const [uiScale, setUiScale] = useState(100);
   const [alwaysOnTop, setAlwaysOnTop] = useState(true);
 
-  const [appVersion, setAppVersion] = useState("1.1.0-beta");
+  const [appVersion, setAppVersion] = useState("1.1.2-beta");
   const [updateStatus, setUpdateStatus] = useState<
     | "idle"
     | "checking"
@@ -718,34 +718,6 @@ export const AppDetailsScreen = () => {
                     }}
                   >
                     {statusDot(alwaysOnTop)} {alwaysOnTop ? "ATIVO" : "INATIVO"}
-                  </span>
-                ),
-              },
-              {
-                label: "Atalho — Abrir Mapa",
-                render: () => (
-                  <span
-                    style={{ display: "flex", alignItems: "center", gap: 3 }}
-                  >
-                    <Kbd k="Ctrl" />
-                    <span style={{ color: "#5a6040", fontSize: 9 }}>+</span>
-                    <Kbd k="Alt" />
-                    <span style={{ color: "#5a6040", fontSize: 9 }}>+</span>
-                    <Kbd k="M" />
-                  </span>
-                ),
-              },
-              {
-                label: "Atalho — Configurações",
-                render: () => (
-                  <span
-                    style={{ display: "flex", alignItems: "center", gap: 3 }}
-                  >
-                    <Kbd k="Ctrl" />
-                    <span style={{ color: "#5a6040", fontSize: 9 }}>+</span>
-                    <Kbd k="Alt" />
-                    <span style={{ color: "#5a6040", fontSize: 9 }}>+</span>
-                    <Kbd k="S" />
                   </span>
                 ),
               },
