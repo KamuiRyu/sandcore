@@ -316,6 +316,27 @@ func main() {
 			if e.Record.GetString("role") == "" {
 				e.Record.Set("role", "ninja")
 			}
+			if e.Record.GetInt("title_points") <= 0 {
+				e.Record.Set("title_points", 0)
+			}
+			if e.Record.GetString("current_title") == "" {
+				titles := []*core.Record{}
+			err := app.RecordQuery("titles").
+				AndWhere(dbx.NewExp("min_points <= {:pts}", dbx.Params{"pts": newPoints})).
+				OrderBy("min_points DESC").
+				Limit(1).
+				All(&titles)
+				if err != nil {
+					log.Printf("ERRO: Falha ao buscar títulos: %v", err)
+				}
+				var titleName string
+				if len(titles) > 0 {
+					titleName = titles[0].GetString("name")
+				}
+				e.Record.Set("current_title", titleName)
+			if e.Record.GetInt("level") <= 0 {
+				e.Record.Set("level", 1)
+			}
 			if err := app.Save(e.Record); err != nil {
 				log.Printf("ERRO: Falha ao setar defaults do usuário: %v", err)
 			}

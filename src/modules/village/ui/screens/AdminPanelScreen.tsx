@@ -16,6 +16,8 @@ import {
   Eye,
   UserPlus,
   Upload,
+  Camera,
+  User as UserIcon,
 } from "lucide-react";
 import { pb } from "../../../../lib/pocketbase";
 import { useAdminViewModel } from "../viewModels/useAdmin.viewModel";
@@ -35,6 +37,10 @@ import { User } from "../../../authentication/core/entities/User.entity";
 import { MissionTemplate } from "../../core/entities/MissionTemplate.entity";
 import { Title } from "../../core/entities/Title.entity";
 import { MissionRank } from "../../core/entities/VillageSettings.entity";
+
+function avatarUrl(u: { id: string; avatar?: string }) {
+  return u.avatar ? `${pb.baseURL}/api/files/users/${u.id}/${u.avatar}` : null
+}
 
 type AdminTab =
   | "members"
@@ -108,27 +114,31 @@ const MembersTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
                 gap: 10,
               }}
             >
-              <div>
-                <div
-                  style={{ fontSize: 13, fontWeight: 600, color: "#e8d5a0" }}
-                >
-                  {u.name}
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {/* Avatar */}
+                <div style={{
+                  width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
+                  border: "1px solid #2a2a1a", overflow: "hidden",
+                  background: "#111", display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  {avatarUrl(u)
+                    ? <img src={avatarUrl(u)!} alt={u.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <UserIcon size={16} color="#6a5028" />}
                 </div>
-                <div style={{ fontSize: 11, color: "#9a7a40" }}>
-                  {u.email} · {new Date(u.created).toLocaleDateString("pt-BR")}
-                </div>
-                <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-                  <StatusBadge status={u.status} />
-                  <span
-                    style={{
-                      fontSize: 11,
-                      color: "#9a7a40",
-                      fontFamily: "'Orbitron', sans-serif",
-                    }}
-                  >
-                    {u.role} {u.ninja_rank ? `· ${u.ninja_rank}` : ""}{" "}
-                    {u.level ? `· Nv.${u.level}` : ""}
-                  </span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#e8d5a0" }}>
+                    {u.name}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#9a7a40" }}>
+                    {u.email} · {new Date(u.created).toLocaleDateString("pt-BR")}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                    <StatusBadge status={u.status} />
+                    <span style={{ fontSize: 11, color: "#9a7a40", fontFamily: "'Orbitron', sans-serif" }}>
+                      {u.role} {u.ninja_rank ? `· ${u.ninja_rank}` : ""}{" "}
+                      {u.level ? `· Nv.${u.level}` : ""}
+                    </span>
+                  </div>
                 </div>
               </div>
               <div style={{ display: "flex", gap: 6 }}>
@@ -215,11 +225,28 @@ const EditUserModal = ({
   const [ninja_rank, setNinjaRank] = useState<string>(user.ninja_rank || "");
   const [level, setLevel] = useState(String(user.level || 0));
   const [organization, setOrganization] = useState<string>(user.organization || "");
+  const [name, setName] = useState(user.name);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(avatarUrl(user));
   const [saving, setSaving] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarFile(file);
+    const reader = new FileReader();
+    reader.onload = ev => setAvatarPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
 
   const save = async () => {
     setSaving(true);
+    if (avatarFile) {
+      await vm.updateUserAvatarField(user.id, avatarFile);
+    }
     await vm.updateUserField(user.id, {
+      name: name.trim() || user.name,
       role: role as any,
       ninja_rank: ninja_rank as any,
       level: parseInt(level) || 0,
@@ -246,9 +273,9 @@ const EditUserModal = ({
           background: "#0a0a0a",
           border: "1px solid #282828",
           borderRadius: 3,
-          padding: 20,
-          minWidth: 320,
-          maxWidth: 400,
+          padding: 28,
+          minWidth: 520,
+          maxWidth: 600,
         }}
       >
         <div
@@ -263,6 +290,45 @@ const EditUserModal = ({
           Editar: {user.name}
         </div>
         <div className="space-y-3">
+          {/* Avatar */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: "50%",
+                border: "2px solid #c8860a", overflow: "hidden",
+                background: "#111", display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                {avatarPreview
+                  ? <img src={avatarPreview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : <UserIcon size={24} color="#6a5028" />}
+              </div>
+              <button
+                onClick={() => fileRef.current?.click()}
+                title="Alterar foto"
+                style={{
+                  position: "absolute", bottom: 0, right: 0,
+                  width: 20, height: 20, borderRadius: "50%",
+                  background: "#c8860a", border: "2px solid #0a0a0a",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <Camera size={10} color="#0a0800" />
+              </button>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+            </div>
+            <div style={{ fontSize: 10, color: "#6a5028", fontFamily: "'Orbitron', sans-serif", lineHeight: 1.6 }}>
+              <div style={{ color: "#9a7a40", fontWeight: 700 }}>{user.name}</div>
+              <div>{user.email}</div>
+              {avatarFile && <div style={{ color: "#c8860a", marginTop: 2 }}>Nova foto selecionada</div>}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 9, color: "#9a7a40", marginBottom: 4, fontFamily: "'Orbitron', sans-serif" }}>
+              NOME
+            </div>
+            <VillageInput value={name} onChange={setName} placeholder="Nome do ninja" />
+          </div>
           <div>
             <div
               style={{
@@ -817,10 +883,23 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
 const ReviewsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   const [rejectNote, setRejectNote] = useState<Record<string, string>>({});
   const [rejectOpen, setRejectOpen] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const pg = usePagination(vm.pendingReviews);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await vm.loadAssignments('status!="completed"');
+    setRefreshing(false);
+  };
 
   return (
     <div className="space-y-2">
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <VillageSecondaryButton small onClick={handleRefresh} disabled={refreshing}>
+          <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
+          {refreshing ? "Atualizando..." : "Atualizar"}
+        </VillageSecondaryButton>
+      </div>
       {vm.pendingReviews.length === 0 ? (
         <div
           style={{

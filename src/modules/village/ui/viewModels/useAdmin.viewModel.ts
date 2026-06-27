@@ -9,6 +9,7 @@ import { OrganizationRole, OrganizationType } from '../../core/entities/Organiza
 import {
   getAllUsers,
   updateUser,
+  updateUserAvatar,
   getTitles,
   createTitle,
   updateTitle,
@@ -126,6 +127,11 @@ export const useAdminViewModel = () => {
 
   const updateUserField = async (userId: string, data: Partial<User>) => {
     await updateUser(userId, data)
+    await load()
+  }
+
+  const updateUserAvatarField = async (userId: string, avatar: File) => {
+    await updateUserAvatar(userId, avatar)
     await load()
   }
 
@@ -294,7 +300,7 @@ export const useAdminViewModel = () => {
     settings, orgRoles, transactions,
     loading, error,
     reload: load,
-    approveUser, rejectUser, updateUserField,
+    approveUser, rejectUser, updateUserField, updateUserAvatarField,
     addTitle, editTitle, removeTitle,
     addTemplate, editTemplate, archiveTemplate,
     saveSettings,

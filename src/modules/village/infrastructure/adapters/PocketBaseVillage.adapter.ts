@@ -188,3 +188,9 @@ export async function getAllUsers(): Promise<User[]> {
 export async function updateUser(id: string, data: Partial<User>): Promise<User> {
   return await pb.collection('users').update(id, data) as unknown as User
 }
+
+export async function updateUserAvatar(id: string, avatar: File): Promise<User> {
+  const form = new FormData()
+  form.append('avatar', avatar)
+  return await pb.collection('users').update(id, form) as unknown as User
+}
