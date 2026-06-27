@@ -11,6 +11,7 @@ export interface VillageSettings {
   min_level_required: Record<MissionRank, number>;
   min_donation_amount: number;
   donation_period: DonationPeriod;
+  title_point_per_donation: number;
   tax_period: TaxPeriod;
   bank_balance: number;
   updated: string;

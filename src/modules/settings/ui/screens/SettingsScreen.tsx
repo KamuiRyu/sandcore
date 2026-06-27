@@ -156,7 +156,7 @@ export const SettingsScreen = () => {
       if (next.has(id)) next.delete(id); else next.add(id)
       const list = [...next]
       appStorage.setItem(SIDEBAR_HIDDEN_KEY, JSON.stringify(list))
-      new BroadcastChannel('sidebar-config').postMessage({ hiddenItems: list })
+      window.ipcRenderer?.send('update-sidebar-hidden', { hiddenItems: list })
       return next
     })
   }

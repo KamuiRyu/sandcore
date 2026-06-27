@@ -260,6 +260,15 @@ export const useAdminViewModel = () => {
       period,
       registered_by: adminId,
     })
+    const pointsPerDonation = settings?.title_point_per_donation ?? 0
+    if (pointsPerDonation > 0) {
+      const donor = users.find(u => u.id === userId)
+      if (donor) {
+        const newPoints = (donor.title_points || 0) + pointsPerDonation
+        await updateUser(userId, { title_points: newPoints })
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, title_points: newPoints } : u))
+      }
+    }
     const [tx, cfg] = await Promise.all([
       getBankTransactions().catch(() => []),
       getVillageSettings().catch(() => null),

@@ -70,12 +70,21 @@ const RANKS: MissionRank[] = ["D", "C", "B", "A", "S"];
 const MembersTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   const [tab, setTab] = useState<"pending" | "approved">("pending");
   const [editUser, setEditUser] = useState<User | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const list = tab === "pending" ? vm.pendingUsers : vm.approvedUsers;
   const pg = usePagination(list);
 
+  const handleRefresh = async () => { setRefreshing(true); await vm.reload(); setRefreshing(false); };
+
   return (
     <div className="space-y-3">
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
+        <VillageSecondaryButton small onClick={handleRefresh} disabled={refreshing}>
+          <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
+          {refreshing ? "Atualizando..." : "Atualizar"}
+        </VillageSecondaryButton>
+      </div>
       <div style={{ display: "flex", gap: 4 }}>
         {(["pending", "approved"] as const).map((t) => (
           <button
@@ -425,6 +434,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   const [editTpl, setEditTpl] = useState<MissionTemplate | null>(null);
   const [locationImageFiles, setLocationImageFiles] = useState<File[]>([]);
   const [shouldRemoveImage, setShouldRemoveImage] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const imageRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     title: "",
@@ -505,7 +515,11 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
 
   return (
     <div className="space-y-3">
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <VillageSecondaryButton small onClick={async () => { setRefreshing(true); await vm.reload(); setRefreshing(false); }} disabled={refreshing}>
+          <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
+          {refreshing ? "Atualizando..." : "Atualizar"}
+        </VillageSecondaryButton>
         <VillagePrimaryButton
           onClick={() => {
             resetForm();
@@ -1283,6 +1297,7 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   }));
 
   const pg = usePagination(vm.assignments);
+  const [refreshing, setRefreshing] = useState(false);
 
   return (
     <div className="space-y-3">
@@ -1379,7 +1394,13 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
 
       <div style={{ height: 10 }} />
 
-      <VillageSection label="Missões em Andamento" />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <VillageSection label="Missões em Andamento" />
+        <VillageSecondaryButton small onClick={async () => { setRefreshing(true); await vm.reload(); setRefreshing(false); }} disabled={refreshing}>
+          <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
+          {refreshing ? "Atualizando..." : "Atualizar"}
+        </VillageSecondaryButton>
+      </div>
       <div className="space-y-2">
         {vm.assignments.length === 0 ? (
           <div style={{ color: "#282828", fontSize: 10, textAlign: "center", padding: "20px 0", fontFamily: "'Orbitron', sans-serif" }}>
@@ -1437,6 +1458,8 @@ const TitlesTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   });
   const [editing, setEditing] = useState<Title | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const pg = usePagination(vm.titles);
+  const [refreshing, setRefreshing] = useState(false);
 
   const openEdit = (t: Title) => {
     setEditing(t);
@@ -1467,7 +1490,11 @@ const TitlesTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
 
   return (
     <div className="space-y-3">
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <VillageSecondaryButton small onClick={async () => { setRefreshing(true); await vm.reload(); setRefreshing(false); }} disabled={refreshing}>
+          <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
+          {refreshing ? "Atualizando..." : "Atualizar"}
+        </VillageSecondaryButton>
         <VillagePrimaryButton
           onClick={() => {
             setEditing(null);
@@ -1561,7 +1588,7 @@ const TitlesTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
         </VillageCard>
       )}
       <div className="space-y-2">
-        {vm.titles.map((t) => (
+        {pg.paged.map((t) => (
           <VillageCard key={t.id}>
             <div
               style={{
@@ -1598,6 +1625,7 @@ const TitlesTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
           </VillageCard>
         ))}
       </div>
+      <Pagination page={pg.page} totalPages={pg.totalPages} total={pg.total} onPage={pg.setPage} />
     </div>
   );
 };
@@ -1610,6 +1638,7 @@ const SettingsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
     daily_points_per_ninja: String(vm.settings?.daily_points_per_ninja || 20),
     min_donation_amount: String(vm.settings?.min_donation_amount || 0),
     donation_period: (vm.settings?.donation_period || "weekly") as string,
+    title_point_per_donation: String(vm.settings?.title_point_per_donation || 0),
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -1621,6 +1650,7 @@ const SettingsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
       daily_points_per_ninja: parseInt(form.daily_points_per_ninja) || 20,
       min_donation_amount: parseInt(form.min_donation_amount) || 0,
       donation_period: form.donation_period as any,
+      title_point_per_donation: parseInt(form.title_point_per_donation) || 0,
     });
     setSaving(false);
     setSaved(true);
@@ -1724,35 +1754,19 @@ const SettingsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
 
       <VillageSection label="Doações" />
       <VillageCard>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
-            <div
-              style={{
-                fontSize: 9,
-                color: "#9a7a40",
-                marginBottom: 4,
-                fontFamily: "'Orbitron', sans-serif",
-              }}
-            >
+            <div style={{ fontSize: 9, color: "#9a7a40", marginBottom: 4, fontFamily: "'Orbitron', sans-serif" }}>
               DOAÇÃO MÍNIMA
             </div>
             <VillageInput
               type="number"
               value={form.min_donation_amount}
-              onChange={(v) =>
-                setForm((f) => ({ ...f, min_donation_amount: v }))
-              }
+              onChange={(v) => setForm((f) => ({ ...f, min_donation_amount: v }))}
             />
           </div>
           <div>
-            <div
-              style={{
-                fontSize: 9,
-                color: "#9a7a40",
-                marginBottom: 4,
-                fontFamily: "'Orbitron', sans-serif",
-              }}
-            >
+            <div style={{ fontSize: 9, color: "#9a7a40", marginBottom: 4, fontFamily: "'Orbitron', sans-serif" }}>
               PERÍODO
             </div>
             <VillageSelect
@@ -1762,6 +1776,17 @@ const SettingsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
               <option value="weekly">Semanal</option>
               <option value="monthly">Mensal</option>
             </VillageSelect>
+          </div>
+          <div>
+            <div style={{ fontSize: 9, color: "#9a7a40", marginBottom: 4, fontFamily: "'Orbitron', sans-serif" }}>
+              PONTOS DE TÍTULO POR DOAÇÃO
+            </div>
+            <VillageInput
+              type="number"
+              value={form.title_point_per_donation}
+              onChange={(v) => setForm((f) => ({ ...f, title_point_per_donation: v }))}
+              placeholder="0"
+            />
           </div>
         </div>
       </VillageCard>
@@ -1801,6 +1826,7 @@ const BankTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
     donation_income: "Doação",
   };
   const pg = usePagination(vm.transactions);
+  const [refreshing, setRefreshing] = useState(false);
 
   const handleDonation = async () => {
     if (!donationUser || !donationAmount || !donationPeriod) {
@@ -1836,9 +1862,15 @@ const BankTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <VillageSection label="Últimas Transações" />
-        <VillagePrimaryButton small onClick={() => setShowDonationForm(v => !v)}>
-          <Plus size={10} /> Doação
-        </VillagePrimaryButton>
+        <div style={{ display: "flex", gap: 6 }}>
+          <VillageSecondaryButton small onClick={async () => { setRefreshing(true); await vm.reload(); setRefreshing(false); }} disabled={refreshing}>
+            <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
+            {refreshing ? "..." : "Atualizar"}
+          </VillageSecondaryButton>
+          <VillagePrimaryButton small onClick={() => setShowDonationForm(v => !v)}>
+            <Plus size={10} /> Doação
+          </VillagePrimaryButton>
+        </div>
       </div>
 
       {showDonationForm && (
@@ -1928,6 +1960,8 @@ const OrgsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   });
 
   const roles = vm.getOrgRolesByType(selectedOrg);
+  const pg = usePagination(roles);
+  const [refreshing, setRefreshing] = useState(false);
 
   const save = async () => {
     await vm.addOrgRole({
@@ -1957,7 +1991,7 @@ const OrgsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
         {(["policia", "hospital", "assistente"] as const).map((org) => (
           <button
             key={org}
-            onClick={() => setSelectedOrg(org)}
+            onClick={() => { setSelectedOrg(org); pg.setPage(1); }}
             style={{
               padding: "6px 14px",
               borderRadius: 2,
@@ -1974,7 +2008,11 @@ const OrgsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
             {ORG_LABELS[org].toUpperCase()}
           </button>
         ))}
-        <div style={{ marginLeft: "auto" }}>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+          <VillageSecondaryButton small onClick={async () => { setRefreshing(true); await vm.reload(); setRefreshing(false); }} disabled={refreshing}>
+            <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
+            {refreshing ? "..." : "Atualizar"}
+          </VillageSecondaryButton>
           <VillagePrimaryButton small onClick={() => setShowForm(true)}>
             <Plus size={10} /> Cargo
           </VillagePrimaryButton>
@@ -2066,7 +2104,7 @@ const OrgsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
       )}
 
       <div className="space-y-2">
-        {roles.map((r) => (
+        {pg.paged.map((r) => (
           <VillageCard key={r.id}>
             <div
               style={{
@@ -2107,6 +2145,7 @@ const OrgsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
           </div>
         )}
       </div>
+      <Pagination page={pg.page} totalPages={pg.totalPages} total={pg.total} onPage={pg.setPage} />
     </div>
   );
 };

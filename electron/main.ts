@@ -249,7 +249,7 @@ function createLoginWindow() {
   })
 
   // Open DevTools automatically to see errors - can be commented out later
-  loginWin.webContents.openDevTools({ mode: 'detach' })
+  //loginWin.webContents.openDevTools({ mode: 'detach' })
 
   if (process.env.VITE_DEV_SERVER_URL) {
     loginWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}?windowType=login`)
@@ -905,17 +905,41 @@ ipcMain.handle('register-shortcut', (_event, { type, shortcut }) => {
   return { success: false }
 })
 
-ipcMain.on('resize-sidebar', (_event, { visibleMain, visibleAdmin }: { visibleMain: number; visibleAdmin: number }) => {
+function applySidebarResize(visibleMain: number, visibleAdmin: number) {
   if (!sidebarWin || sidebarWin.isDestroyed()) return
-  lastVisibleMain = visibleMain
-  lastVisibleAdmin = visibleAdmin
   const zoom = (appConfig.uiScale || 100) / 100
-  const ITEM_H = 42   // height per nav button + gap
-  const BASE_H = 192  // exact base height for borders, padding, logo, dividers, settings, logout + safety buffer
+  const ITEM_H = 46   // 44px button height + 2px flex gap
+  const BASE_H = 252  // logo(56) + top-divider(9) + main-nav-padding(16) + bottom-nav(163) + buffer(8)
   const rawH = BASE_H + visibleMain * ITEM_H + visibleAdmin * ITEM_H
   const newHeight = Math.round(Math.max(rawH, 180) * zoom)
-  const newWidth  = Math.round(56 * zoom)
-  sidebarWin.setSize(newWidth, newHeight)
+  const newWidth = Math.round(56 * zoom)
+  const [curX, curY] = sidebarWin.getPosition()
+  sidebarWin.setBounds({ x: curX, y: curY, width: newWidth, height: newHeight })
+}
+
+ipcMain.on('resize-sidebar', (_event, { visibleMain, visibleAdmin }: { visibleMain: number; visibleAdmin: number }) => {
+  lastVisibleMain = visibleMain
+  lastVisibleAdmin = visibleAdmin
+  applySidebarResize(visibleMain, visibleAdmin)
+})
+
+ipcMain.on('update-sidebar-hidden', (_event, { hiddenItems }: { hiddenItems: string[] }) => {
+  const role = appAuth?.model?.role || 'ninja'
+  const isAdmin = role === 'admin'
+  const isManager = role === 'manager' || role === 'admin'
+  const hidden = new Set(hiddenItems)
+  const mainMenuItemIds = ['map', 'missions', 'ninja-card', 'groups', 'stats', 'crafting']
+  const visibleMain = mainMenuItemIds.filter(id => !hidden.has(id)).length
+  const visibleAdmin = [
+    ...(isManager ? ['manager'] : []),
+    ...(isAdmin ? ['admin'] : []),
+  ].filter(id => !hidden.has(id)).length
+  lastVisibleMain = visibleMain
+  lastVisibleAdmin = visibleAdmin
+  applySidebarResize(visibleMain, visibleAdmin)
+  if (sidebarWin && !sidebarWin.isDestroyed()) {
+    sidebarWin.webContents.send('sidebar-hidden-updated', { hiddenItems })
+  }
 })
 
 ipcMain.on('set-config', (_event, newConfig) => {
@@ -970,8 +994,8 @@ ipcMain.on('set-config', (_event, newConfig) => {
       sidebarWin.webContents.setZoomFactor(zoom)
       const [curX, curY] = sidebarWin.getPosition()
       const newW = Math.round(56 * zoom)
-      const ITEM_H = 42
-      const BASE_H = 192
+      const ITEM_H = 46
+      const BASE_H = 252
       const rawH = BASE_H + lastVisibleMain * ITEM_H + lastVisibleAdmin * ITEM_H
       const newH = Math.round(Math.max(rawH, 180) * zoom)
       sidebarWin.setBounds({ x: curX, y: curY, width: newW, height: newH })

@@ -322,10 +322,10 @@ func main() {
 			if e.Record.GetString("current_title") == "" {
 				titles := []*core.Record{}
 			err := app.RecordQuery("titles").
-				AndWhere(dbx.NewExp("min_points <= {:pts}", dbx.Params{"pts": newPoints})).
-				OrderBy("min_points DESC").
-				Limit(1).
-				All(&titles)
+					AndWhere(dbx.NewExp("min_points <= {:pts}", dbx.Params{"pts": 0})).
+					OrderBy("min_points DESC").
+					Limit(1).
+					All(&titles)
 				if err != nil {
 					log.Printf("ERRO: Falha ao buscar títulos: %v", err)
 				}
@@ -334,6 +334,7 @@ func main() {
 					titleName = titles[0].GetString("name")
 				}
 				e.Record.Set("current_title", titleName)
+			}
 			if e.Record.GetInt("level") <= 0 {
 				e.Record.Set("level", 1)
 			}

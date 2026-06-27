@@ -140,12 +140,6 @@ export const MissionBoardScreen = () => {
                         </span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
-                        {!isExpanded && (
-                          <div style={{ display: 'flex', gap: 8, fontSize: 11, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>
-                            {t.reward_yens > 0 && <span>💰 {t.reward_yens.toLocaleString('pt-BR')}¥</span>}
-                            {t.reward_points > 0 && <span>⭐ {t.reward_points}pts</span>}
-                          </div>
-                        )}
                         {vm.settings && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>
                             <Zap size={11} />
@@ -253,20 +247,6 @@ export const MissionBoardScreen = () => {
                           </div>
                         </div>
 
-                        {/* Action buttons */}
-                        {!vm.assignedTemplateIds.has(t.id) && (
-                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, borderTop: '1px solid #1e1e1e', paddingTop: 12 }}>
-                            <VillagePrimaryButton
-                              small
-                              disabled={!vm.checkEligibility(t.id).eligible}
-                              onClick={async () => {
-                                await vm.assignMission(t.id);
-                              }}
-                            >
-                              {vm.checkEligibility(t.id).eligible ? 'Aceitar Missão' : vm.checkEligibility(t.id).reason}
-                            </VillagePrimaryButton>
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>
