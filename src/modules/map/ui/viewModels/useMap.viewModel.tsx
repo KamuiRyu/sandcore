@@ -784,6 +784,9 @@ export function useMapViewModel() {
       // Se for o pin customizado selecionado pelo usuário, ele deve sempre aparecer no mapa
       if (selectedCustomPinId === p.id) return true;
 
+      // Respeitar o toggle de visibilidade do pin
+      if (p.isHidden) return false;
+
       if (hasActiveRoutes && mode === "explore") {
         const idsInRoutes = new Set<string>();
         savedRoutes
@@ -1716,13 +1719,18 @@ export function useMapViewModel() {
     }
     try {
       const rSave = cleanRouteForPersist(currentRoute, customPins);
-      if (selectedSavedRouteId)
+      if (selectedSavedRouteId) {
         await mapDependencies.mapRoutesRepository.update(
           selectedSavedRouteId,
           rSave,
           userId,
         );
-      else await mapDependencies.mapRoutesRepository.create(rSave, userId);
+        if (!visibleRoutes.includes(selectedSavedRouteId))
+          setVisibleRoutes((prev) => [...prev, selectedSavedRouteId]);
+      } else {
+        const saved = await mapDependencies.mapRoutesRepository.create(rSave, userId);
+        setVisibleRoutes((prev) => [...prev, saved.id]);
+      }
       mapDependencies.mapRoutesRepository.listMine().then((res) => {
         setSavedRoutes(res.items);
         setTotalSavedRoutesPages(res.totalPages);
@@ -1752,6 +1760,7 @@ export function useMapViewModel() {
     showToast,
     selectedSavedRouteId,
     publicRoutes,
+    visibleRoutes,
   ]);
 
   const getPinTimerRemaining = useCallback(
@@ -2552,9 +2561,11 @@ export function useMapViewModel() {
       [],
     ),
     toggleCustomPinVisibility: useCallback((id: string) => {
-      setCustomPins((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, isHidden: !p.isHidden } : p)),
-      );
+      setCustomPins((prev) => {
+        const next = prev.map((p) => (p.id === id ? { ...p, isHidden: !p.isHidden } : p));
+        appStorage.setItem("shinobi-map-custom-pins", JSON.stringify(next));
+        return next;
+      });
     }, []),
     toggleRouteVisibility: useCallback((id: string) => {
       setVisibleRoutes((prev) =>
@@ -2686,5 +2697,6 @@ export function useMapViewModel() {
     generateOptimizedRoute,
     isAutoRouteModalOpen,
     setIsAutoRouteModalOpen,
+    showToast,
   };
 }

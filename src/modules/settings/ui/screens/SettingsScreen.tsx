@@ -1,22 +1,27 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Volume2, Keyboard, Trash2, Map, Scroll, Shield, Users, BarChart2, Hammer, Building2, Settings as SettingsIcon } from 'lucide-react'
+import { Volume2, Keyboard, Trash2, Map, Scroll, Shield, Users, BarChart2, Hammer, Building2, Settings as SettingsIcon, Zap } from 'lucide-react'
 import { appStorage } from '../../../../lib/storage'
 
 const SIDEBAR_HIDDEN_KEY = 'shinobi-map-sidebar-hidden'
 
-const SHORTCUT_TABS = [
-  { id: 'map',        label: 'Mapa' },
-  { id: 'missions',   label: 'Missões' },
-  { id: 'ninja-card', label: 'Carteirinha' },
-  { id: 'groups',     label: 'Grupos' },
-  { id: 'stats',      label: 'Estatísticas' },
-  { id: 'crafting',   label: 'Crafting' },
-  { id: 'settings',   label: 'Configurações' },
-  { id: 'details',    label: 'App Details' },
-  { id: 'manager',    label: 'Organização' },
-  { id: 'admin',      label: 'Admin' },
+const SHORTCUT_PANELS = [
+  { id: 'map',        label: 'Mapa',           icon: Map,          desc: 'Abre o painel do mapa' },
+  { id: 'missions',   label: 'Missões',         icon: Scroll,       desc: 'Abre o painel de missões' },
+  { id: 'ninja-card', label: 'Carteirinha',     icon: Shield,       desc: 'Abre a carteirinha ninja' },
+  { id: 'groups',     label: 'Grupos',          icon: Users,        desc: 'Abre o painel de grupos' },
+  { id: 'stats',      label: 'Estatísticas',    icon: BarChart2,    desc: 'Abre as estatísticas' },
+  { id: 'crafting',   label: 'Crafting',        icon: Hammer,       desc: 'Abre o painel de crafting' },
+  { id: 'settings',   label: 'Configurações',   icon: SettingsIcon, desc: 'Abre as configurações' },
+  { id: 'details',    label: 'App Details',     icon: SettingsIcon, desc: 'Informações do aplicativo' },
+  { id: 'manager',    label: 'Organização',     icon: Building2,    desc: 'Painel de organização' },
+  { id: 'admin',      label: 'Admin',           icon: SettingsIcon, desc: 'Painel administrativo' },
 ] as const
+
+const SHORTCUT_ACTIONS = [
+  { id: 'quick-mark', label: 'Marcação Rápida', icon: Zap, desc: 'Abre o painel de marcação rápida sem sair do jogo' },
+] as const
+
 
 const SIDEBAR_ITEMS = [
   { id: 'map',        label: 'Mapa',          icon: Map },
@@ -162,6 +167,7 @@ export const SettingsScreen = () => {
     manager: '',
     admin: '',
     details: '',
+    'quick-mark': 'CommandOrControl+Alt+Q',
   })
   const [recordingTab, setRecordingTab] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
@@ -243,7 +249,11 @@ export const SettingsScreen = () => {
         parts.push(mainKey)
         const finalShortcut = parts.join('+')
         const conflict = Object.entries(shortcuts).find(([id, sc]) => id !== recordingTab && sc === finalShortcut)
-        if (conflict) { setErrorMessage(`Conflito com o atalho de "${SHORTCUT_TABS.find(t => t.id === conflict[0])?.label ?? conflict[0]}".`); return }
+        if (conflict) {
+          const allItems = [...SHORTCUT_PANELS, ...SHORTCUT_ACTIONS] as readonly { id: string; label: string }[]
+          setErrorMessage(`Conflito com o atalho de "${allItems.find(t => t.id === conflict[0])?.label ?? conflict[0]}".`)
+          return
+        }
         window.ipcRenderer?.invoke('register-shortcut', { tabId: recordingTab, shortcut: finalShortcut }).then((res: any) => {
           if (res?.success) {
             setShortcuts(s => ({ ...s, [recordingTab]: finalShortcut }))
@@ -422,30 +432,81 @@ export const SettingsScreen = () => {
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Grupo: Ações no Jogo */}
             <div>
-              <SL>Atalhos de Teclado</SL>
-
+              <SL><Zap size={10} /> Ações no Jogo</SL>
               <ListContainer>
-                {SHORTCUT_TABS.map((tab, i) => {
+                {SHORTCUT_ACTIONS.map((item, i) => {
+                  const Icon = item.icon
+                  const sc = shortcuts[item.id] || ''
+                  const isRecording = recordingTab === item.id
+                  return (
+                    <ListItem key={item.id} vertical isLast={i === SHORTCUT_ACTIONS.length - 1}>
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-xs font-semibold flex items-center gap-1.5" style={{ color: '#e8d5a0' }}>
+                          <Icon size={13} style={{ color: '#c8860a' }} /> {item.label}
+                        </span>
+                        <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                          {sc && (
+                            <button
+                              onClick={() => {
+                                window.ipcRenderer?.invoke('register-shortcut', { tabId: item.id, shortcut: '' }).then((res: any) => {
+                                  if (res?.success) { setShortcuts(s => ({ ...s, [item.id]: '' })); window.ipcRenderer?.send('set-config', { shortcuts: { [item.id]: '' } }); setErrorMessage('') }
+                                })
+                              }}
+                              className="p-1.5 rounded-[3px] transition-all cursor-pointer border"
+                              style={{ color: '#e07070', background: 'rgba(120,20,20,0.1)', borderColor: '#7a1414' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.3)' }}
+                              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.1)' }}
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          )}
+                          {isRecording
+                            ? <PrimaryButton>PRESSIONE...</PrimaryButton>
+                            : <SecondaryButton onClick={() => { setRecordingTab(item.id); setErrorMessage('') }}>GRAVAR</SecondaryButton>
+                          }
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-1">
+                          {sc
+                            ? sc.split('+').map((p, j) => <KbdKey key={j} k={p} />)
+                            : <span className="text-[10px] italic" style={{ color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>Nenhum atalho</span>
+                          }
+                        </div>
+                        {isRecording
+                          ? <span className="text-[8.5px] italic animate-pulse" style={{ color: '#c8a030' }}>Esc cancelar · Backspace limpar</span>
+                          : <span className="text-[9px]" style={{ color: '#6a5028' }}>{item.desc}</span>
+                        }
+                      </div>
+                    </ListItem>
+                  )
+                })}
+              </ListContainer>
+            </div>
+
+            {/* Grupo: Painéis */}
+            <div>
+              <SL><Keyboard size={10} /> Painéis</SL>
+              <ListContainer>
+                {SHORTCUT_PANELS.map((tab, i) => {
+                  const Icon = tab.icon
                   const sc = shortcuts[tab.id] || ''
                   const isRecording = recordingTab === tab.id
-                  const isLast = i === SHORTCUT_TABS.length - 1
+                  const isLast = i === SHORTCUT_PANELS.length - 1
                   return (
                     <ListItem key={tab.id} vertical isLast={isLast}>
                       <div className="flex items-center justify-between w-full">
                         <span className="text-xs font-semibold flex items-center gap-1.5" style={{ color: '#e8d5a0' }}>
-                          <Keyboard size={13} style={{ color: '#9a7a40' }} /> {tab.label}
+                          <Icon size={13} style={{ color: '#9a7a40' }} /> {tab.label}
                         </span>
                         <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
                           {sc && (
                             <button
                               onClick={() => {
                                 window.ipcRenderer?.invoke('register-shortcut', { tabId: tab.id, shortcut: '' }).then((res: any) => {
-                                  if (res?.success) {
-                                    setShortcuts(s => ({ ...s, [tab.id]: '' }))
-                                    window.ipcRenderer?.send('set-config', { shortcuts: { [tab.id]: '' } })
-                                    setErrorMessage('')
-                                  }
+                                  if (res?.success) { setShortcuts(s => ({ ...s, [tab.id]: '' })); window.ipcRenderer?.send('set-config', { shortcuts: { [tab.id]: '' } }); setErrorMessage('') }
                                 })
                               }}
                               className="p-1.5 rounded-[3px] transition-all cursor-pointer border"
