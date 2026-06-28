@@ -580,12 +580,14 @@ const getAllowedOresForSubRegion = (
 
 export interface InteractiveMapProps {
   externalSearchQuery?: string;
+  mirrorMode?: boolean;
 }
 
 export function InteractiveMap({
   externalSearchQuery = "",
+  mirrorMode = false,
 }: InteractiveMapProps) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(!mirrorMode);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isQuickMarkOpen, setIsQuickMarkOpen] = useState(false);
   const {
@@ -917,6 +919,7 @@ export function InteractiveMap({
   ]);
 
   const {
+    applyExternalCamera,
     displayedCamera,
     displayedZoomScale,
     focusCoords,
@@ -939,6 +942,118 @@ export function InteractiveMap({
     zoomOut,
     zoomThumbBottom,
   } = interactiveMap;
+
+  // Mirror mode: receive camera from parent (MinimapScreen) and apply it
+  useEffect(() => {
+    if (!mirrorMode) return
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type !== 'set-camera') return
+      applyExternalCamera({ x: e.data.x, y: e.data.y, scale: e.data.scale })
+    }
+    window.addEventListener('message', handler)
+    return () => window.removeEventListener('message', handler)
+  }, [mirrorMode, applyExternalCamera])
+
+  // Sync minimap data: viewport + all visible pins + route checkpoint highlights
+  useEffect(() => {
+    if (!window.ipcRenderer) return
+
+    const { x: camX, y: camY, scale } = displayedCamera
+    const sW = mapSurfaceSize.width
+    const sH = mapSurfaceSize.height
+    const vW = viewportSize.width
+    const vH = viewportSize.height
+
+    const checkpointIds = new Set<string>()
+    const checkpointColors: Record<string, string> = {}
+    let firstPendingFound = false
+    const currentId = { id: '' }
+
+    visibleRoutes.forEach((routeId) => {
+      const route =
+        savedRoutes.find((r) => r.id === routeId) ||
+        publicRoutes.find((r) => r.id === routeId)
+      if (!route) return
+      route.route.checkpoints.forEach((cp: RouteCheckpoint) => {
+        const id = cp.pointId || cp.customPinId
+        if (!id) return
+        checkpointIds.add(id)
+        checkpointColors[id] = route.route.color || '#00d6a3'
+        const state = completedPins[id]
+        const isCompleted = !!state && state.status !== 'ready'
+        if (!isCompleted && !firstPendingFound) {
+          firstPendingFound = true
+          currentId.id = id
+        }
+      })
+    })
+
+    const pins: Array<{
+      x: number; y: number; isCompleted: boolean; isCurrent: boolean
+      isCheckpoint: boolean; color: string
+    }> = []
+
+    const seenIds = new Set<string>()
+
+    visibleOfficialPoints.forEach((p) => {
+      seenIds.add(p.id)
+      const state = completedPins[p.id]
+      pins.push({
+        x: p.x, y: p.y,
+        isCompleted: !!state && state.status !== 'ready',
+        isCurrent: p.id === currentId.id,
+        isCheckpoint: checkpointIds.has(p.id),
+        color: checkpointColors[p.id] || '#c8860a',
+      })
+    })
+
+    visibleCustomPins.forEach((p) => {
+      seenIds.add(p.id)
+      const state = completedPins[p.id]
+      pins.push({
+        x: p.x, y: p.y,
+        isCompleted: !!state && state.status !== 'ready',
+        isCurrent: p.id === currentId.id,
+        isCheckpoint: checkpointIds.has(p.id),
+        color: checkpointColors[p.id] || p.color || '#c8860a',
+      })
+    })
+
+    // Ensure the current checkpoint is always present even if filtered out of visible lists
+    if (currentId.id && !seenIds.has(currentId.id)) {
+      const op = officialPoints.find((p) => p.id === currentId.id)
+      if (op) {
+        pins.push({
+          x: op.x, y: op.y,
+          isCompleted: false,
+          isCurrent: true,
+          isCheckpoint: true,
+          color: checkpointColors[currentId.id] || '#00d6a3',
+        })
+      } else {
+        const cp = customPins.find((p) => p.id === currentId.id)
+        if (cp) {
+          pins.push({
+            x: cp.x, y: cp.y,
+            isCompleted: false,
+            isCurrent: true,
+            isCheckpoint: true,
+            color: checkpointColors[currentId.id] || cp.color || '#00d6a3',
+          })
+        }
+      }
+    }
+
+    window.ipcRenderer.send('minimap-data', {
+      pins,
+      camera: { x: camX, y: camY, scale, sW, sH, vW, vH },
+    })
+  }, [
+    visibleRoutes, savedRoutes, publicRoutes, completedPins,
+    visibleOfficialPoints, visibleCustomPins,
+    officialPoints, customPins,
+    displayedCamera, mapSurfaceSize, viewportSize,
+  ])
 
   const getScreenCoords = useCallback(
     (x: number, y: number) => {
@@ -1478,7 +1593,7 @@ export function InteractiveMap({
   return (
     <>
       {/* Mode Banner */}
-      {(mode === "pin" ||
+      {!mirrorMode && (mode === "pin" ||
         mode === "route" ||
         mode === "feedback" ||
         editingCustomPinId !== null) && (
@@ -1856,7 +1971,7 @@ export function InteractiveMap({
         </div>
 
         {/* Painel Flutuante de Atalhos Rápidos (Canto Superior Direito) */}
-        <div className="absolute top-3 right-3 sm:top-5 sm:right-5 z-[60] flex flex-col gap-1.5 rounded-[2px] border border-[#c8860a]/30 bg-[#030c10]/70 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl">
+        {!mirrorMode && <div className="absolute top-3 right-3 sm:top-5 sm:right-5 z-[60] flex flex-col gap-1.5 rounded-[2px] border border-[#c8860a]/30 bg-[#030c10]/70 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl">
           {/* Adicionar Pin */}
           <button
             onClick={() => {
@@ -2087,9 +2202,9 @@ export function InteractiveMap({
               <Minus size={16} strokeWidth={2} />
             </button>
           </div>
-        </div>
+        </div>}
 
-        <MapSidebar
+        {!mirrorMode && <MapSidebar
           savedRoutes={savedRoutes}
           publicRoutes={publicRoutes}
           isSidebarOpen={isSidebarOpen}
@@ -2174,14 +2289,14 @@ export function InteractiveMap({
           copyInviteCode={copyInviteCode}
           isAuthenticated={isAuthenticated}
           openLoginModal={() => setIsAuthModalOpen(true)}
-        />
+        />}
       </section>
 
-      {isAuthModalOpen && (
+      {!mirrorMode && isAuthModalOpen && (
         <AuthModal onClose={() => setIsAuthModalOpen(false)} />
       )}
 
-      {activePopupPin &&
+      {!mirrorMode && activePopupPin &&
         popupCoords &&
         mode === "explore" &&
         !editingCustomPinId && (
@@ -2869,19 +2984,21 @@ export function InteractiveMap({
         />
       )}
 
-      <QuickMarkPanel
-        isOpen={isQuickMarkOpen}
-        onClose={() => setIsQuickMarkOpen(false)}
-        visibleRoutes={visibleRoutes}
-        savedRoutes={savedRoutes}
-        publicRoutes={publicRoutes}
-        officialPoints={officialPoints}
-        customPins={customPins}
-        completedPins={completedPins as Record<string, { status: string; subType?: string }>}
-        notificationSettings={notificationSettings}
-        updateNotificationSettings={updateNotificationSettings}
-        onMark={handleMarkCompleted}
-      />
+      {!mirrorMode && (
+        <QuickMarkPanel
+          isOpen={isQuickMarkOpen}
+          onClose={() => setIsQuickMarkOpen(false)}
+          visibleRoutes={visibleRoutes}
+          savedRoutes={savedRoutes}
+          publicRoutes={publicRoutes}
+          officialPoints={officialPoints}
+          customPins={customPins}
+          completedPins={completedPins as Record<string, { status: string; subType?: string }>}
+          notificationSettings={notificationSettings}
+          updateNotificationSettings={updateNotificationSettings}
+          onMark={handleMarkCompleted}
+        />
+      )}
     </>
   );
 }

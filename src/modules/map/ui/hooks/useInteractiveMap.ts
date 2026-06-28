@@ -458,7 +458,12 @@ export function useInteractiveMap(options: UseInteractiveMapOptions = {}) {
     )
   }
 
+  const applyExternalCamera = useCallback((nextCamera: MapCamera) => {
+    setCamera(clampCamera(nextCamera))
+  }, [clampCamera])
+
   return {
+    applyExternalCamera,
     camera,
     displayedCamera,
     displayedZoomScale,

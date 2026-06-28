@@ -8,7 +8,15 @@ export type NotificationSoundType =
   | 'obito'
   | 'naruto_iyoo'
 
+export type MinimapCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+export type MinimapSize = 'small' | 'medium' | 'large'
+
 export type NotificationSettings = {
+  minimapEnabled?: boolean
+  minimapSize?: MinimapSize
+  minimapOpacity?: number
+  minimapCorner?: MinimapCorner
+  minimapShowCompleted?: boolean
   soundEnabled: boolean
   soundVolume: number
   soundType: NotificationSoundType
@@ -25,6 +33,11 @@ export type NotificationSettings = {
 }
 
 export const defaultNotificationSettings: NotificationSettings = {
+  minimapEnabled: false,
+  minimapSize: 'medium',
+  minimapOpacity: 85,
+  minimapCorner: 'bottom-right',
+  minimapShowCompleted: true,
   soundEnabled: false,
   soundVolume: 0.5,
   soundType: 'jutsu',

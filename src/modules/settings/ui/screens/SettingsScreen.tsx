@@ -19,7 +19,16 @@ const SHORTCUT_PANELS = [
 ] as const
 
 const SHORTCUT_ACTIONS = [
-  { id: 'quick-mark', label: 'Marcação Rápida', icon: Zap, desc: 'Abre o painel de marcação rápida sem sair do jogo' },
+  { id: 'quick-mark',   label: 'Marcação Rápida', icon: Zap, desc: 'Abre o painel de marcação rápida sem sair do jogo' },
+  { id: 'quick-mark-1', label: 'Marcar · Padrão',  icon: Zap, desc: 'Marca o ponto atual como Padrão / Já passei' },
+  { id: 'quick-mark-2', label: 'Marcar · Opção 2', icon: Zap, desc: '1ª opção de identificação (minério/cogumelo)' },
+  { id: 'quick-mark-3', label: 'Marcar · Opção 3', icon: Zap, desc: '2ª opção de identificação' },
+  { id: 'quick-mark-4', label: 'Marcar · Opção 4', icon: Zap, desc: '3ª opção de identificação' },
+  { id: 'quick-mark-5', label: 'Marcar · Opção 5', icon: Zap, desc: '4ª opção de identificação' },
+  { id: 'quick-mark-6', label: 'Marcar · Opção 6', icon: Zap, desc: '5ª opção de identificação' },
+  { id: 'quick-mark-7', label: 'Marcar · Opção 7', icon: Zap, desc: '6ª opção de identificação' },
+  { id: 'quick-mark-8', label: 'Marcar · Opção 8', icon: Zap, desc: '7ª opção de identificação' },
+  { id: 'quick-mark-9', label: 'Marcar · Opção 9', icon: Zap, desc: '8ª opção de identificação' },
 ] as const
 
 
@@ -167,7 +176,16 @@ export const SettingsScreen = () => {
     manager: '',
     admin: '',
     details: '',
-    'quick-mark': 'CommandOrControl+Alt+Q',
+    'quick-mark':   'CommandOrControl+Alt+Q',
+    'quick-mark-1': 'CommandOrControl+Alt+1',
+    'quick-mark-2': 'CommandOrControl+Alt+2',
+    'quick-mark-3': 'CommandOrControl+Alt+3',
+    'quick-mark-4': 'CommandOrControl+Alt+4',
+    'quick-mark-5': 'CommandOrControl+Alt+5',
+    'quick-mark-6': 'CommandOrControl+Alt+6',
+    'quick-mark-7': 'CommandOrControl+Alt+7',
+    'quick-mark-8': 'CommandOrControl+Alt+8',
+    'quick-mark-9': 'CommandOrControl+Alt+9',
   })
   const [recordingTab, setRecordingTab] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
@@ -435,16 +453,18 @@ export const SettingsScreen = () => {
             {/* Grupo: Ações no Jogo */}
             <div>
               <SL><Zap size={10} /> Ações no Jogo</SL>
+
+              {/* quick-mark (painel) */}
               <ListContainer>
-                {SHORTCUT_ACTIONS.map((item, i) => {
-                  const Icon = item.icon
+                {(() => {
+                  const item = SHORTCUT_ACTIONS[0]
                   const sc = shortcuts[item.id] || ''
                   const isRecording = recordingTab === item.id
                   return (
-                    <ListItem key={item.id} vertical isLast={i === SHORTCUT_ACTIONS.length - 1}>
+                    <ListItem key={item.id} vertical isLast>
                       <div className="flex items-center justify-between w-full">
                         <span className="text-xs font-semibold flex items-center gap-1.5" style={{ color: '#e8d5a0' }}>
-                          <Icon size={13} style={{ color: '#c8860a' }} /> {item.label}
+                          <Zap size={13} style={{ color: '#c8860a' }} /> {item.label}
                         </span>
                         <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
                           {sc && (
@@ -458,9 +478,7 @@ export const SettingsScreen = () => {
                               style={{ color: '#e07070', background: 'rgba(120,20,20,0.1)', borderColor: '#7a1414' }}
                               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.3)' }}
                               onMouseLeave={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.1)' }}
-                            >
-                              <Trash2 size={12} />
-                            </button>
+                            ><Trash2 size={12} /></button>
                           )}
                           {isRecording
                             ? <PrimaryButton>PRESSIONE...</PrimaryButton>
@@ -468,7 +486,62 @@ export const SettingsScreen = () => {
                           }
                         </div>
                       </div>
+                      <div className="flex flex-col gap-1 w-full mt-1">
+                        <div className="flex items-center gap-1">
+                          {sc
+                            ? sc.split('+').map((p, j) => <KbdKey key={j} k={p} />)
+                            : <span className="text-[10px] italic" style={{ color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>Nenhum atalho</span>
+                          }
+                        </div>
+                        {isRecording
+                          ? <span className="text-[8.5px] italic animate-pulse" style={{ color: '#c8a030' }}>Esc cancelar · Backspace limpar</span>
+                          : <span className="text-[9px]" style={{ color: '#6a5028' }}>{item.desc}</span>
+                        }
+                      </div>
+                    </ListItem>
+                  )
+                })()}
+              </ListContainer>
+
+              {/* Marcação Direta — quick-mark-1 a quick-mark-9 */}
+              <div className="mt-3 rounded-[3px] border border-[#1e1e1e] overflow-hidden">
+                <div className="px-3 py-2 border-b border-[#1e1e1e] flex items-center gap-1.5">
+                  <Zap size={10} style={{ color: '#c8860a' }} />
+                  <span style={{ fontFamily: "'Orbitron', sans-serif", fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#c8a030' }}>
+                    Marcação Direta
+                  </span>
+                </div>
+                {SHORTCUT_ACTIONS.slice(1).map((item, i) => {
+                  const sc = shortcuts[item.id] || ''
+                  const isRecording = recordingTab === item.id
+                  const isLast = i === SHORTCUT_ACTIONS.length - 2
+                  return (
+                    <ListItem key={item.id} vertical isLast={isLast}>
                       <div className="flex items-center justify-between w-full">
+                        <span className="text-[11px] font-semibold flex items-center gap-1.5" style={{ color: '#e8d5a0' }}>
+                          <Zap size={11} style={{ color: '#c8860a' }} /> {item.label}
+                        </span>
+                        <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                          {sc && (
+                            <button
+                              onClick={() => {
+                                window.ipcRenderer?.invoke('register-shortcut', { tabId: item.id, shortcut: '' }).then((res: any) => {
+                                  if (res?.success) { setShortcuts(s => ({ ...s, [item.id]: '' })); window.ipcRenderer?.send('set-config', { shortcuts: { [item.id]: '' } }); setErrorMessage('') }
+                                })
+                              }}
+                              className="p-1.5 rounded-[3px] transition-all cursor-pointer border"
+                              style={{ color: '#e07070', background: 'rgba(120,20,20,0.1)', borderColor: '#7a1414' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.3)' }}
+                              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(120,20,20,0.1)' }}
+                            ><Trash2 size={12} /></button>
+                          )}
+                          {isRecording
+                            ? <PrimaryButton>PRESSIONE...</PrimaryButton>
+                            : <SecondaryButton onClick={() => { setRecordingTab(item.id); setErrorMessage('') }}>GRAVAR</SecondaryButton>
+                          }
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1 w-full mt-1">
                         <div className="flex items-center gap-1">
                           {sc
                             ? sc.split('+').map((p, j) => <KbdKey key={j} k={p} />)
@@ -483,7 +556,7 @@ export const SettingsScreen = () => {
                     </ListItem>
                   )
                 })}
-              </ListContainer>
+              </div>
             </div>
 
             {/* Grupo: Painéis */}

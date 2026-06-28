@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bell, Play, Volume2, Monitor, MousePointer2, Eye, EyeOff, Layout, Shield } from 'lucide-react'
+import { Bell, Play, Volume2, Monitor, MousePointer2, Eye, EyeOff, Layout, Shield, Map } from 'lucide-react'
 import { AppModal } from '../../../app/ui/components/AppModal'
 import { Checkbox } from '../../../../components/ui/Checkbox'
 import {
@@ -279,8 +279,129 @@ export function NotificationSettingsModal({
                 </div>
               </div>
 
+              {/* ── Minimap ── */}
+              <div className="grid gap-4">
+                <div className="flex items-center gap-2">
+                  <Map size={13} className="text-[#c8860a]" />
+                  <h3 className="font-mono text-xs font-black uppercase tracking-wider text-white">Minimapa</h3>
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-[2px] bg-white/[0.03] border border-white/5 hover:border-white/10 transition-all">
+                  <div className="grid gap-1">
+                    <span className="text-[11px] font-black uppercase text-white">Ativar Minimapa</span>
+                    <p className="text-[10px] text-[#9a7a40] leading-relaxed">Exibe uma janela de minimapa com os pontos da rota ativa.</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const next = !settings.minimapEnabled
+                      onUpdate({ minimapEnabled: next })
+                      window.ipcRenderer?.invoke('set-minimap-enabled', {
+                        enabled: next,
+                        size: settings.minimapSize || 'medium',
+                        opacity: settings.minimapOpacity ?? 85,
+                        corner: settings.minimapCorner || 'bottom-right',
+                        showCompleted: settings.minimapShowCompleted ?? true,
+                      })
+                    }}
+                    className={cn('relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all', settings.minimapEnabled ? 'bg-[#c8860a]' : 'bg-[#1a1a1a]')}
+                  >
+                    <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white transition', settings.minimapEnabled ? 'translate-x-5' : 'translate-x-0')} />
+                  </button>
+                </div>
+
+                {settings.minimapEnabled && (
+                  <div className="grid gap-3 pl-1">
+                    {/* Size */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-[#9a7a40] uppercase tracking-wider">Tamanho</span>
+                      <div className="flex gap-1">
+                        {(['small', 'medium', 'large'] as const).map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => {
+                              onUpdate({ minimapSize: s })
+                              window.ipcRenderer?.invoke('update-minimap-settings', { size: s })
+                            }}
+                            className={cn(
+                              'px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-wider border transition-all cursor-pointer',
+                              settings.minimapSize === s
+                                ? 'bg-[rgba(200,134,10,0.2)] border-[#c8860a] text-[#f0d9a0]'
+                                : 'bg-white/5 border-white/10 text-[#9a7a40] hover:border-white/20'
+                            )}
+                          >
+                            {s === 'small' ? 'P' : s === 'medium' ? 'M' : 'G'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Opacity */}
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-[10px] text-[#9a7a40] uppercase tracking-wider">Opacidade</span>
+                      <div className="flex items-center gap-2 flex-1 max-w-[180px]">
+                        <input
+                          type="range" min={20} max={100} step={5}
+                          value={settings.minimapOpacity ?? 85}
+                          onChange={(e) => {
+                            const v = parseInt(e.target.value)
+                            onUpdate({ minimapOpacity: v })
+                            window.ipcRenderer?.invoke('update-minimap-settings', { opacity: v })
+                          }}
+                          className="flex-1 accent-[#c8860a] cursor-pointer"
+                        />
+                        <span className="text-[9px] text-[#9a7a40] w-8 text-right">{settings.minimapOpacity ?? 85}%</span>
+                      </div>
+                    </div>
+
+                    {/* Corner */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-[#9a7a40] uppercase tracking-wider">Posição</span>
+                      <div className="grid grid-cols-2 gap-1 w-[140px]">
+                        {([
+                          { id: 'top-left',     label: '↖ Sup. Esq.' },
+                          { id: 'top-right',    label: '↗ Sup. Dir.' },
+                          { id: 'bottom-left',  label: '↙ Inf. Esq.' },
+                          { id: 'bottom-right', label: '↘ Inf. Dir.' },
+                        ] as const).map((c) => (
+                          <button
+                            key={c.id}
+                            onClick={() => {
+                              onUpdate({ minimapCorner: c.id })
+                              window.ipcRenderer?.invoke('update-minimap-settings', { corner: c.id })
+                            }}
+                            className={cn(
+                              'px-1.5 py-1 rounded text-[8px] font-bold border transition-all cursor-pointer text-center',
+                              settings.minimapCorner === c.id
+                                ? 'bg-[rgba(200,134,10,0.2)] border-[#c8860a] text-[#f0d9a0]'
+                                : 'bg-white/5 border-white/10 text-[#9a7a40] hover:border-white/20'
+                            )}
+                          >
+                            {c.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Show completed */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-[#9a7a40] uppercase tracking-wider">Exibir concluídos</span>
+                      <button
+                        onClick={() => {
+                          const v = !(settings.minimapShowCompleted ?? true)
+                          onUpdate({ minimapShowCompleted: v })
+                          window.ipcRenderer?.invoke('update-minimap-settings', { showCompleted: v })
+                        }}
+                        className={cn('relative inline-flex h-4 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all', (settings.minimapShowCompleted ?? true) ? 'bg-[#c8860a]' : 'bg-[#1a1a1a]')}
+                      >
+                        <span className={cn('inline-block h-3 w-3 transform rounded-full bg-white transition', (settings.minimapShowCompleted ?? true) ? 'translate-x-4' : 'translate-x-0')} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="h-px bg-white/5" />
-              
+
               <div className="rounded-[2px] border border-yellow-500/10 bg-yellow-500/5 p-4 flex gap-4">
                  <Shield size={18} className="text-yellow-500 shrink-0 mt-1" />
                  <div className="grid gap-1">

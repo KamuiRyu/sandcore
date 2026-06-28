@@ -67,6 +67,15 @@ function updateShortcut(tabId: string, shortcut: string): boolean {
         return
       }
 
+      // Marcação direta: quick-mark-1 a quick-mark-9
+      const directMatch = tabId.match(/^quick-mark-(\d)$/)
+      if (directMatch) {
+        if (panelWin && !panelWin.isDestroyed()) {
+          panelWin.webContents.send('quick-mark-direct', { optionIndex: parseInt(directMatch[1]) })
+        }
+        return
+      }
+
       if (!wasMinimized && currentTabId === tabId) {
         togglePanel(null)
       } else {
@@ -103,10 +112,24 @@ function loadConfig() {
       manager: '',
       admin: '',
       details: '',
-      'quick-mark': 'CommandOrControl+Alt+Q',
+      'quick-mark':   'CommandOrControl+Alt+Q',
+      'quick-mark-1': 'CommandOrControl+Alt+1',
+      'quick-mark-2': 'CommandOrControl+Alt+2',
+      'quick-mark-3': 'CommandOrControl+Alt+3',
+      'quick-mark-4': 'CommandOrControl+Alt+4',
+      'quick-mark-5': 'CommandOrControl+Alt+5',
+      'quick-mark-6': 'CommandOrControl+Alt+6',
+      'quick-mark-7': 'CommandOrControl+Alt+7',
+      'quick-mark-8': 'CommandOrControl+Alt+8',
+      'quick-mark-9': 'CommandOrControl+Alt+9',
     },
     loginPosition: null,
-    sidebarPosition: null
+    sidebarPosition: null,
+    minimapEnabled: false,
+    minimapSize: 'medium',
+    minimapOpacity: 85,
+    minimapCorner: 'bottom-right',
+    minimapShowCompleted: true,
   }
   try {
     if (fs.existsSync(configPath)) {
@@ -469,6 +492,7 @@ function createSidebarWindow() {
       panelWin.destroy()
       panelWin = null
     }
+    destroyMinimapWindow()
     if (!loginWin || loginWin.isDestroyed()) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       BrowserWindow.getAllWindows().forEach(w => { try { w.destroy() } catch (_) { /* empty */ } })
@@ -554,6 +578,162 @@ function createPanelWindow() {
 
   return panelWin
 }
+
+// ─── Minimap Window ───────────────────────────────────────────────────────────
+let minimapWin: BrowserWindow | null = null
+
+const MINIMAP_SIZE_PX: Record<string, number> = { small: 160, medium: 220, large: 300 }
+
+function getMinimapPx(): number {
+  return MINIMAP_SIZE_PX[appConfig.minimapSize || 'medium'] || 220
+}
+
+function getMinimapPosition(): { x: number; y: number } {
+  const display = screen.getPrimaryDisplay()
+  const { width: sw, height: sh } = display.workAreaSize
+  const px = getMinimapPx()
+  const margin = 16
+  const corner: string = appConfig.minimapCorner || 'bottom-right'
+  const x = corner.includes('right')  ? sw - px - margin : margin
+  const y = corner.includes('bottom') ? sh - px - margin : margin
+  return { x, y }
+}
+
+function createMinimapWindow() {
+  if (minimapWin && !minimapWin.isDestroyed()) return minimapWin
+
+  const preloadPath = path.join(process.env.DIST!, '../dist-electron/preload.js')
+  const px = getMinimapPx()
+  const { x, y } = getMinimapPosition()
+
+  minimapWin = new BrowserWindow({
+    width: px,
+    height: px,
+    x,
+    y,
+    frame: false,
+    transparent: true,
+    hasShadow: false,
+    backgroundColor: '#00000000',
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    focusable: false,
+    webPreferences: {
+      preload: preloadPath,
+      nodeIntegration: false,
+      contextIsolation: true,
+      backgroundThrottling: false,
+    },
+  })
+
+  minimapWin.setAlwaysOnTop(true, 'screen-saver', 1)
+  minimapWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+  minimapWin.setIgnoreMouseEvents(false)
+  minimapWin.setMenu(null)
+
+  if (process.env.VITE_DEV_SERVER_URL) {
+    minimapWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}?windowType=minimap`)
+  } else {
+    minimapWin.loadFile(path.join(process.env.DIST!, 'index.html'), { query: { windowType: 'minimap' } })
+  }
+
+  minimapWin.on('closed', () => { minimapWin = null })
+
+  return minimapWin
+}
+
+function destroyMinimapWindow() {
+  if (minimapWin && !minimapWin.isDestroyed()) {
+    minimapWin.destroy()
+    minimapWin = null
+  }
+}
+
+function resizeMinimapWindow() {
+  if (!minimapWin || minimapWin.isDestroyed()) return
+  const px = getMinimapPx()
+  const { x, y } = getMinimapPosition()
+  minimapWin.setBounds({ x, y, width: px, height: px })
+}
+
+// IPC: toggle minimap on/off
+ipcMain.handle('set-minimap-enabled', (_event, { enabled, size, opacity, corner, showCompleted }: {
+  enabled: boolean; size?: string; opacity?: number; corner?: string; showCompleted?: boolean
+}) => {
+  appConfig.minimapEnabled = enabled
+  if (size)                appConfig.minimapSize           = size
+  if (opacity != null)     appConfig.minimapOpacity        = opacity
+  if (corner)              appConfig.minimapCorner         = corner
+  if (showCompleted != null) appConfig.minimapShowCompleted = showCompleted
+  saveConfig(appConfig)
+
+  if (enabled) {
+    if (!minimapWin || minimapWin.isDestroyed()) {
+      createMinimapWindow()
+    } else {
+      resizeMinimapWindow()
+    }
+  } else {
+    destroyMinimapWindow()
+  }
+  return { ok: true }
+})
+
+// IPC: update minimap settings without toggling
+ipcMain.handle('update-minimap-settings', (_event, settings: {
+  size?: string; opacity?: number; corner?: string; showCompleted?: boolean
+}) => {
+  if (settings.size)                appConfig.minimapSize          = settings.size
+  if (settings.opacity != null)     appConfig.minimapOpacity       = settings.opacity
+  if (settings.corner)              appConfig.minimapCorner        = settings.corner
+  if (settings.showCompleted != null) appConfig.minimapShowCompleted = settings.showCompleted
+  saveConfig(appConfig)
+  resizeMinimapWindow()
+  // Push updated settings to minimap renderer
+  if (minimapWin && !minimapWin.isDestroyed()) {
+    minimapWin.webContents.send('minimap-update', {
+      settings: {
+        size: appConfig.minimapSize,
+        opacity: appConfig.minimapOpacity,
+        corner: appConfig.minimapCorner,
+        showCompleted: appConfig.minimapShowCompleted,
+      },
+    })
+  }
+  return { ok: true }
+})
+
+// IPC: forward minimap data from panel to minimap window
+ipcMain.on('minimap-data', (_event, payload) => {
+  if (minimapWin && !minimapWin.isDestroyed()) {
+    minimapWin.webContents.send('minimap-update', {
+      pins: payload.pins,
+      camera: payload.camera,
+      settings: {
+        size: appConfig.minimapSize || 'medium',
+        opacity: appConfig.minimapOpacity ?? 85,
+        corner: appConfig.minimapCorner || 'bottom-right',
+        showCompleted: appConfig.minimapShowCompleted ?? true,
+      },
+    })
+  }
+})
+
+// IPC: get minimap window position (for drag)
+ipcMain.handle('get-minimap-position', () => {
+  if (!minimapWin || minimapWin.isDestroyed()) return { x: 0, y: 0 }
+  const [x, y] = minimapWin.getPosition()
+  return { x, y }
+})
+
+// IPC: move minimap window (drag from renderer)
+ipcMain.on('move-minimap', (_event, { x, y }: { x: number; y: number }) => {
+  if (minimapWin && !minimapWin.isDestroyed()) {
+    minimapWin.setPosition(Math.round(x), Math.round(y))
+  }
+})
+// ──────────────────────────────────────────────────────────────────────────────
 
 let closePanelTimeout: NodeJS.Timeout | null = null
 
@@ -1152,17 +1332,10 @@ if (!gotTheLock) {
     for (const [tabId, shortcut] of Object.entries(appConfig.shortcuts as Record<string, string>)) {
       if (shortcut) updateShortcut(tabId, shortcut)
     }
-
-    // Atalhos de marcação direta: Ctrl+Alt+1 a Ctrl+Alt+9
-    for (let i = 1; i <= 9; i++) {
-      const accelerator = `CommandOrControl+Alt+${i}`
-      const optionIndex = i
-      globalShortcut.register(accelerator, () => {
-        if (panelWin && !panelWin.isDestroyed()) {
-          panelWin.webContents.send('quick-mark-direct', { optionIndex })
-        }
-      })
+    if (appConfig.minimapEnabled) {
+      createMinimapWindow()
     }
+
   })
 }
 

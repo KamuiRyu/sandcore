@@ -7,6 +7,8 @@ import { SidebarScreen } from './modules/dashboard/ui/screens/SidebarScreen'
 import { ContentPanelScreen } from './modules/dashboard/ui/screens/ContentPanelScreen'
 
 import { SplashScreen } from './modules/app/ui/screens/SplashScreen'
+import { MinimapScreen } from './modules/map/ui/screens/MinimapScreen'
+import { MapMirrorScreen } from './modules/map/ui/screens/MapMirrorScreen'
 
 function App() {
   const viewModel = useAuthViewModel()
@@ -88,13 +90,23 @@ function App() {
     }
   }, [activeTab, layoutSide, alignSide])
 
-  if (loading && windowType !== 'splash' && windowType !== 'login') {
+  if (loading && windowType !== 'splash' && windowType !== 'login' && windowType !== 'minimap' && windowType !== 'map-mirror') {
     return null
   }
 
   // If windowType is explicitly set to splash
   if (windowType === 'splash') {
     return <SplashScreen />
+  }
+
+  // Minimap overlay window
+  if (windowType === 'minimap') {
+    return <MinimapScreen />
+  }
+
+  // Map mirror (iframe inside MinimapScreen)
+  if (windowType === 'map-mirror') {
+    return <MapMirrorScreen />
   }
 
   // If windowType is explicitly set to login
