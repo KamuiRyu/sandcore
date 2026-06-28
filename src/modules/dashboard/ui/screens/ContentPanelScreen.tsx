@@ -14,7 +14,6 @@ import {
   Minus,
   Scroll,
   Shield,
-  Award,
   Award as MyMissionsIcon,
   UserCircle,
 } from "lucide-react";
@@ -85,34 +84,40 @@ export const ContentPanelScreen = ({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const tabMeta = TAB_META[lastActiveTab] ?? TAB_META["settings"];
 
-  return (
-    <div
-      key={lastActiveTab}
-      className={`flex flex-col relative overflow-hidden transition-[opacity,transform,filter] duration-300 ease-out
-        ${isMounted && !isClosing ? "opacity-100 scale-100 blur-none" : "opacity-0 scale-95 blur-sm"}
-        ${['map','admin','manager'].includes(lastActiveTab)
-            ? 'w-[1200px] h-[800px]'
-            : 'w-[450px] h-[550px]'}
-      `}
-    >
-      {isNinjaCardTab && (
-        <div className="w-full h-full relative">
-          <NinjaCardScreen onClose={handleClose} />
-        </div>
-      )}
+  const panelVisible = isMounted && !isClosing;
 
-      {!isNinjaCardTab && <HudPanel
-        isOpen={isMounted && !isClosing}
-        onClose={handleClose}
-        title={TAB_META[lastActiveTab!]?.label || "Painel"}
-        icon={TAB_META[lastActiveTab!]?.icon || FileText}
-        standalone={true}
-        hideHeader={isMapTab}
-        contentClassName={isMapTab ? "flex flex-col overflow-hidden p-0" : "p-5"}
+  return (
+    <>
+      {/* MAP PANEL — sempre montado. Não usa HudPanel/AnimatePresence para evitar desmontagem
+          ao fechar/minimizar. display:none esconde sem destruir o estado React. */}
+      <div
+        className={`flex flex-col relative overflow-hidden w-[1200px] h-[800px] transition-[opacity,transform,filter] duration-300 ease-out
+          ${isMapTab && panelVisible ? "opacity-100 scale-100 blur-none" : "opacity-0 scale-95 blur-sm"}`}
+        style={{ display: isMapTab ? "flex" : "none" }}
       >
-        {isMapTab && (
+        {/* Mesma aparência do HudPanel, mas sem AnimatePresence */}
+        <div
+          className="relative flex h-full w-full flex-col overflow-hidden rounded-[2px]"
+          style={{
+            background: "linear-gradient(160deg,#0a0a0a 0%,#080808 100%)",
+            border: "1px solid rgba(255, 221, 102, 0.4)",
+          }}
+        >
+          {/* Gold top accent */}
+          <div
+            className="absolute top-0 left-0 right-0 h-[3px] pointer-events-none z-10"
+            style={{
+              background: "linear-gradient(90deg, transparent 0%, #282828 15%, #c8860a 40%, #e8a820 50%, #c8860a 60%, #282828 85%, transparent 100%)",
+            }}
+          />
+          {/* Noise overlay */}
+          <div
+            className="absolute inset-0 pointer-events-none z-0 opacity-[0.04]"
+            style={{ backgroundImage: `url("./images/noise.svg")` }}
+          />
+
+          {/* Map custom header */}
           <div className="h-14 bg-transparent border-b border-[#282828] px-4 flex items-center justify-between gap-4 select-none z-50 flex-none relative">
-            {/* Title row */}
             <div className="flex items-center gap-2 min-w-0 flex-none">
               <div
                 className="flex items-center justify-center w-[18px] h-[18px] rounded-full border flex-shrink-0"
@@ -130,7 +135,6 @@ export const ContentPanelScreen = ({
               </div>
             </div>
 
-            {/* Search, Help */}
             <div className="flex-1 max-w-sm flex items-center gap-2">
               <div className="flex-1 relative flex items-center">
                 <span className="absolute left-3 flex items-center pointer-events-none text-[#9a7a40]">
@@ -152,26 +156,13 @@ export const ContentPanelScreen = ({
               </div>
             </div>
 
-            {/* Window controls */}
             <div className="flex items-center h-full gap-2">
               <button
-                onClick={() =>
-                  window.dispatchEvent(new CustomEvent("open-map-settings"))
-                }
+                onClick={() => window.dispatchEvent(new CustomEvent("open-map-settings"))}
                 className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#282828] transition-all cursor-pointer"
                 style={{ background: "#1a1a1a", color: "#9a7a40" }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget;
-                  el.style.borderColor = "#c8860a";
-                  el.style.color = "#c8860a";
-                  el.style.background = "#282828";
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget;
-                  el.style.borderColor = "#282828";
-                  el.style.color = "#9a7a40";
-                  el.style.background = "#1a1a1a";
-                }}
+                onMouseEnter={(e) => { const el = e.currentTarget; el.style.borderColor = "#c8860a"; el.style.color = "#c8860a"; el.style.background = "#282828"; }}
+                onMouseLeave={(e) => { const el = e.currentTarget; el.style.borderColor = "#282828"; el.style.color = "#9a7a40"; el.style.background = "#1a1a1a"; }}
                 title="Configurações do Mapa"
               >
                 <Settings size={11} />
@@ -180,18 +171,8 @@ export const ContentPanelScreen = ({
                 onClick={() => window.ipcRenderer?.send("minimize-panel-window")}
                 className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#282828] transition-all cursor-pointer"
                 style={{ background: "#1a1a1a", color: "#9a7a40" }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget;
-                  el.style.borderColor = "#c8860a";
-                  el.style.color = "#c8860a";
-                  el.style.background = "#282828";
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget;
-                  el.style.borderColor = "#282828";
-                  el.style.color = "#9a7a40";
-                  el.style.background = "#1a1a1a";
-                }}
+                onMouseEnter={(e) => { const el = e.currentTarget; el.style.borderColor = "#c8860a"; el.style.color = "#c8860a"; el.style.background = "#282828"; }}
+                onMouseLeave={(e) => { const el = e.currentTarget; el.style.borderColor = "#282828"; el.style.color = "#9a7a40"; el.style.background = "#1a1a1a"; }}
                 title="Minimizar"
               >
                 <Minus size={11} />
@@ -200,73 +181,87 @@ export const ContentPanelScreen = ({
                 onClick={handleClose}
                 className="flex items-center justify-center w-5 h-5 text-[11px] rounded-[1px] border border-[#282828] transition-all cursor-pointer"
                 style={{ background: "#1a1a1a", color: "#9a7a40" }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget;
-                  el.style.borderColor = "#c8860a";
-                  el.style.color = "#c8860a";
-                  el.style.background = "#282828";
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget;
-                  el.style.borderColor = "#282828";
-                  el.style.color = "#9a7a40";
-                  el.style.background = "#1a1a1a";
-                }}
+                onMouseEnter={(e) => { const el = e.currentTarget; el.style.borderColor = "#c8860a"; el.style.color = "#c8860a"; el.style.background = "#282828"; }}
+                onMouseLeave={(e) => { const el = e.currentTarget; el.style.borderColor = "#282828"; el.style.color = "#9a7a40"; el.style.background = "#1a1a1a"; }}
                 title="Fechar"
               >
                 <X size={11} />
               </button>
             </div>
           </div>
-        )}
 
-        {isMapTab && (
+          {/* Map content */}
           <div className="flex-1 overflow-hidden h-full flex flex-col relative z-20">
             <MapScreen searchQuery={searchQuery} />
           </div>
-        )}
+        </div>
+      </div>
 
-        {!isMapTab && lastActiveTab === "groups" && <GroupsScreen />}
-        {!isMapTab && lastActiveTab === "settings" && <SettingsScreen />}
-        {!isMapTab && lastActiveTab === "stats" && <StatsScreen />}
-        {!isMapTab && lastActiveTab === "details" && <AppDetailsScreen />}
-        {!isMapTab && lastActiveTab === "crafting" && <CraftingScreen />}
-        {!isMapTab && lastActiveTab === "missions" && (
-          <div className="flex flex-col h-full">
-            <div className="flex border-b border-[#1a1a1a] flex-none">
-              <button
-                onClick={() => setMissionsSubTab('board')}
-                className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-mono font-black uppercase tracking-widest transition-colors cursor-pointer"
-                style={{
-                  color: missionsSubTab === 'board' ? '#c8860a' : '#6a5028',
-                  borderBottom: missionsSubTab === 'board' ? '2px solid #c8860a' : '2px solid transparent',
-                }}
-              >
-                <Scroll size={11} />
-                Quadro
-              </button>
-              <button
-                onClick={() => setMissionsSubTab('mine')}
-                className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-mono font-black uppercase tracking-widest transition-colors cursor-pointer"
-                style={{
-                  color: missionsSubTab === 'mine' ? '#c8860a' : '#6a5028',
-                  borderBottom: missionsSubTab === 'mine' ? '2px solid #c8860a' : '2px solid transparent',
-                }}
-              >
-                <MyMissionsIcon size={11} />
-                Minhas Missões
-              </button>
+      {/* NON-MAP PANELS — mount/unmount normalmente com key para animação */}
+      {!isMapTab && (
+        <div
+          key={lastActiveTab}
+          className={`flex flex-col relative overflow-hidden transition-[opacity,transform,filter] duration-300 ease-out
+            ${panelVisible ? "opacity-100 scale-100 blur-none" : "opacity-0 scale-95 blur-sm"}
+            ${['admin', 'manager'].includes(lastActiveTab) ? 'w-[1200px] h-[800px]' : 'w-[450px] h-[550px]'}`}
+        >
+          {isNinjaCardTab && (
+            <div className="w-full h-full relative">
+              <NinjaCardScreen onClose={handleClose} />
             </div>
-            <div className="flex-1 overflow-hidden">
-              {missionsSubTab === 'board' ? <MissionBoardScreen /> : <MyMissionsScreen />}
-            </div>
-          </div>
-        )}
-        {!isMapTab && lastActiveTab === "admin" && <AdminPanelScreen />}
-        {!isMapTab && lastActiveTab === "manager" && <ManagerScreen />}
-        {!isMapTab && lastActiveTab === "profile" && <ProfileEditScreen />}
-      </HudPanel>}
-    </div>
+          )}
+
+          {!isNinjaCardTab && <HudPanel
+            isOpen={panelVisible}
+            onClose={handleClose}
+            title={TAB_META[lastActiveTab!]?.label || "Painel"}
+            icon={TAB_META[lastActiveTab!]?.icon || FileText}
+            standalone={true}
+            contentClassName="p-5"
+          >
+            {lastActiveTab === "groups" && <GroupsScreen />}
+            {lastActiveTab === "settings" && <SettingsScreen />}
+            {lastActiveTab === "stats" && <StatsScreen />}
+            {lastActiveTab === "details" && <AppDetailsScreen />}
+            {lastActiveTab === "crafting" && <CraftingScreen />}
+            {lastActiveTab === "missions" && (
+              <div className="flex flex-col h-full">
+                <div className="flex border-b border-[#1a1a1a] flex-none">
+                  <button
+                    onClick={() => setMissionsSubTab('board')}
+                    className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-mono font-black uppercase tracking-widest transition-colors cursor-pointer"
+                    style={{
+                      color: missionsSubTab === 'board' ? '#c8860a' : '#6a5028',
+                      borderBottom: missionsSubTab === 'board' ? '2px solid #c8860a' : '2px solid transparent',
+                    }}
+                  >
+                    <Scroll size={11} />
+                    Quadro
+                  </button>
+                  <button
+                    onClick={() => setMissionsSubTab('mine')}
+                    className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-mono font-black uppercase tracking-widest transition-colors cursor-pointer"
+                    style={{
+                      color: missionsSubTab === 'mine' ? '#c8860a' : '#6a5028',
+                      borderBottom: missionsSubTab === 'mine' ? '2px solid #c8860a' : '2px solid transparent',
+                    }}
+                  >
+                    <MyMissionsIcon size={11} />
+                    Minhas Missões
+                  </button>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  {missionsSubTab === 'board' ? <MissionBoardScreen /> : <MyMissionsScreen />}
+                </div>
+              </div>
+            )}
+            {lastActiveTab === "admin" && <AdminPanelScreen />}
+            {lastActiveTab === "manager" && <ManagerScreen />}
+            {lastActiveTab === "profile" && <ProfileEditScreen />}
+          </HudPanel>}
+        </div>
+      )}
+    </>
   );
 };
 export default ContentPanelScreen;

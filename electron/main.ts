@@ -55,6 +55,18 @@ function updateShortcut(tabId: string, shortcut: string): boolean {
         }, 150)
       }
 
+      if (tabId === 'quick-mark') {
+        // Garante que o painel do mapa esteja visível
+        if (currentTabId !== 'map') {
+          openPanel('map')
+        }
+        // O mapa está sempre montado (nunca desmonta), então o IPC pode ser enviado imediatamente
+        if (panelWin && !panelWin.isDestroyed()) {
+          panelWin.webContents.send('toggle-quick-mark')
+        }
+        return
+      }
+
       if (!wasMinimized && currentTabId === tabId) {
         togglePanel(null)
       } else {
@@ -91,6 +103,7 @@ function loadConfig() {
       manager: '',
       admin: '',
       details: '',
+      'quick-mark': 'CommandOrControl+Alt+Q',
     },
     loginPosition: null,
     sidebarPosition: null
@@ -1138,6 +1151,17 @@ if (!gotTheLock) {
     createSplashWindow()
     for (const [tabId, shortcut] of Object.entries(appConfig.shortcuts as Record<string, string>)) {
       if (shortcut) updateShortcut(tabId, shortcut)
+    }
+
+    // Atalhos de marcação direta: Ctrl+Alt+1 a Ctrl+Alt+9
+    for (let i = 1; i <= 9; i++) {
+      const accelerator = `CommandOrControl+Alt+${i}`
+      const optionIndex = i
+      globalShortcut.register(accelerator, () => {
+        if (panelWin && !panelWin.isDestroyed()) {
+          panelWin.webContents.send('quick-mark-direct', { optionIndex })
+        }
+      })
     }
   })
 }

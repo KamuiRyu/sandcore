@@ -41,11 +41,13 @@ import {
   Trash2,
   Wand2,
   X,
+  Zap,
 } from "lucide-react";
 
 import { MapFeedbackModal } from "./MapFeedbackModal";
 import { AutoRouteFilterModal } from "./AutoRouteFilterModal";
 import { AuthModal } from "../../../authentication/ui/components/AuthModal";
+import { QuickMarkPanel } from "./QuickMarkPanel";
 
 function formatRemainingTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -585,6 +587,7 @@ export function InteractiveMap({
 }: InteractiveMapProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isQuickMarkOpen, setIsQuickMarkOpen] = useState(false);
   const {
     currentRoute,
     customPins,
@@ -594,6 +597,7 @@ export function InteractiveMap({
     markRoutePinsCompleted,
     addRouteResourcesToDailyStats,
     toast,
+    showToast,
     interactiveMap,
     loadSavedRoute,
     officialPoints,
@@ -773,6 +777,144 @@ export function InteractiveMap({
     return () =>
       window.removeEventListener("open-map-settings", handleOpenSettings);
   }, [setIsSettingsModalOpen]);
+
+  // Atalho de teclado: Q abre/fecha o painel de marcação rápida (só quando há rotas ativas)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "q" || e.key === "Q") {
+        const tag = (e.target as HTMLElement).tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+        if (visibleRoutes.length === 0) return;
+        setIsQuickMarkOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [visibleRoutes.length]);
+
+  // Atalho global (IPC do Electron) para abrir o QuickMarkPanel de dentro do jogo
+  useEffect(() => {
+    if (!window.ipcRenderer) return;
+    const handler = () => {
+      if (visibleRoutes.length === 0) return;
+      setIsQuickMarkOpen((v) => !v);
+    };
+    window.ipcRenderer.on("toggle-quick-mark", handler);
+    return () => window.ipcRenderer?.off("toggle-quick-mark", handler);
+  }, [visibleRoutes.length]);
+
+  // Atalho de marcação direta: Ctrl+Alt+1~9 marca o ponto atual sem abrir o painel
+  useEffect(() => {
+    if (!window.ipcRenderer) return;
+    const handler = (_: unknown, { optionIndex }: { optionIndex: number }) => {
+      if (visibleRoutes.length === 0) return;
+
+      // Coletar checkpoints pendentes das rotas visíveis (mesma lógica do QuickMarkPanel)
+      const checkpoints: Array<{
+        id: string;
+        name: string;
+        iconId: string;
+        type: string;
+        subRegionId?: string;
+        allowedOres?: string[];
+      }> = [];
+
+      visibleRoutes.forEach((routeId) => {
+        const route =
+          savedRoutes.find((r) => r.id === routeId) ||
+          publicRoutes.find((r) => r.id === routeId);
+        if (!route) return;
+        route.route.checkpoints.forEach((cp: RouteCheckpoint) => {
+          if (cp.pointId) {
+            const pin = officialPoints.find((p) => p.id === cp.pointId);
+            if (!pin) return;
+            const state = completedPins[pin.id];
+            if (state && state.status !== "ready") return; // já completo
+            const getAllowedOres = (subRegionId?: string): string[] => {
+              if (!subRegionId)
+                return ["ore_1","ore_2","ore_3","ore_4","ore_5","ore_6","ore_7","ore_8","ore_9"];
+              const sub = subRegionId.trim().toLowerCase();
+              const list: string[] = ["ore_1"];
+              if (["vale do fim"].includes(sub)) list.push("ore_2");
+              if (["ilha doton","ilha dotou","caverna tetsu","caverna fuji"].includes(sub)) list.push("ore_3","ore_5","ore_9");
+              if (["iwagakure"].includes(sub)) list.push("ore_4","ore_7");
+              if (["tetsugakure"].includes(sub)) list.push("ore_6","ore_8");
+              return list;
+            };
+            checkpoints.push({
+              id: pin.id,
+              name: pin.name,
+              iconId: pin.iconId,
+              type: pin.type,
+              subRegionId: pin.subRegionId,
+              allowedOres: getAllowedOres(pin.subRegionId),
+            });
+          } else if (cp.customPinId) {
+            const pin = customPins.find((p) => p.id === cp.customPinId);
+            if (!pin) return;
+            const state = completedPins[pin.id];
+            if (state && state.status !== "ready") return;
+            checkpoints.push({
+              id: pin.id,
+              name: pin.name,
+              iconId: pin.iconId,
+              type: "custom",
+            });
+          }
+        });
+      });
+
+      const current = checkpoints[0];
+      if (!current) return;
+
+      const isOre = current.type === "ore";
+      const isMushroom = current.type === "mushroom";
+      const hasSubtypes = isOre || isMushroom;
+
+      if (!hasSubtypes) {
+        // Tipos simples: opção 1 = marcar
+        if (optionIndex === 1) {
+          handleMarkCompleted(current.id);
+          showToast("Marcado", current.name, "success");
+        }
+        return;
+      }
+
+      // Montar lista de opções igual ao QuickMarkPanel
+      const subtypeIcons: string[] = (
+        markerIconsByType[current.type as keyof typeof markerIconsByType] ?? []
+      ).filter(
+        (iconId: string) =>
+          iconId !== "mushroom_1" &&
+          (!isOre || (current.allowedOres ?? []).includes(iconId)),
+      );
+
+      // Opção 1 = padrão/já passei (ore_1 / mushroom_1), depois vêm os subtypes
+      if (optionIndex === 1) {
+        const defaultSubtype = isOre ? "ore_1" : "mushroom_1";
+        handleMarkCompleted(current.id, defaultSubtype);
+        showToast("Marcado", `${current.name} · Padrão`, "success");
+        return;
+      }
+
+      const icon = subtypeIcons[optionIndex - 2];
+      if (!icon) return;
+      handleMarkCompleted(current.id, icon);
+      showToast("Marcado", `${current.name} · ${getMarkerIconLabel(icon)}`, "success");
+    };
+
+    window.ipcRenderer.on("quick-mark-direct", handler);
+    return () => window.ipcRenderer?.off("quick-mark-direct", handler);
+  }, [
+    visibleRoutes,
+    savedRoutes,
+    publicRoutes,
+    officialPoints,
+    customPins,
+    completedPins,
+    handleMarkCompleted,
+    showToast,
+  ]);
 
   const {
     displayedCamera,
@@ -1064,14 +1206,25 @@ export function InteractiveMap({
 
   const hiddenRoutePinIds = useMemo(() => {
     const hidden = new Set<string>();
+    // Pins que devem ser mostrados porque são checkpoint ativo/próximo de uma rota visível
+    const activeOrNextIds = new Set<string>();
 
-    visibleRoutes.forEach((routeId: string) => {
-      const route =
-        savedRoutes.find((r) => r.id === routeId) ||
-        publicRoutes.find((r) => r.id === routeId);
-      if (!route) return;
+    const allRoutes = [...savedRoutes, ...publicRoutes];
 
-      const activeCheckpointIndex = route.route.checkpoints.findIndex(
+    allRoutes.forEach((route) => {
+      const isVisible = visibleRoutes.includes(route.id);
+
+      if (!isVisible) {
+        // Rota oculta: esconder todos os seus checkpoints
+        route.route.checkpoints.forEach((cp: RouteCheckpoint) => {
+          if (cp.pointId) hidden.add(cp.pointId);
+          if (cp.customPinId) hidden.add(cp.customPinId);
+        });
+        return;
+      }
+
+      // Rota visível: esconder todos exceto o checkpoint ativo e o próximo
+      const activeIdx = route.route.checkpoints.findIndex(
         (cp: RouteCheckpoint) => {
           const pinId = cp.pointId || cp.customPinId;
           if (!pinId) return false;
@@ -1081,7 +1234,8 @@ export function InteractiveMap({
         },
       );
 
-      if (activeCheckpointIndex === -1) {
+      if (activeIdx === -1) {
+        // Todos concluídos: esconder todos
         route.route.checkpoints.forEach((cp: RouteCheckpoint) => {
           if (cp.pointId) hidden.add(cp.pointId);
           if (cp.customPinId) hidden.add(cp.customPinId);
@@ -1089,14 +1243,12 @@ export function InteractiveMap({
         return;
       }
 
-      const activeOrNextIds = new Set<string>();
-
-      const currentCp = route.route.checkpoints[activeCheckpointIndex];
+      const currentCp = route.route.checkpoints[activeIdx];
       if (currentCp.pointId) activeOrNextIds.add(currentCp.pointId);
       if (currentCp.customPinId) activeOrNextIds.add(currentCp.customPinId);
 
-      if (activeCheckpointIndex + 1 < route.route.checkpoints.length) {
-        const nextCp = route.route.checkpoints[activeCheckpointIndex + 1];
+      if (activeIdx + 1 < route.route.checkpoints.length) {
+        const nextCp = route.route.checkpoints[activeIdx + 1];
         if (nextCp.pointId) activeOrNextIds.add(nextCp.pointId);
         if (nextCp.customPinId) activeOrNextIds.add(nextCp.customPinId);
       }
@@ -1108,6 +1260,9 @@ export function InteractiveMap({
         }
       });
     });
+
+    // Pins que são checkpoint ativo/próximo de uma rota visível nunca ficam ocultos
+    activeOrNextIds.forEach((id) => hidden.delete(id));
 
     return hidden;
   }, [visibleRoutes, savedRoutes, publicRoutes, completedPins]);
@@ -1213,92 +1368,36 @@ export function InteractiveMap({
     const points = viewportBounds
       ? visibleCustomPins.filter(
           (p: SavedCustomPin) =>
-            p.x >= viewportBounds.minX &&
-            p.x <= viewportBounds.maxX &&
-            p.y >= viewportBounds.minY &&
-            p.y <= viewportBounds.maxY,
+            p.id === selectedCustomPinId ||
+            (p.x >= viewportBounds.minX &&
+              p.x <= viewportBounds.maxX &&
+              p.y >= viewportBounds.minY &&
+              p.y <= viewportBounds.maxY),
         )
       : visibleCustomPins;
 
     if (hiddenRoutePinIds.size === 0) return points;
     return points.filter((p: SavedCustomPin) => !hiddenRoutePinIds.has(p.id));
-  }, [visibleCustomPins, viewportBounds, hiddenRoutePinIds]);
+  }, [visibleCustomPins, viewportBounds, hiddenRoutePinIds, selectedCustomPinId]);
 
   const finalCustomPins = useMemo(() => {
-    const scale = cullingCamera.scale;
-    if (scale >= 3.2) {
-      return [...culledCustomPins].sort((a, b) => {
-        const aState = completedPins[a.id];
-        const aIsCompleted = !!aState && aState.status !== "ready";
-        const aSelected = a.id === selectedCustomPinId ? 2 : 0;
-        const aPriority =
-          referencedCustomPinIds.has(a.id) && !aIsCompleted ? 1 : 0;
-
-        const bState = completedPins[b.id];
-        const bIsCompleted = !!bState && bState.status !== "ready";
-        const bSelected = b.id === selectedCustomPinId ? 2 : 0;
-        const bPriority =
-          referencedCustomPinIds.has(b.id) && !bIsCompleted ? 1 : 0;
-
-        return aSelected + aPriority - (bSelected + bPriority);
-      }) as ClusteredCustomPin[];
-    }
-
-    const grid = new Map<string, ClusteredCustomPin[]>();
-    const gridSize = 3.5 / scale;
-    const result: ClusteredCustomPin[] = [];
-
-    for (const p of culledCustomPins) {
-      const gx = Math.floor(p.x / gridSize);
-      const gy = Math.floor(p.y / gridSize);
-      const key = `${gx}-${gy}`;
-      if (!grid.has(key)) grid.set(key, []);
-      grid.get(key)!.push(p as ClusteredCustomPin);
-    }
-
-    for (const [key, group] of grid) {
-      if (group.length > 2) {
-        const avgX =
-          group.reduce((sum: number, p: SavedCustomPin) => sum + p.x, 0) /
-          group.length;
-        const avgY =
-          group.reduce((sum: number, p: SavedCustomPin) => sum + p.y, 0) /
-          group.length;
-        result.push({
-          ...group[0],
-          id: `cluster-custom-${key}`,
-          name: `${group.length}x Pinos Customizados`,
-          x: avgX,
-          y: avgY,
-          isCluster: true,
-          clusterCount: group.length,
-        });
-      } else {
-        result.push(...group);
-      }
-    }
-
-    // Sort: referenced or selected pins last (on top)
-    return [...result].sort((a, b) => {
+    return [...culledCustomPins].sort((a, b) => {
       const aState = completedPins[a.id];
       const aIsCompleted = !!aState && aState.status !== "ready";
-
       const aSelected = a.id === selectedCustomPinId ? 2 : 0;
       const aPriority =
         referencedCustomPinIds.has(a.id) && !aIsCompleted ? 1 : 0;
 
       const bState = completedPins[b.id];
       const bIsCompleted = !!bState && bState.status !== "ready";
-
       const bSelected = b.id === selectedCustomPinId ? 2 : 0;
       const bPriority =
         referencedCustomPinIds.has(b.id) && !bIsCompleted ? 1 : 0;
 
       return aSelected + aPriority - (bSelected + bPriority);
-    });
+    }) as ClusteredCustomPin[];
   }, [
     culledCustomPins,
-    cullingCamera.scale,
     referencedCustomPinIds,
     selectedCustomPinId,
     completedPins,
@@ -1607,6 +1706,30 @@ export function InteractiveMap({
               </div>
             )}
 
+            {/* Draft pin indicator durante posicionamento (antes de confirmar) */}
+            {mode === "pin" && selectedCustomPin?.isPlaced && (() => {
+              const coords = getScreenCoords(selectedCustomPin.x, selectedCustomPin.y);
+              return (
+                <PinBadge
+                  color={selectedCustomPin.color}
+                  iconId={selectedCustomPin.iconId}
+                  isSelected
+                  key="draft-pin"
+                  id="draft-pin"
+                  label={selectedCustomPin.name}
+                  screenX={coords.x}
+                  screenY={coords.y}
+                  x={selectedCustomPin.x}
+                  y={selectedCustomPin.y}
+                  typeLabel="Novo Pino"
+                  isCompleted={false}
+                  globalTick={globalTick}
+                  isMoving={isMoving}
+                  displayedCamera={displayedCamera}
+                />
+              );
+            })()}
+
             {/* Renderizar todos os pinos customizados (fora do contêiner escalado) */}
             {finalCustomPins.map((pin) => {
               const coords = getScreenCoords(pin.x, pin.y);
@@ -1862,6 +1985,28 @@ export function InteractiveMap({
               />
             </span>
           </button>
+
+          {/* Marcação Rápida (só aparece com rota ativa) */}
+          {visibleRoutes.length > 0 && (
+            <button
+              onClick={() => setIsQuickMarkOpen((v) => !v)}
+              className={cn(
+                "grid h-10 w-10 place-items-center rounded-[2px] border transition-all duration-200 cursor-pointer group relative",
+                isQuickMarkOpen
+                  ? "border-yellow-500 bg-yellow-500/20 text-yellow-300 shadow-[0_0_15px_rgba(234,179,8,0.4)]"
+                  : "border-white/10 bg-black/30 text-[#f0d9a0] hover:text-white hover:bg-white/10 active:scale-95",
+              )}
+              title="Marcação Rápida [Q]"
+              type="button"
+            >
+              <Zap size={18} className="transition-transform group-hover:scale-110" />
+              {!isQuickMarkOpen && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-500 text-[7px] font-black text-black">
+                  Q
+                </span>
+              )}
+            </button>
+          )}
 
           {/* Divider */}
           <span className="block h-px mx-1 bg-gradient-to-r from-transparent via-white/10 to-transparent my-0.5" />
@@ -2723,6 +2868,20 @@ export function InteractiveMap({
           onRequestPushPermission={requestPushPermission}
         />
       )}
+
+      <QuickMarkPanel
+        isOpen={isQuickMarkOpen}
+        onClose={() => setIsQuickMarkOpen(false)}
+        visibleRoutes={visibleRoutes}
+        savedRoutes={savedRoutes}
+        publicRoutes={publicRoutes}
+        officialPoints={officialPoints}
+        customPins={customPins}
+        completedPins={completedPins as Record<string, { status: string; subType?: string }>}
+        notificationSettings={notificationSettings}
+        updateNotificationSettings={updateNotificationSettings}
+        onMark={handleMarkCompleted}
+      />
     </>
   );
 }
