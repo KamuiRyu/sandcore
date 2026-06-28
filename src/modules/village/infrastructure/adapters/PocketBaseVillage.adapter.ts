@@ -40,7 +40,7 @@ export async function deleteTitle(id: string): Promise<void> {
 // ─── Mission Templates ───────────────────────────────────────────────────────
 
 export async function getMissionTemplates(activeOnly = true): Promise<MissionTemplate[]> {
-  const filter = activeOnly ? 'is_active=true' : ''
+  const filter = activeOnly ? 'is_active=true && is_imported!=true' : ''
   return await pb.collection('mission_templates').getFullList({ filter, sort: 'rank' }) as unknown as MissionTemplate[]
 }
 
@@ -84,6 +84,7 @@ export async function createAssignment(data: {
   day: string;
   assigned_at: string;
   group_id?: string;
+  is_imported?: boolean;
 }): Promise<MissionAssignment> {
   return await pb.collection('mission_assignments').create(data) as unknown as MissionAssignment
 }
@@ -92,6 +93,7 @@ export async function createGroupAssignment(
   templateId: string,
   userIds: string[],
   day: string,
+  is_imported?: boolean,
 ): Promise<MissionAssignment[]> {
   const group_id = crypto.randomUUID()
   const now = new Date().toISOString()
@@ -104,6 +106,7 @@ export async function createGroupAssignment(
         day,
         assigned_at: now,
         group_id,
+        ...(is_imported ? { is_imported: true } : {}),
       }) as unknown as Promise<MissionAssignment>
     )
   )

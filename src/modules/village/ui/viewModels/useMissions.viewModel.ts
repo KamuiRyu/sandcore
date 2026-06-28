@@ -172,9 +172,9 @@ export const useMissionsViewModel = () => {
     await load()
   }
 
-  const activeAssignments = myAssignments.filter(a => a.status === 'in_progress')
-  const pendingAssignments = myAssignments.filter(a => a.status === 'pending_review')
-  const completedAssignments = myAssignments.filter(a => a.status === 'completed')
+  const activeAssignments = myAssignments.filter(a => a.status === 'in_progress' && !a.is_imported)
+  const pendingAssignments = myAssignments.filter(a => a.status === 'pending_review' && !a.is_imported)
+  const completedAssignments = myAssignments.filter(a => a.status === 'completed' && !a.is_imported)
 
   const assignedTemplateIds = new Set(
     myAssignments.filter(a => a.day?.trim() === today()).map(a => a.template)

@@ -255,20 +255,23 @@ export const useAdminViewModel = () => {
   }
 
   const assignMission = async (templateId: string, userId: string, day: string) => {
-    await _applyPointsCost(templateId, [userId])
+    const tpl = templates.find(t => t.id === templateId)
+    if (!tpl?.is_imported) await _applyPointsCost(templateId, [userId])
     await createAssignment({
       template: templateId,
       assigned_to: userId,
       status: 'in_progress',
       day,
       assigned_at: new Date().toISOString(),
+      ...(tpl?.is_imported ? { is_imported: true } : {}),
     })
     await loadAssignments('status!="completed"')
   }
 
   const assignMissionToGroup = async (templateId: string, userIds: string[], day: string) => {
-    await _applyPointsCost(templateId, userIds)
-    await createGroupAssignment(templateId, userIds, day)
+    const tpl = templates.find(t => t.id === templateId)
+    if (!tpl?.is_imported) await _applyPointsCost(templateId, userIds)
+    await createGroupAssignment(templateId, userIds, day, tpl?.is_imported)
     await loadAssignments('status!="completed"')
   }
 

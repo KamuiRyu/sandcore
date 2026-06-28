@@ -448,6 +448,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
     reward_items: "",
     reward_points: "0",
     is_active: true,
+    is_imported: false,
   });
   const pg = usePagination(vm.templates);
 
@@ -463,6 +464,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
       reward_items: "",
       reward_points: "0",
       is_active: true,
+      is_imported: false,
     });
     setLocationImageFiles([]);
     setShouldRemoveImage(false);
@@ -481,6 +483,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
       reward_items: t.reward_items || "",
       reward_points: String(t.reward_points),
       is_active: t.is_active,
+      is_imported: t.is_imported ?? false,
     });
     setLocationImageFiles([]);
     setShouldRemoveImage(false);
@@ -499,6 +502,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
     formData.append("reward_points", String(parseInt(form.reward_points) || 0));
     formData.append("reward_items", form.reward_items);
     formData.append("is_active", String(form.is_active));
+    formData.append("is_imported", String(form.is_imported));
 
     if (locationImageFiles.length > 0) {
       locationImageFiles.forEach((file) => {
@@ -818,6 +822,26 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
               )}
             </div>
           </div>
+          <label style={{
+            display: "flex", alignItems: "center", gap: 8, marginTop: 14,
+            cursor: "pointer", userSelect: "none",
+          }}>
+            <input
+              type="checkbox"
+              checked={form.is_imported}
+              onChange={e => setForm(f => ({ ...f, is_imported: e.target.checked }))}
+              style={{ accentColor: "#c8860a", width: 14, height: 14 }}
+            />
+            <div>
+              <div style={{ fontSize: 11, color: "#e8d5a0", fontFamily: "'Orbitron', sans-serif" }}>
+                Missão importada
+              </div>
+              <div style={{ fontSize: 9, color: "#6a5028", fontFamily: "'Orbitron', sans-serif", marginTop: 2 }}>
+                Não aparece no board nem no histórico do jogador — usada apenas na carteirinha
+              </div>
+            </div>
+          </label>
+
           <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
             <VillagePrimaryButton onClick={handleSave}>
               {editTpl ? "Salvar" : "Criar"}
@@ -878,6 +902,9 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
                     {t.reward_yens > 0 && <span>💰 {t.reward_yens}¥</span>}
                     {t.reward_points > 0 && (
                       <span>⭐ {t.reward_points}pts</span>
+                    )}
+                    {t.is_imported && (
+                      <span style={{ color: "#7a6040", border: "1px solid #3a2a10", borderRadius: 2, padding: "0px 4px", fontSize: 9 }}>IMPORTADA</span>
                     )}
                     {!t.is_active && (
                       <span style={{ color: "#6a5028" }}>ARQUIVADA</span>
@@ -1258,11 +1285,15 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
     return true;
   };
 
-  const toggleUser = (id: string) => {
-    setSelectedUsers(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  };
-
   const requiredPartySize = selectedTpl ? (selectedTpl.party_size ?? 1) : 1;
+
+  const toggleUser = (id: string) => {
+    setSelectedUsers(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      if (prev.length >= requiredPartySize) return prev;
+      return [...prev, id];
+    });
+  };
   const partySizeMatch = selectedUsers.length === requiredPartySize;
 
   const handleAssign = async () => {
