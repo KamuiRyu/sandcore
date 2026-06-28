@@ -93,6 +93,18 @@ const AssignmentCard = ({
             </div>
           )}
 
+          {/* Objective */}
+          {tpl?.objective && (
+            <div style={{ background: 'rgba(120,160,80,0.06)', border: '1px solid rgba(120,160,80,0.2)', borderRadius: 3, padding: '10px 12px' }}>
+              <div style={{ fontSize: 10, color: '#7ab840', fontFamily: "'Orbitron', sans-serif", marginBottom: 6, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
+                🎯 OBJETIVO:
+              </div>
+              <div style={{ fontSize: 12, color: '#a0c870', fontFamily: "'Orbitron', sans-serif", lineHeight: 1.6 }}>
+                {tpl.objective}
+              </div>
+            </div>
+          )}
+
           {/* Location Images */}
           {tpl?.location_image && (
             <div>

@@ -4,6 +4,7 @@ export interface MissionTemplate {
   id: string;
   title: string;
   description?: string;
+  objective?: string;
   rank: MissionRank;
   min_ninja_rank?: string;
   min_level: number;

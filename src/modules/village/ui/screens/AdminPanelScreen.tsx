@@ -440,6 +440,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   const [form, setForm] = useState({
     title: "",
     description: "",
+    objective: "",
     rank: "D" as MissionRank,
     min_ninja_rank: "",
     min_level: "0",
@@ -456,6 +457,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
     setForm({
       title: "",
       description: "",
+      objective: "",
       rank: "D",
       min_ninja_rank: "",
       min_level: "0",
@@ -475,6 +477,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
     setForm({
       title: t.title,
       description: t.description || "",
+      objective: t.objective || "",
       rank: t.rank,
       min_ninja_rank: t.min_ninja_rank || "",
       min_level: String(t.min_level),
@@ -494,6 +497,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
     const formData = new FormData();
     formData.append("title", form.title);
     formData.append("description", form.description);
+    formData.append("objective", form.objective);
     formData.append("rank", form.rank);
     formData.append("min_ninja_rank", form.min_ninja_rank);
     formData.append("min_level", String(parseInt(form.min_level) || 0));
@@ -586,6 +590,23 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
                 value={form.description}
                 onChange={(v) => setForm((f) => ({ ...f, description: v }))}
                 placeholder="Detalhes da missão"
+              />
+            </div>
+            <div className="col-span-2">
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "#9a7a40",
+                  marginBottom: 5,
+                  fontFamily: "'Orbitron', sans-serif",
+                }}
+              >
+                OBJETIVO
+              </div>
+              <VillageInput
+                value={form.objective}
+                onChange={(v) => setForm((f) => ({ ...f, objective: v }))}
+                placeholder="O que o ninja deve fazer/entregar para concluir"
               />
             </div>
             <div>
@@ -887,6 +908,13 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
                       style={{ fontSize: 11, color: "#9a7a40", marginTop: 2 }}
                     >
                       {t.description}
+                    </div>
+                  )}
+                  {t.objective && (
+                    <div
+                      style={{ fontSize: 11, color: "#7a9a60", marginTop: 2, fontStyle: "italic" }}
+                    >
+                      🎯 {t.objective}
                     </div>
                   )}
                   <div
@@ -1390,6 +1418,12 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
             {selectedTpl.description && (
               <div style={{ marginTop: 6, fontSize: 11, color: "#6a5028", fontFamily: "'Orbitron', sans-serif" }}>
                 {selectedTpl.description}
+              </div>
+            )}
+            {selectedTpl.objective && (
+              <div style={{ marginTop: 6, display: "flex", alignItems: "flex-start", gap: 5, fontSize: 11, color: "#7a9a60", fontFamily: "'Orbitron', sans-serif" }}>
+                <span>🎯</span>
+                <span>{selectedTpl.objective}</span>
               </div>
             )}
           </div>
