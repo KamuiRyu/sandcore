@@ -19,6 +19,7 @@ import {
   updateMissionTemplate,
   getAllAssignments,
   createAssignment,
+  createGroupAssignment,
   updateAssignment,
   getVillageSettings,
   updateVillageSettings,
@@ -204,43 +205,57 @@ export const useAdminViewModel = () => {
     await loadAssignments('status!="completed"')
   }
 
+  const approveGroup = async (groupId: string) => {
+    const targets = assignments.filter(a => a.group_id === groupId && a.status === 'pending_review')
+    await Promise.all(targets.map(a => updateAssignment(a.id, {
+      status: 'completed',
+      reviewed_by: adminId,
+      completed_at: new Date().toISOString(),
+    } as any)))
+    await loadAssignments('status!="completed"')
+  }
+
+  const rejectGroup = async (groupId: string, notes: string) => {
+    const targets = assignments.filter(a => a.group_id === groupId && a.status === 'pending_review')
+    await Promise.all(targets.map(a => updateAssignment(a.id, {
+      status: 'in_progress',
+      admin_notes: notes,
+      reviewed_by: adminId,
+    } as any)))
+    await loadAssignments('status!="completed"')
+  }
+
   const removeAssignment = async (assignmentId: string) => {
     await pb.collection('mission_assignments').delete(assignmentId)
     await loadAssignments('status!="completed"')
   }
 
-  const assignMission = async (templateId: string, userId: string, day: string) => {
+  const _applyPointsCost = async (templateId: string, userIds: string[]) => {
     const tpl = templates.find(t => t.id === templateId)
-    if (tpl && settings) {
-      let costMap = settings.points_cost
-      if (typeof costMap === 'string') {
-        try {
-          costMap = JSON.parse(costMap)
-        } catch {}
-      }
-      if (costMap) {
-        const upperRank = tpl.rank.toUpperCase()
-        let cost = 0
-        for (const [key, val] of Object.entries(costMap)) {
-          if (key.toUpperCase() === upperRank) {
-            cost = Number(val) || 0
-            break
-          }
-        }
-        if (cost > 0) {
-          try {
-            const u = await pb.collection('users').getOne(userId) as any
-            const currentUsed = u.daily_points_used || 0
-            await pb.collection('users').update(userId, {
-              daily_points_used: currentUsed + cost,
-            })
-          } catch (e) {
-            console.error('Error updating target user daily points:', e)
-          }
-        }
-      }
+    if (!tpl || !settings) return
+    let costMap = settings.points_cost
+    if (typeof costMap === 'string') {
+      try { costMap = JSON.parse(costMap) } catch {}
     }
+    if (!costMap) return
+    const upperRank = tpl.rank.toUpperCase()
+    let cost = 0
+    for (const [key, val] of Object.entries(costMap)) {
+      if (key.toUpperCase() === upperRank) { cost = Number(val) || 0; break }
+    }
+    if (cost <= 0) return
+    await Promise.all(userIds.map(async userId => {
+      try {
+        const u = await pb.collection('users').getOne(userId) as any
+        await pb.collection('users').update(userId, { daily_points_used: (u.daily_points_used || 0) + cost })
+      } catch (e) {
+        console.error('Error updating daily points for', userId, e)
+      }
+    }))
+  }
 
+  const assignMission = async (templateId: string, userId: string, day: string) => {
+    await _applyPointsCost(templateId, [userId])
     await createAssignment({
       template: templateId,
       assigned_to: userId,
@@ -248,6 +263,12 @@ export const useAdminViewModel = () => {
       day,
       assigned_at: new Date().toISOString(),
     })
+    await loadAssignments('status!="completed"')
+  }
+
+  const assignMissionToGroup = async (templateId: string, userIds: string[], day: string) => {
+    await _applyPointsCost(templateId, userIds)
+    await createGroupAssignment(templateId, userIds, day)
     await loadAssignments('status!="completed"')
   }
 
@@ -313,9 +334,9 @@ export const useAdminViewModel = () => {
     addTitle, editTitle, removeTitle,
     addTemplate, editTemplate, archiveTemplate,
     saveSettings,
-    approveAssignment, rejectAssignment,
+    approveAssignment, rejectAssignment, approveGroup, rejectGroup,
     loadAssignments,
-    assignMission, removeAssignment,
+    assignMission, assignMissionToGroup, removeAssignment,
     addOrgRole, editOrgRole, removeOrgRole,
     getOrgRolesByType,
     addDonation,

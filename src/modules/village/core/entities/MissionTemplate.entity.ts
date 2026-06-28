@@ -7,6 +7,7 @@ export interface MissionTemplate {
   rank: MissionRank;
   min_ninja_rank?: string;
   min_level: number;
+  party_size: number;
   reward_yens: number;
   reward_items?: string;
   reward_points: number;

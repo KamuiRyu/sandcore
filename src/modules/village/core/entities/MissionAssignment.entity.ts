@@ -11,6 +11,7 @@ export interface MissionAssignment {
   evidence?: string;
   admin_notes?: string;
   reviewed_by?: string;
+  group_id?: string;
   day: string;
   assigned_at: string;
   submitted_at?: string;

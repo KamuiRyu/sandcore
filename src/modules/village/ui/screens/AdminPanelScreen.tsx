@@ -35,6 +35,7 @@ import {
 import { usePagination, Pagination } from "../components/Pagination";
 import { User } from "../../../authentication/core/entities/User.entity";
 import { MissionTemplate } from "../../core/entities/MissionTemplate.entity";
+import { MissionAssignment } from "../../core/entities/MissionAssignment.entity";
 import { Title } from "../../core/entities/Title.entity";
 import { MissionRank } from "../../core/entities/VillageSettings.entity";
 
@@ -442,6 +443,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
     rank: "D" as MissionRank,
     min_ninja_rank: "",
     min_level: "0",
+    party_size: "1",
     reward_yens: "0",
     reward_items: "",
     reward_points: "0",
@@ -456,6 +458,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
       rank: "D",
       min_ninja_rank: "",
       min_level: "0",
+      party_size: "1",
       reward_yens: "0",
       reward_items: "",
       reward_points: "0",
@@ -473,6 +476,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
       rank: t.rank,
       min_ninja_rank: t.min_ninja_rank || "",
       min_level: String(t.min_level),
+      party_size: String(t.party_size ?? 1),
       reward_yens: String(t.reward_yens),
       reward_items: t.reward_items || "",
       reward_points: String(t.reward_points),
@@ -490,6 +494,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
     formData.append("rank", form.rank);
     formData.append("min_ninja_rank", form.min_ninja_rank);
     formData.append("min_level", String(parseInt(form.min_level) || 0));
+    formData.append("party_size", String(Math.max(1, parseInt(form.party_size) || 1)));
     formData.append("reward_yens", String(parseInt(form.reward_yens) || 0));
     formData.append("reward_points", String(parseInt(form.reward_points) || 0));
     formData.append("reward_items", form.reward_items);
@@ -643,6 +648,21 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
                 onChange={(v) => setForm((f) => ({ ...f, min_level: v }))}
                 placeholder="0"
               />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: "#9a7a40", marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>
+                NINJAS NECESSÁRIOS
+              </div>
+              <VillageSelect
+                value={form.party_size}
+                onChange={(v) => setForm((f) => ({ ...f, party_size: v }))}
+              >
+                <option value="1">1 — Solo</option>
+                <option value="2">2 — Dupla</option>
+                <option value="3">3 — Trio</option>
+                <option value="4">4 — Equipe</option>
+                <option value="5">5 — Pelotão</option>
+              </VillageSelect>
             </div>
             <div>
               <div
@@ -854,6 +874,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
                       marginTop: 4,
                     }}
                   >
+                    {(t.party_size ?? 1) > 1 && <span>👥 {t.party_size} ninjas</span>}
                     {t.reward_yens > 0 && <span>💰 {t.reward_yens}¥</span>}
                     {t.reward_points > 0 && (
                       <span>⭐ {t.reward_points}pts</span>
@@ -894,17 +915,112 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
 
 // ─── Reviews Tab ──────────────────────────────────────────────────────────────
 
+// ─── ReviewAssignmentCard ─────────────────────────────────────────────────────
+
+const ReviewAssignmentCard = ({
+  a,
+  onApprove,
+  onReject,
+}: {
+  a: MissionAssignment;
+  onApprove: () => void;
+  onReject: (note: string) => void;
+}) => {
+  const [rejectNote, setRejectNote] = useState("");
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const ninja = a.expand?.assigned_to;
+
+  return (
+    <div style={{
+      display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12,
+      padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 3,
+      border: "1px solid #1a1a1a",
+    }}>
+      <div className="flex-1 min-w-0">
+        <div style={{ fontSize: 11, color: "#9a7a40" }}>
+          Ninja: <span style={{ color: "#c8a030" }}>{ninja?.name || "–"}</span> · {a.day}
+        </div>
+        {a.submitted_at && (
+          <div style={{ fontSize: 10, color: "#6a5028", marginTop: 2 }}>
+            Enviado em: {new Date(a.submitted_at).toLocaleString("pt-BR")}
+          </div>
+        )}
+        {a.evidence && (
+          <div style={{ marginTop: 8 }}>
+            <div style={{ fontSize: 9, color: "#6a5028", fontFamily: "'Orbitron', sans-serif", marginBottom: 4 }}>
+              EVIDÊNCIAS:
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {(Array.isArray(a.evidence) ? a.evidence : [a.evidence]).map((filename, i) => {
+                if (!filename) return null;
+                const fileUrl = pb.files.getUrl(a, filename);
+                const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(filename);
+                return (
+                  <a key={i} href={fileUrl} target="_blank" rel="noopener noreferrer"
+                    style={{
+                      display: "flex", flexDirection: "column", alignItems: "center",
+                      border: "1px solid #1e1e1e", borderRadius: 3, padding: 4,
+                      background: "rgba(0,0,0,0.4)", cursor: "zoom-in", width: 60,
+                    }}>
+                    {isImage
+                      ? <img src={fileUrl} alt={`Evidência ${i + 1}`} style={{ width: "100%", height: 44, objectFit: "cover", borderRadius: 2 }} />
+                      : <div style={{ width: "100%", height: 44, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>📂</div>
+                    }
+                    <span style={{ fontSize: 8, color: "#9a7a40", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%", textAlign: "center" }}>
+                      Doc {i + 1}
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {rejectOpen && (
+          <div style={{ marginTop: 8 }}>
+            <VillageInput value={rejectNote} onChange={setRejectNote} placeholder="Motivo da rejeição..." />
+          </div>
+        )}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+        <VillagePrimaryButton small onClick={onApprove}>
+          <Check size={10} /> Aprovar
+        </VillagePrimaryButton>
+        {rejectOpen ? (
+          <VillageSecondaryButton small danger onClick={() => { onReject(rejectNote); setRejectOpen(false); setRejectNote(""); }}>
+            <X size={10} /> Confirmar
+          </VillageSecondaryButton>
+        ) : (
+          <VillageSecondaryButton small danger onClick={() => setRejectOpen(true)}>
+            <X size={10} /> Rejeitar
+          </VillageSecondaryButton>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── Reviews Tab ──────────────────────────────────────────────────────────────
+
 const ReviewsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
-  const [rejectNote, setRejectNote] = useState<Record<string, string>>({});
-  const [rejectOpen, setRejectOpen] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const pg = usePagination(vm.pendingReviews);
+  const [groupRejectNote, setGroupRejectNote] = useState<Record<string, string>>({});
+  const [groupRejectOpen, setGroupRejectOpen] = useState<string | null>(null);
 
   const handleRefresh = async () => {
     setRefreshing(true);
     await vm.loadAssignments('status!="completed"');
     setRefreshing(false);
   };
+
+  // Group pending reviews by group_id (solo assignments use their own id as key)
+  const groups = vm.pendingReviews.reduce<Record<string, MissionAssignment[]>>((acc, a) => {
+    const key = a.group_id || a.id;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(a);
+    return acc;
+  }, {});
+
+  const groupEntries = Object.entries(groups);
 
   return (
     <div className="space-y-2">
@@ -914,220 +1030,88 @@ const ReviewsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
           {refreshing ? "Atualizando..." : "Atualizar"}
         </VillageSecondaryButton>
       </div>
-      {vm.pendingReviews.length === 0 ? (
-        <div
-          style={{
-            color: "#282828",
-            fontSize: 10,
-            textAlign: "center",
-            padding: "40px 0",
-            fontFamily: "'Orbitron', sans-serif",
-          }}
-        >
+      {groupEntries.length === 0 ? (
+        <div style={{ color: "#282828", fontSize: 10, textAlign: "center", padding: "40px 0", fontFamily: "'Orbitron', sans-serif" }}>
           Nenhuma missão aguardando avaliação
         </div>
       ) : (
-        pg.paged.map((a) => {
-          const tpl = a.expand?.template;
-          const ninja = a.expand?.assigned_to;
+        groupEntries.map(([groupKey, members]) => {
+          const tpl = members[0].expand?.template;
+          const isGroup = members.length > 1;
+          const pendingCount = members.filter(m => m.status === "pending_review").length;
+
           return (
-            <VillageCard key={a.id}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  gap: 12,
-                }}
-              >
+            <VillageCard key={groupKey}>
+              {/* Group header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: isGroup ? 10 : 0 }}>
                 <div className="flex-1 min-w-0">
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      marginBottom: 6,
-                    }}
-                  >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                     {tpl && <MissionRankBadge rank={tpl.rank as MissionRank} />}
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: "#e8d5a0",
-                      }}
-                    >
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#e8d5a0" }}>
                       {tpl?.title || "Missão"}
                     </span>
-                  </div>
-                  <div style={{ fontSize: 11, color: "#9a7a40" }}>
-                    Ninja:{" "}
-                    <span style={{ color: "#c8a030" }}>
-                      {ninja?.name || "–"}
-                    </span>{" "}
-                    · {a.day}
-                  </div>
-                  {a.submitted_at && (
-                    <div
-                      style={{ fontSize: 11, color: "#9a7a40", marginTop: 2 }}
-                    >
-                      Enviado em:{" "}
-                      {new Date(a.submitted_at).toLocaleString("pt-BR")}
-                    </div>
-                  )}
-                  {tpl && (
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 10,
-                        fontSize: 11,
+                    {isGroup && (
+                      <span style={{
+                        fontSize: 9, fontFamily: "'Orbitron', sans-serif", fontWeight: 700,
+                        padding: "2px 6px", borderRadius: 2,
+                        background: "rgba(200,134,10,0.12)", border: "1px solid rgba(200,134,10,0.3)",
                         color: "#c8a030",
-                        marginTop: 6,
-                      }}
-                    >
-                      {tpl.reward_yens > 0 && (
-                        <span>💰 {tpl.reward_yens}¥</span>
-                      )}
-                      {tpl.reward_points > 0 && (
-                        <span>⭐ {tpl.reward_points}pts</span>
-                      )}
-                    </div>
-                  )}
-
-                  {a.evidence && (
-                    <div style={{ marginTop: 10, borderTop: "1px dashed #282828", paddingTop: 8 }}>
-                      <div
-                        style={{
-                          fontSize: 10,
-                          color: "#9a7a40",
-                          fontFamily: "'Orbitron', sans-serif",
-                          marginBottom: 6,
-                        }}
-                      >
-                        EVIDÊNCIAS ENVIADAS:
-                      </div>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        {(Array.isArray(a.evidence) ? a.evidence : [a.evidence]).map((filename, i) => {
-                          if (!filename) return null;
-                          const fileUrl = pb.files.getUrl(a, filename);
-                          const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(filename);
-
-                          return (
-                            <a
-                              key={i}
-                              href={fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                border: "1px solid #1e1e1e",
-                                borderRadius: 3,
-                                padding: 4,
-                                background: "rgba(0,0,0,0.4)",
-                                cursor: "zoom-in",
-                                width: 70,
-                              }}
-                            >
-                              {isImage ? (
-                                <img
-                                  src={fileUrl}
-                                  alt={`Evidência ${i + 1}`}
-                                  style={{
-                                    width: "100%",
-                                    height: 50,
-                                    objectFit: "cover",
-                                    borderRadius: 2,
-                                  }}
-                                />
-                              ) : (
-                                <div
-                                  style={{
-                                    width: "100%",
-                                    height: 50,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    fontSize: 16,
-                                  }}
-                                >
-                                  📂
-                                </div>
-                              )}
-                              <span
-                                style={{
-                                  fontSize: 8,
-                                  color: "#9a7a40",
-                                  marginTop: 4,
-                                  textOverflow: "ellipsis",
-                                  overflow: "hidden",
-                                  whiteSpace: "nowrap",
-                                  width: "100%",
-                                  textAlign: "center",
-                                }}
-                              >
-                                Doc {i + 1}
-                              </span>
-                            </a>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  {rejectOpen === a.id && (
-                    <div style={{ marginTop: 8 }}>
-                      <VillageInput
-                        value={rejectNote[a.id] || ""}
-                        onChange={(v) =>
-                          setRejectNote((n) => ({ ...n, [a.id]: v }))
-                        }
-                        placeholder="Motivo da rejeição..."
-                      />
+                      }}>
+                        GRUPO · {pendingCount} PENDENTE{pendingCount > 1 ? "S" : ""}
+                      </span>
+                    )}
+                  </div>
+                  {tpl && (
+                    <div style={{ display: "flex", gap: 10, fontSize: 11, color: "#c8a030" }}>
+                      {tpl.reward_yens > 0 && <span>💰 {tpl.reward_yens}¥</span>}
+                      {tpl.reward_points > 0 && <span>⭐ {tpl.reward_points}pts</span>}
                     </div>
                   )}
                 </div>
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
-                >
-                  <VillagePrimaryButton
-                    small
-                    onClick={() => vm.approveAssignment(a.id)}
-                  >
-                    <Check size={10} /> Aprovar
-                  </VillagePrimaryButton>
-                  {rejectOpen === a.id ? (
-                    <VillageSecondaryButton
-                      small
-                      danger
-                      onClick={() => {
-                        vm.rejectAssignment(a.id, rejectNote[a.id] || "");
-                        setRejectOpen(null);
-                      }}
-                    >
-                      <X size={10} /> Confirmar
-                    </VillageSecondaryButton>
-                  ) : (
-                    <VillageSecondaryButton
-                      small
-                      danger
-                      onClick={() => setRejectOpen(a.id)}
-                    >
-                      <X size={10} /> Rejeitar
-                    </VillageSecondaryButton>
-                  )}
-                </div>
+                {/* Group bulk actions */}
+                {isGroup && pendingCount > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+                    <VillagePrimaryButton small onClick={() => vm.approveGroup(groupKey)}>
+                      <Check size={10} /> Aprovar todos
+                    </VillagePrimaryButton>
+                    {groupRejectOpen === groupKey ? (
+                      <>
+                        <VillageInput
+                          value={groupRejectNote[groupKey] || ""}
+                          onChange={v => setGroupRejectNote(n => ({ ...n, [groupKey]: v }))}
+                          placeholder="Motivo..."
+                        />
+                        <VillageSecondaryButton small danger onClick={() => {
+                          vm.rejectGroup(groupKey, groupRejectNote[groupKey] || "");
+                          setGroupRejectOpen(null);
+                        }}>
+                          <X size={10} /> Confirmar todos
+                        </VillageSecondaryButton>
+                      </>
+                    ) : (
+                      <VillageSecondaryButton small danger onClick={() => setGroupRejectOpen(groupKey)}>
+                        <X size={10} /> Rejeitar todos
+                      </VillageSecondaryButton>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Individual member cards */}
+              <div className="space-y-2">
+                {members.map(a => (
+                  <ReviewAssignmentCard
+                    key={a.id}
+                    a={a}
+                    onApprove={() => vm.approveAssignment(a.id)}
+                    onReject={(note) => vm.rejectAssignment(a.id, note)}
+                  />
+                ))}
               </div>
             </VillageCard>
           );
         })
       )}
-      <Pagination
-        page={pg.page}
-        totalPages={pg.totalPages}
-        total={pg.total}
-        onPage={pg.setPage}
-      />
     </div>
   );
 };
@@ -1238,7 +1222,7 @@ const SearchableSelect = ({
 const RANK_ORDER: Record<string, number> = { genin: 1, chunin: 2, jonin: 3, anbu: 4, kage: 5 };
 
 const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
-  const [selectedUser, setSelectedUser] = useState("");
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [day, setDay] = useState(() => {
     const now = new Date();
@@ -1248,6 +1232,17 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+  const [userDropOpen, setUserDropOpen] = useState(false);
+  const userDropRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (userDropRef.current && !userDropRef.current.contains(e.target as Node)) setUserDropOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const activeTemplates = vm.templates.filter((t) => t.is_active);
   const selectedTpl = activeTemplates.find(t => t.id === selectedTemplate);
@@ -1263,18 +1258,33 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
     return true;
   };
 
+  const toggleUser = (id: string) => {
+    setSelectedUsers(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const requiredPartySize = selectedTpl ? (selectedTpl.party_size ?? 1) : 1;
+  const partySizeMatch = selectedUsers.length === requiredPartySize;
+
   const handleAssign = async () => {
-    if (!selectedUser || !selectedTemplate || !day) {
-      setError("Selecione a missão, o membro e a data.");
+    if (selectedUsers.length === 0 || !selectedTemplate || !day) {
+      setError("Selecione a missão, ao menos um membro e a data.");
+      return;
+    }
+    if (!partySizeMatch) {
+      setError(`Esta missão exige exatamente ${requiredPartySize} ninja${requiredPartySize > 1 ? "s" : ""}. Você selecionou ${selectedUsers.length}.`);
       return;
     }
     setError("");
     setSuccess(false);
     setLoading(true);
     try {
-      await vm.assignMission(selectedTemplate, selectedUser, day);
+      if (selectedUsers.length === 1) {
+        await vm.assignMission(selectedTemplate, selectedUsers[0], day);
+      } else {
+        await vm.assignMissionToGroup(selectedTemplate, selectedUsers, day);
+      }
       setSuccess(true);
-      setSelectedUser("");
+      setSelectedUsers([]);
       setSelectedTemplate("");
     } catch (e: any) {
       setError(e.message || "Erro ao atribuir missão.");
@@ -1289,12 +1299,10 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
     meta: `Rank ${t.rank}`,
   }));
 
-  const userOptions: SearchableOption[] = vm.assignableUsers.map(u => ({
-    id: u.id,
-    label: u.name,
-    meta: `${u.ninja_rank || "–"} Nv.${u.level || 0}`,
-    eligible: selectedTpl ? userEligible(u) : undefined,
-  }));
+  const filteredUserOptions = vm.assignableUsers.filter(u =>
+    u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+    (u.ninja_rank || "").toLowerCase().includes(userSearch.toLowerCase())
+  );
 
   const pg = usePagination(vm.assignments);
   const [refreshing, setRefreshing] = useState(false);
@@ -1308,7 +1316,7 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
           label="1. MISSÃO"
           options={templateOptions}
           value={selectedTemplate}
-          onChange={v => { setSelectedTemplate(v); setSelectedUser(""); }}
+          onChange={v => { setSelectedTemplate(v); setSelectedUsers([]); }}
           placeholder="Selecione a missão..."
         />
 
@@ -1324,7 +1332,13 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
                 {selectedTpl.title}
               </span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, fontSize: 11, fontFamily: "'Orbitron', sans-serif" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, fontSize: 11, fontFamily: "'Orbitron', sans-serif" }}>
+              <div>
+                <div style={{ color: "#6a5028", marginBottom: 2 }}>GRUPO</div>
+                <div style={{ color: (selectedTpl.party_size ?? 1) > 1 ? "#c8a030" : "#e8d5a0" }}>
+                  {(selectedTpl.party_size ?? 1) === 1 ? "Solo" : `${selectedTpl.party_size} ninjas`}
+                </div>
+              </div>
               <div>
                 <div style={{ color: "#6a5028", marginBottom: 2 }}>POSTO MÍN.</div>
                 <div style={{ color: "#e8d5a0" }}>{selectedTpl.min_ninja_rank || "–"}</div>
@@ -1350,18 +1364,128 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
           </div>
         )}
 
-        {/* Step 2: Ninja */}
-        <div style={{ marginTop: 12 }}>
-          <SearchableSelect
-            label="2. NINJA"
-            options={userOptions}
-            value={selectedUser}
-            onChange={setSelectedUser}
-            placeholder={selectedTpl ? "Selecione o ninja..." : "Selecione uma missão primeiro"}
-          />
+        {/* Step 2: Ninjas (multi-select) */}
+        <div style={{ marginTop: 12 }} ref={userDropRef}>
+          <div style={{ fontSize: 9, color: "#9a7a40", marginBottom: 5, fontFamily: "'Orbitron', sans-serif" }}>
+            2. NINJAS {selectedUsers.length > 0 && <span style={{ color: "#c8a030" }}>({selectedUsers.length} selecionado{selectedUsers.length > 1 ? "s" : ""})</span>}
+          </div>
+          {/* Selected tags */}
+          {selectedUsers.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
+              {selectedUsers.map(uid => {
+                const u = vm.assignableUsers.find(x => x.id === uid);
+                return (
+                  <span key={uid} style={{
+                    display: "inline-flex", alignItems: "center", gap: 4,
+                    background: "rgba(200,134,10,0.12)", border: "1px solid rgba(200,134,10,0.3)",
+                    borderRadius: 3, padding: "2px 6px", fontSize: 10, color: "#e8d5a0",
+                    fontFamily: "'Orbitron', sans-serif",
+                  }}>
+                    {u?.name || uid}
+                    <button onClick={() => toggleUser(uid)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9a7a40", padding: 0, lineHeight: 1 }}>×</button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          {/* Dropdown trigger */}
+          <div
+            onClick={() => setUserDropOpen(v => !v)}
+            style={{
+              padding: "7px 10px", background: "rgba(8,8,8,0.8)",
+              border: `1px solid ${userDropOpen ? "#c8860a" : "#1e1e1e"}`,
+              borderRadius: 3, cursor: "pointer", fontSize: 12,
+              color: "#4a3a20", fontFamily: "'Orbitron', sans-serif",
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+            }}
+          >
+            <span>{selectedTpl ? "Selecionar ninjas..." : "Selecione uma missão primeiro"}</span>
+            <span style={{ fontSize: 9, color: "#9a7a40" }}>▾</span>
+          </div>
+          {userDropOpen && (
+            <div style={{
+              background: "#0a0a0a", border: "1px solid #2a2a2a", borderRadius: 3,
+              marginTop: 2, maxHeight: 220, display: "flex", flexDirection: "column",
+            }}>
+              <div style={{ padding: "6px 8px", borderBottom: "1px solid #1e1e1e" }}>
+                <input
+                  autoFocus
+                  value={userSearch}
+                  onChange={e => setUserSearch(e.target.value)}
+                  placeholder="Pesquisar ninja..."
+                  onClick={e => e.stopPropagation()}
+                  style={{
+                    width: "100%", background: "transparent", border: "none", outline: "none",
+                    fontSize: 11, color: "#e8d5a0", fontFamily: "'Orbitron', sans-serif",
+                  }}
+                />
+              </div>
+              <div style={{ overflowY: "auto", maxHeight: 160 }}>
+                {filteredUserOptions.length === 0 ? (
+                  <div style={{ padding: "10px 12px", fontSize: 11, color: "#4a3a20", fontFamily: "'Orbitron', sans-serif" }}>
+                    Nenhum resultado
+                  </div>
+                ) : filteredUserOptions.map(u => {
+                  const eligible = selectedTpl ? userEligible(u) : true;
+                  const checked = selectedUsers.includes(u.id);
+                  return (
+                    <div
+                      key={u.id}
+                      onClick={() => toggleUser(u.id)}
+                      style={{
+                        padding: "7px 12px", cursor: "pointer", fontSize: 11,
+                        color: !eligible ? "#6a4040" : "#e8d5a0",
+                        background: checked ? "rgba(200,134,10,0.1)" : "transparent",
+                        fontFamily: "'Orbitron', sans-serif",
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{
+                          width: 12, height: 12, border: `1px solid ${checked ? "#c8860a" : "#3a3a3a"}`,
+                          borderRadius: 2, background: checked ? "#c8860a" : "transparent",
+                          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                        }}>
+                          {checked && <span style={{ color: "#000", fontSize: 8, lineHeight: 1 }}>✓</span>}
+                        </span>
+                        <span>{u.name}</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 9, color: "#6a5028" }}>{u.ninja_rank || "–"} Nv.{u.level || 0}</span>
+                        {selectedTpl && (eligible
+                          ? <span style={{ fontSize: 9, color: "#3a7a4a" }}>✓</span>
+                          : <span style={{ fontSize: 9, color: "#7a3030" }}>✗</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {selectedUsers.length > 0 && (
+                <div style={{ borderTop: "1px solid #1e1e1e", padding: "6px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 9, color: "#9a7a40", fontFamily: "'Orbitron', sans-serif" }}>
+                    {selectedUsers.length} selecionado{selectedUsers.length > 1 ? "s" : ""}
+                  </span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setSelectedUsers([]); }}
+                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 9, color: "#7a3030", fontFamily: "'Orbitron', sans-serif" }}
+                  >
+                    Limpar
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
           {selectedTpl && (
-            <div style={{ fontSize: 9, color: "#6a5028", marginTop: 4, fontFamily: "'Orbitron', sans-serif" }}>
-              ✓ elegível · ✗ não atende os requisitos
+            <div style={{ fontSize: 9, marginTop: 4, fontFamily: "'Orbitron', sans-serif", display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "#6a5028" }}>✓ elegível · ✗ não atende os requisitos</span>
+              {selectedUsers.length > 0 && (
+                <span style={{ color: partySizeMatch ? "#34d399" : "#f87171" }}>
+                  {partySizeMatch
+                    ? `✓ ${selectedUsers.length}/${requiredPartySize} ninjas`
+                    : `${selectedUsers.length}/${requiredPartySize} ninjas`}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -1386,8 +1510,8 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
         )}
 
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
-          <VillagePrimaryButton onClick={handleAssign} disabled={loading || !selectedTemplate || !selectedUser}>
-            {loading ? "Atribuindo..." : "Atribuir Missão"}
+          <VillagePrimaryButton onClick={handleAssign} disabled={loading || !selectedTemplate || selectedUsers.length === 0}>
+            {loading ? "Atribuindo..." : selectedUsers.length > 1 ? `Atribuir para ${selectedUsers.length} Ninjas` : "Atribuir Missão"}
           </VillagePrimaryButton>
         </div>
       </VillageCard>

@@ -83,8 +83,30 @@ export async function createAssignment(data: {
   status: 'in_progress';
   day: string;
   assigned_at: string;
+  group_id?: string;
 }): Promise<MissionAssignment> {
   return await pb.collection('mission_assignments').create(data) as unknown as MissionAssignment
+}
+
+export async function createGroupAssignment(
+  templateId: string,
+  userIds: string[],
+  day: string,
+): Promise<MissionAssignment[]> {
+  const group_id = crypto.randomUUID()
+  const now = new Date().toISOString()
+  return await Promise.all(
+    userIds.map(userId =>
+      pb.collection('mission_assignments').create({
+        template: templateId,
+        assigned_to: userId,
+        status: 'in_progress',
+        day,
+        assigned_at: now,
+        group_id,
+      }) as unknown as Promise<MissionAssignment>
+    )
+  )
 }
 
 export async function updateAssignment(id: string, data: Partial<MissionAssignment>): Promise<MissionAssignment> {
