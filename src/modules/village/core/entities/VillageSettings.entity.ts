@@ -14,5 +14,7 @@ export interface VillageSettings {
   title_point_per_donation: number;
   tax_period: TaxPeriod;
   bank_balance: number;
+  rank_quota_enabled: boolean;
+  rank_quota: Record<MissionRank, number>;
   updated: string;
 }

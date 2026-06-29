@@ -16,6 +16,8 @@ export interface User {
   current_title?: string;
   daily_points_used?: number;
   last_points_reset?: string;
+  daily_missions_used?: number;
+  daily_missions_date?: string;
   approved_by?: string;
   approved_at?: string;
   organization?: string;

@@ -552,6 +552,22 @@ func main() {
 						log.Printf("[Missão] ERRO: Falha ao creditar title_points para %s: %v", userId, err)
 					}
 				}
+
+				// Creditar title_points para quem aprovou (admin, manager ou kage)
+				reviewerId := e.Record.GetString("reviewed_by")
+				if reviewerId != "" && reviewerId != userId {
+					reviewer, err := app.FindRecordById("users", reviewerId)
+					if err == nil {
+						role := reviewer.GetString("role")
+						ninjaRank := reviewer.GetString("ninja_rank")
+						if role == "admin" || role == "manager" || ninjaRank == "kage" {
+							reviewer.Set("title_points", reviewer.GetInt("title_points")+rewardPoints)
+							if err := app.Save(reviewer); err != nil {
+								log.Printf("[Missão] ERRO: Falha ao creditar title_points para revisor %s: %v", reviewerId, err)
+							}
+						}
+					}
+				}
 			}
 
 			if rewardYens <= 0 {

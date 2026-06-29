@@ -111,6 +111,7 @@ export async function createAssignment(data: {
   assigned_at: string;
   group_id?: string;
   is_imported?: boolean;
+  selected_pins?: string[];
 }): Promise<MissionAssignment> {
   return await pb.collection('mission_assignments').create(data) as unknown as MissionAssignment
 }
@@ -120,6 +121,7 @@ export async function createGroupAssignment(
   userIds: string[],
   day: string,
   is_imported?: boolean,
+  selected_pins?: string[],
 ): Promise<MissionAssignment[]> {
   const group_id = crypto.randomUUID()
   const now = new Date().toISOString()
@@ -133,6 +135,7 @@ export async function createGroupAssignment(
         assigned_at: now,
         group_id,
         ...(is_imported ? { is_imported: true } : {}),
+        ...(selected_pins ? { selected_pins } : {}),
       }) as unknown as Promise<MissionAssignment>
     )
   )
@@ -140,6 +143,77 @@ export async function createGroupAssignment(
 
 export async function updateAssignment(id: string, data: Partial<MissionAssignment>): Promise<MissionAssignment> {
   return await pb.collection('mission_assignments').update(id, data) as unknown as MissionAssignment
+}
+
+export async function getCompletedTodayByRank(userId: string, day: string): Promise<Record<string, number>> {
+  const records = await pb.collection('mission_assignments').getFullList({
+    filter: `assigned_to="${userId}" && status="completed" && day="${day}"`,
+    expand: 'template',
+  }) as unknown as MissionAssignment[]
+  const counts: Record<string, number> = {}
+  for (const r of records) {
+    const rank = (r as any).expand?.template?.rank as string | undefined
+    if (rank) counts[rank] = (counts[rank] ?? 0) + 1
+  }
+  return counts
+}
+
+export interface ActiveMissionPin {
+  assignmentId: string
+  templateId: string
+  templateTitle: string
+  x: number
+  y: number
+  category: string
+  label: string
+  pinId: string
+}
+
+export async function getActiveMissionPins(userId: string): Promise<ActiveMissionPin[]> {
+  const records = await pb.collection('mission_assignments').getFullList({
+    filter: `assigned_to="${userId}" && (status="in_progress" || status="pending_review")`,
+    expand: 'template',
+  }) as unknown as MissionAssignment[]
+
+  const pins: ActiveMissionPin[] = []
+  for (const r of records) {
+    const tpl = (r as any).expand?.template
+    if (!tpl) continue
+    const rawSelected = (r as any).selected_pins
+    const selectedPins: string[] | undefined = typeof rawSelected === 'string'
+      ? (() => { try { return JSON.parse(rawSelected) } catch { return undefined } })()
+      : Array.isArray(rawSelected) ? rawSelected : undefined
+    const allPins: any[] = typeof tpl.pins === 'string'
+      ? (() => { try { return JSON.parse(tpl.pins) } catch { return [] } })()
+      : (tpl.pins ?? [])
+    if (!allPins.length) continue
+    const visiblePins = selectedPins?.length
+      ? allPins.filter(p => selectedPins.includes(p.id))
+      : allPins
+    for (const pin of visiblePins) {
+      pins.push({
+        assignmentId: r.id,
+        templateId: tpl.id,
+        templateTitle: tpl.title,
+        x: pin.x,
+        y: pin.y,
+        category: pin.category,
+        label: pin.label,
+        pinId: `mission-${r.id}-${pin.id}`,
+      })
+    }
+  }
+  return pins
+}
+
+export async function incrementDailyMissionsUsed(userId: string, day: string, count = 1): Promise<void> {
+  const user = await pb.collection('users').getOne(userId) as any
+  const sameDay = user.daily_missions_date === day
+  const current = sameDay ? (user.daily_missions_used ?? 0) : 0
+  await pb.collection('users').update(userId, {
+    daily_missions_used: current + count,
+    daily_missions_date: day,
+  })
 }
 
 // ─── Organization Roles ──────────────────────────────────────────────────────

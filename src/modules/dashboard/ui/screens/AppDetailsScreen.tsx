@@ -57,7 +57,7 @@ export const AppDetailsScreen = () => {
   const [uiScale, setUiScale] = useState(100);
   const [alwaysOnTop, setAlwaysOnTop] = useState(true);
 
-  const [appVersion, setAppVersion] = useState("1.1.9-beta");
+  const [appVersion, setAppVersion] = useState("1.1.10-beta");
   const [updateStatus, setUpdateStatus] = useState<
     | "idle"
     | "checking"

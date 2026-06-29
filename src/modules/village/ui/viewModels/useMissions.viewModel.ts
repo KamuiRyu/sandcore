@@ -198,6 +198,12 @@ export const useMissionsViewModel = () => {
   ).length
   const maxDailyMissions = settings?.max_daily_missions || 0
 
+  const todayStr = today()
+  const userModel = pb.authStore.model
+  const dailyMissionsUsed = userModel?.daily_missions_date === todayStr
+    ? (userModel?.daily_missions_used ?? 0)
+    : 0
+
   return {
     templates,
     myAssignments,
@@ -216,5 +222,6 @@ export const useMissionsViewModel = () => {
     usedPoints,
     todayActiveMissionCount,
     maxDailyMissions,
+    dailyMissionsUsed,
   }
 }

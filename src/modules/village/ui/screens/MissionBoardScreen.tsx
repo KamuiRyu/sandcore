@@ -17,8 +17,8 @@ export const MissionBoardScreen = () => {
   const maxPoints = vm.settings?.daily_points_per_ninja ?? 0
   const remainingPoints = Math.max(0, maxPoints - vm.usedPoints)
   const pointsPct = maxPoints > 0 ? Math.min(100, (vm.usedPoints / maxPoints) * 100) : 0
-  const missionLimitReached = vm.maxDailyMissions > 0 && vm.todayActiveMissionCount >= vm.maxDailyMissions
-  const missionPct = vm.maxDailyMissions > 0 ? Math.min(100, (vm.todayActiveMissionCount / vm.maxDailyMissions) * 100) : 0
+  const missionLimitReached = vm.maxDailyMissions > 0 && vm.dailyMissionsUsed >= vm.maxDailyMissions
+  const missionPct = vm.maxDailyMissions > 0 ? Math.min(100, (vm.dailyMissionsUsed / vm.maxDailyMissions) * 100) : 0
 
   const filtered = vm.templates.filter(t => {
     if (filterRank !== 'all' && t.rank !== filterRank) return false
@@ -115,7 +115,7 @@ export const MissionBoardScreen = () => {
               MISSÕES DIÁRIAS
             </div>
             <span style={{ fontSize: 12, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, color: missionLimitReached ? '#e07070' : '#c8a030' }}>
-              {vm.todayActiveMissionCount} / {vm.maxDailyMissions} ativas
+              {vm.dailyMissionsUsed} / {vm.maxDailyMissions} atribuídas hoje
             </span>
           </div>
           <div style={{ height: 4, background: '#1e1e1e', borderRadius: 2, overflow: 'hidden' }}>
@@ -124,7 +124,7 @@ export const MissionBoardScreen = () => {
           {missionLimitReached && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 11, color: '#e07070', fontFamily: "'Orbitron', sans-serif" }}>
               <AlertTriangle size={11} />
-              Limite diário atingido. Conclua ou aguarde a avaliação de uma missão ativa.
+              Limite diário atingido. Você não receberá novas missões hoje.
             </div>
           )}
         </div>
@@ -239,7 +239,7 @@ export const MissionBoardScreen = () => {
                             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                               {(Array.isArray(t.location_image) ? t.location_image : [t.location_image]).map((imgName, i) => {
                                 if (!imgName) return null;
-                                const fileUrl = pb.files.getUrl(t, imgName);
+                                const fileUrl = pb.files.getURL(t, imgName);
                                 return (
                                   <a
                                     key={i}

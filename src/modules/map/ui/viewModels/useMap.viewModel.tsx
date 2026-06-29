@@ -30,6 +30,7 @@ import { logger } from "../../../../lib/utils";
 import { useDebounce } from "../hooks/useDebounce";
 import { SubmitMapFeedbackUseCase } from "../../core/usecases/SubmitMapFeedback.usecase";
 import type { MapFeedback } from "../../core/entities/MapFeedback.entity";
+import { getActiveMissionPins, type ActiveMissionPin } from "../../../village/infrastructure/adapters/PocketBaseVillage.adapter";
 import type { AutoRouteFilters } from "../components/AutoRouteFilterModal";
 import type {
   MapGroup,
@@ -121,6 +122,16 @@ export function useMapViewModel() {
   const auth = useAuthViewModel();
   const isAuthenticated = auth.isLoggedIn;
   const user = auth.getCurrentUser();
+
+  const [missionPins, setMissionPins] = useState<ActiveMissionPin[]>([]);
+  useEffect(() => {
+    if (!user?.id) return;
+    const userId = user.id;
+    getActiveMissionPins(userId).then(pins => { console.log('[missionPins]', pins); setMissionPins(pins); }).catch(e => console.error('[missionPins error]', e));
+    const refresh = () => getActiveMissionPins(userId).then(pins => { console.log('[missionPins refresh]', pins); setMissionPins(pins); }).catch(e => console.error('[missionPins error]', e));
+    pb.collection('mission_assignments').subscribe('*', refresh);
+    return () => { pb.collection('mission_assignments').unsubscribe('*'); };
+  }, [user?.id]);
 
   const [mode, _setMode] = useState<"explore" | "pin" | "route" | "feedback">(
     "explore",
@@ -2110,6 +2121,7 @@ export function useMapViewModel() {
     ),
     currentRoute,
     customPins,
+    missionPins,
     defaultMapRegion,
     deleteSavedRoute: useCallback(
       async (id: string) => {

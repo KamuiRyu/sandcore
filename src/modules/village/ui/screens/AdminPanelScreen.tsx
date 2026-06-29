@@ -38,9 +38,11 @@ import {
 import { usePagination, Pagination } from "../components/Pagination";
 import { User } from "../../../authentication/core/entities/User.entity";
 import { MissionTemplate } from "../../core/entities/MissionTemplate.entity";
+import { MISSION_PIN_CATEGORIES, MissionPin } from "../../core/entities/MissionTemplate.entity";
 import { MissionAssignment } from "../../core/entities/MissionAssignment.entity";
 import { Title } from "../../core/entities/Title.entity";
 import { MissionRank } from "../../core/entities/VillageSettings.entity";
+import { getCompletedTodayByRank, incrementDailyMissionsUsed } from "../../infrastructure/adapters/PocketBaseVillage.adapter";
 
 function avatarUrl(u: { id: string; avatar?: string }) {
   return u.avatar ? `${pb.baseURL}/api/files/users/${u.id}/${u.avatar}` : null
@@ -670,8 +672,11 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
     reward_points: "0",
     is_active: true,
     is_imported: false,
+    pins_pick_count: "0",
   });
   const pg = usePagination(vm.templates);
+  const [pins, setPins] = useState<MissionPin[]>([]);
+  const [newPin, setNewPin] = useState<Omit<MissionPin, 'id'>>({ x: 0, y: 0, category: 'mission', label: '' });
 
   const resetForm = () => {
     setForm({
@@ -687,9 +692,12 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
       reward_points: "0",
       is_active: true,
       is_imported: false,
+      pins_pick_count: "0",
     });
     setLocationImageFiles([]);
     setShouldRemoveImage(false);
+    setPins([]);
+    setNewPin({ x: 0, y: 0, category: 'mission', label: '' });
   };
 
   const openEdit = (t: MissionTemplate) => {
@@ -707,12 +715,22 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
       reward_points: String(t.reward_points),
       is_active: t.is_active,
       is_imported: t.is_imported ?? false,
+      pins_pick_count: String(t.pins_pick_count ?? 0),
     });
+    setPins(t.pins ? [...t.pins] : []);
     setLocationImageFiles([]);
     setShouldRemoveImage(false);
     setShowForm(true);
     setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
+
+  const addPin = () => {
+    if (!newPin.label.trim()) return;
+    setPins(prev => [...prev, { ...newPin, id: crypto.randomUUID() }]);
+    setNewPin({ x: 0, y: 0, category: 'mission', label: '' });
+  };
+
+  const removePin = (id: string) => setPins(prev => prev.filter(p => p.id !== id));
 
   const handleSave = async () => {
     const formData = new FormData();
@@ -728,6 +746,8 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
     formData.append("reward_items", form.reward_items);
     formData.append("is_active", String(form.is_active));
     formData.append("is_imported", String(form.is_imported));
+    formData.append("pins", JSON.stringify(pins));
+    formData.append("pins_pick_count", String(parseInt(form.pins_pick_count) || 0));
 
     if (locationImageFiles.length > 0) {
       locationImageFiles.forEach((file) => {
@@ -1052,7 +1072,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
                       return (
                         <div key={i} style={{ position: "relative", border: "1px solid #1e1e1e", borderRadius: 3, overflow: "hidden", width: 40, height: 40 }}>
                           <img
-                            src={pb.files.getUrl(editTpl!, imgName)}
+                            src={pb.files.getURL(editTpl!, imgName)}
                             alt="Existing"
                             style={{ width: "100%", height: "100%", objectFit: "cover" }}
                           />
@@ -1071,6 +1091,117 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
               )}
             </div>
           </div>
+          {/* Pins de Mapa */}
+          <div style={{ marginTop: 18, borderTop: "1px solid #1e1e1e", paddingTop: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <div style={{ fontSize: 11, color: "#9a7a40", fontFamily: "'Orbitron', sans-serif" }}>PINS NO MAPA</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 9, color: "#6a5028", fontFamily: "'Orbitron', sans-serif" }}>SORTEAR</span>
+                <div style={{ width: 60 }}>
+                  <VillageInput
+                    type="number"
+                    value={form.pins_pick_count}
+                    onChange={v => setForm(f => ({ ...f, pins_pick_count: v }))}
+                    placeholder="0"
+                  />
+                </div>
+                <span style={{ fontSize: 9, color: "#3a3a2a", fontFamily: "'Orbitron', sans-serif" }}>
+                  {parseInt(form.pins_pick_count) > 0 ? `de ${pins.length}` : "= todos"}
+                </span>
+              </div>
+            </div>
+
+            {/* Lista de pins existentes */}
+            {pins.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 }}>
+                {pins.map(pin => {
+                  const catLabel = MISSION_PIN_CATEGORIES.find(c => c.value === pin.category)?.label ?? pin.category;
+                  return (
+                    <div key={pin.id} style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      background: "rgba(255,255,255,0.02)", border: "1px solid #1e1e1e",
+                      borderRadius: 2, padding: "5px 8px",
+                    }}>
+                      <span style={{ fontSize: 9, color: "#c8860a", fontFamily: "'Orbitron', sans-serif", flexShrink: 0 }}>
+                        {catLabel}
+                      </span>
+                      <span style={{ fontSize: 10, color: "#e8d5a0", flex: 1 }}>{pin.label}</span>
+                      <span style={{ fontSize: 9, color: "#6a5028", fontFamily: "'Orbitron', sans-serif", flexShrink: 0 }}>
+                        x:{pin.x} y:{pin.y}
+                      </span>
+                      <button onClick={() => removePin(pin.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#f87171", fontSize: 12, lineHeight: 1, padding: 0 }}>✕</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Adicionar novo pin */}
+            {(() => {
+              const NO_COORDS_CATS = new Set(['mushroom', 'ore', 'cotton', 'hibiscus', 'borago', 'stick']);
+              const needsCoords = !NO_COORDS_CATS.has(newPin.category);
+              return (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: needsCoords ? "1fr 100px 100px 140px max-content" : "1fr 140px max-content", gap: 6, alignItems: "end" }}>
+                    <div>
+                      <div style={{ fontSize: 8, color: "#6a5028", marginBottom: 3, fontFamily: "'Orbitron', sans-serif" }}>RÓTULO</div>
+                      <VillageInput
+                        value={newPin.label}
+                        onChange={v => setNewPin(p => ({ ...p, label: v }))}
+                        placeholder="Ex: Entrega de cogumelos"
+                      />
+                    </div>
+                    {needsCoords && (
+                      <>
+                        <div>
+                          <div style={{ fontSize: 8, color: "#6a5028", marginBottom: 3, fontFamily: "'Orbitron', sans-serif" }}>X</div>
+                          <VillageInput
+                            type="number"
+                            value={String(newPin.x)}
+                            onChange={v => setNewPin(p => ({ ...p, x: parseFloat(v) || 0 }))}
+                          />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 8, color: "#6a5028", marginBottom: 3, fontFamily: "'Orbitron', sans-serif" }}>Y</div>
+                          <VillageInput
+                            type="number"
+                            value={String(newPin.y)}
+                            onChange={v => setNewPin(p => ({ ...p, y: parseFloat(v) || 0 }))}
+                          />
+                        </div>
+                      </>
+                    )}
+                    <div>
+                      <div style={{ fontSize: 8, color: "#6a5028", marginBottom: 3, fontFamily: "'Orbitron', sans-serif" }}>CATEGORIA</div>
+                      <VillageSelect value={newPin.category} onChange={v => setNewPin(p => ({ ...p, category: v as any, x: 0, y: 0 }))}>
+                        {MISSION_PIN_CATEGORIES.map(c => (
+                          <option key={c.value} value={c.value}>{c.label}</option>
+                        ))}
+                      </VillageSelect>
+                    </div>
+                    <button
+                      onClick={addPin}
+                      disabled={!newPin.label.trim()}
+                      style={{
+                        height: 28, padding: "0 10px", fontSize: 10, fontFamily: "'Orbitron', sans-serif",
+                        background: "rgba(200,134,10,0.12)", border: "1px solid #c8860a", borderRadius: 2,
+                        color: "#c8860a", cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+                        opacity: !newPin.label.trim() ? 0.4 : 1, whiteSpace: "nowrap",
+                      }}
+                    >
+                      <Plus size={9} /> Add
+                    </button>
+                  </div>
+                  {needsCoords && (
+                    <div style={{ fontSize: 8, color: "#3a3a2a", marginTop: 6, fontFamily: "'Orbitron', sans-serif" }}>
+                      Coordenadas X/Y do mapa — use o debugger de coordenadas no mapa para obter os valores exatos.
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+
           <label style={{
             display: "flex", alignItems: "center", gap: 8, marginTop: 14,
             cursor: "pointer", userSelect: "none",
@@ -1238,7 +1369,7 @@ const ReviewAssignmentCard = ({
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {(Array.isArray(a.evidence) ? a.evidence : [a.evidence]).map((filename, i) => {
                 if (!filename) return null;
-                const fileUrl = pb.files.getUrl(a, filename);
+                const fileUrl = pb.files.getURL(a, filename);
                 const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(filename);
                 return (
                   <a key={i} href={fileUrl} target="_blank" rel="noopener noreferrer"
@@ -1561,6 +1692,8 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   };
   const partySizeMatch = selectedUsers.length === requiredPartySize;
 
+  const RANK_SEQUENCE: MissionRank[] = ["D", "C", "B", "A", "S"];
+
   const handleAssign = async () => {
     if (selectedUsers.length === 0 || !selectedTemplate || !day) {
       setError("Selecione a missão, ao menos um membro e a data.");
@@ -1570,14 +1703,87 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
       setError(`Esta missão exige exatamente ${requiredPartySize} ninja${requiredPartySize > 1 ? "s" : ""}. Você selecionou ${selectedUsers.length}.`);
       return;
     }
+
+    // Validação de cota mínima por rank
+    if (vm.settings?.rank_quota_enabled && selectedTpl) {
+      const tplRankIdx = RANK_SEQUENCE.indexOf(selectedTpl.rank as MissionRank);
+      const ranksToCheck = RANK_SEQUENCE.slice(0, tplRankIdx); // ranks abaixo do rank da missão
+      const rawQuota = vm.settings.rank_quota ?? {};
+      const quota: Record<string, number> = typeof rawQuota === 'string'
+        ? (() => { try { return JSON.parse(rawQuota as any) } catch { return {} } })()
+        : rawQuota as any;
+
+      if (ranksToCheck.length > 0) {
+        for (const userId of selectedUsers) {
+          const ninja = vm.approvedUsers.find(u => u.id === userId);
+          const counts = await getCompletedTodayByRank(userId, day);
+          for (const rank of ranksToCheck) {
+            const required = quota[rank] ?? 0;
+            if (required > 0 && (counts[rank] ?? 0) < required) {
+              const ninjaName = ninja?.name || userId;
+              setError(`${ninjaName} precisa de ${required} missão(ões) Rank ${rank} hoje (tem ${counts[rank] ?? 0}) para pegar Rank ${selectedTpl.rank}.`);
+              return;
+            }
+          }
+        }
+      }
+    }
+
+    // Validação de limite diário por ninja
+    const maxDaily = vm.settings?.max_daily_missions ?? 0;
+    if (maxDaily > 0) {
+      for (const userId of selectedUsers) {
+        const ninja = vm.approvedUsers.find(u => u.id === userId);
+        const sameDay = ninja?.daily_missions_date === day;
+        const used = sameDay ? (ninja?.daily_missions_used ?? 0) : 0;
+        if (used >= maxDaily) {
+          setError(`${ninja?.name || userId} já atingiu o limite de ${maxDaily} missão(ões) hoje.`);
+          return;
+        }
+      }
+    }
+
+    // Validação de pontos diários por ninja
+    if (selectedTpl && vm.settings) {
+      let costMap = vm.settings.points_cost as any;
+      if (typeof costMap === 'string') { try { costMap = JSON.parse(costMap) } catch { costMap = {} } }
+      const upperRank = selectedTpl.rank.toUpperCase();
+      let cost = 0;
+      for (const [key, val] of Object.entries(costMap ?? {})) {
+        if (key.toUpperCase() === upperRank) { cost = Number(val) || 0; break; }
+      }
+      const maxPoints = vm.settings.daily_points_per_ninja ?? 0;
+      if (cost > 0 && maxPoints > 0) {
+        for (const userId of selectedUsers) {
+          const ninja = vm.approvedUsers.find(u => u.id === userId);
+          const usedPoints = ninja?.daily_points_used ?? 0;
+          if (usedPoints + cost > maxPoints) {
+            setError(`${ninja?.name || userId} não tem pontos suficientes hoje (${usedPoints}/${maxPoints} usados, missão custa ${cost} pts).`);
+            return;
+          }
+        }
+      }
+    }
+
     setError("");
     setSuccess(false);
     setLoading(true);
+    // Sortear pins se configurado
+    const pickCount = selectedTpl?.pins_pick_count ?? 0;
+    const allPinIds = (selectedTpl?.pins ?? []).map(p => p.id);
+    let selected_pins: string[] | undefined;
+    if (pickCount > 0 && allPinIds.length > pickCount) {
+      const shuffled = [...allPinIds].sort(() => Math.random() - 0.5);
+      selected_pins = shuffled.slice(0, pickCount);
+    }
+
     try {
       if (selectedUsers.length === 1) {
-        await vm.assignMission(selectedTemplate, selectedUsers[0], day);
+        await vm.assignMission(selectedTemplate, selectedUsers[0], day, selected_pins);
+        await incrementDailyMissionsUsed(selectedUsers[0], day);
       } else {
-        await vm.assignMissionToGroup(selectedTemplate, selectedUsers, day);
+        await vm.assignMissionToGroup(selectedTemplate, selectedUsers, day, selected_pins);
+        await Promise.all(selectedUsers.map(uid => incrementDailyMissionsUsed(uid, day)));
       }
       setSuccess(true);
       setSelectedUsers([]);
@@ -2065,13 +2271,22 @@ const TitlesTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
 
 // ─── Settings Tab ─────────────────────────────────────────────────────────────
 
+const RANK_QUOTA_DEFAULT: Record<MissionRank, number> = { D: 0, C: 0, B: 0, A: 0, S: 0 }
+
 const SettingsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
+  const rawQuota = vm.settings?.rank_quota ?? RANK_QUOTA_DEFAULT
+  const safeQuota: Record<MissionRank, number> = typeof rawQuota === 'string'
+    ? (() => { try { return JSON.parse(rawQuota) } catch { return RANK_QUOTA_DEFAULT } })()
+    : (rawQuota as any)
+
   const [form, setForm] = useState({
     max_daily_missions: String(vm.settings?.max_daily_missions || 5),
     daily_points_per_ninja: String(vm.settings?.daily_points_per_ninja || 20),
     min_donation_amount: String(vm.settings?.min_donation_amount || 0),
     donation_period: (vm.settings?.donation_period || "weekly") as string,
     title_point_per_donation: String(vm.settings?.title_point_per_donation || 0),
+    rank_quota_enabled: vm.settings?.rank_quota_enabled ?? false,
+    rank_quota: { ...RANK_QUOTA_DEFAULT, ...safeQuota } as Record<MissionRank, number>,
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -2084,6 +2299,8 @@ const SettingsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
       min_donation_amount: parseInt(form.min_donation_amount) || 0,
       donation_period: form.donation_period as any,
       title_point_per_donation: parseInt(form.title_point_per_donation) || 0,
+      rank_quota_enabled: form.rank_quota_enabled,
+      rank_quota: form.rank_quota,
     });
     setSaving(false);
     setSaved(true);
@@ -2222,6 +2439,55 @@ const SettingsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
             />
           </div>
         </div>
+      </VillageCard>
+
+      <VillageSection label="Cota Mínima por Rank" />
+      <VillageCard>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+          <button
+            onClick={() => setForm(f => ({ ...f, rank_quota_enabled: !f.rank_quota_enabled }))}
+            style={{
+              width: 36, height: 20, borderRadius: 10, flexShrink: 0, cursor: "pointer",
+              border: "none", position: "relative",
+              background: form.rank_quota_enabled ? "#c8860a" : "#282828",
+              transition: "background 0.2s",
+            }}
+          >
+            <span style={{
+              position: "absolute", top: 3, left: form.rank_quota_enabled ? 18 : 3,
+              width: 14, height: 14, borderRadius: "50%", background: "#e8d5a0",
+              transition: "left 0.2s",
+            }} />
+          </button>
+          <span style={{ fontSize: 11, color: form.rank_quota_enabled ? "#e8d5a0" : "#6a5028", fontFamily: "'Orbitron', sans-serif" }}>
+            {form.rank_quota_enabled ? "Ativada" : "Desativada"}
+          </span>
+        </div>
+        {form.rank_quota_enabled && (
+          <>
+            <div style={{ fontSize: 9, color: "#6a5028", marginBottom: 10, fontFamily: "'Orbitron', sans-serif" }}>
+              MÍNIMO DE MISSÕES POR RANK (antes de pegar rank superior)
+            </div>
+            <div className="grid grid-cols-5 gap-2">
+              {(["D", "C", "B", "A", "S"] as MissionRank[]).map((r) => (
+                <div key={r}>
+                  <div style={{ marginBottom: 6 }}><MissionRankBadge rank={r} /></div>
+                  <VillageInput
+                    type="number"
+                    value={String(form.rank_quota[r] ?? 0)}
+                    onChange={(v) => setForm(f => ({
+                      ...f,
+                      rank_quota: { ...f.rank_quota, [r]: parseInt(v) || 0 },
+                    }))}
+                  />
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: 9, color: "#6a5028", marginTop: 10, fontFamily: "'Orbitron', sans-serif" }}>
+              Ex: D=2 significa que o ninja precisa de 2 missões D concluídas hoje para pegar missões C ou superiores.
+            </div>
+          </>
+        )}
       </VillageCard>
 
       <VillagePrimaryButton onClick={save} disabled={saving}>

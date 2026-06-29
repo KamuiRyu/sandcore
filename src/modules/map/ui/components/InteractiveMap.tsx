@@ -1,4 +1,4 @@
-import { useState, useMemo, memo, useEffect, useCallback } from "react";
+import { useState, useMemo, memo, useEffect, useCallback, useRef } from "react";
 import {
   getMarkerIconSrc,
   getMarkerTypeLabel,
@@ -14,6 +14,8 @@ import type {
   SavedCustomPin,
 } from "../../core/entities/MapRoute.entity";
 import { useMapViewModel } from "../viewModels/useMap.viewModel";
+import type { ActiveMissionPin } from "../../../village/infrastructure/adapters/PocketBaseVillage.adapter";
+import { MISSION_PIN_CATEGORIES } from "../../../village/core/entities/MissionTemplate.entity";
 import { getResourceData } from "../../core/entities/ResourceDefinitions.entity";
 import { cn } from "../../../../lib/utils";
 import { ViewportPortal } from "../../../app/ui/components/ViewportPortal";
@@ -715,6 +717,7 @@ export function InteractiveMap({
     isAuthenticated,
     referencedOfficialPointIds,
     referencedCustomPinIds,
+    missionPins,
   } = useMapViewModel();
 
   const handleMarkCompleted = useCallback(
@@ -804,12 +807,26 @@ export function InteractiveMap({
   }, [visibleRoutes.length]);
 
   // Atalho de marcação direta: Ctrl+Alt+1~9 marca o ponto atual sem abrir o painel
+  const _quickMarkDataRef = useRef({
+    visibleRoutes, savedRoutes, publicRoutes, officialPoints,
+    customPins, completedPins, handleMarkCompleted, showToast,
+  });
+  useEffect(() => {
+    _quickMarkDataRef.current = {
+      visibleRoutes, savedRoutes, publicRoutes, officialPoints,
+      customPins, completedPins, handleMarkCompleted, showToast,
+    };
+  });
   useEffect(() => {
     if (!window.ipcRenderer) return;
     const handler = (_: unknown, { optionIndex }: { optionIndex: number }) => {
+      const {
+        visibleRoutes, savedRoutes, publicRoutes, officialPoints,
+        customPins, completedPins, handleMarkCompleted, showToast,
+      } = _quickMarkDataRef.current;
+
       if (visibleRoutes.length === 0) return;
 
-      // Coletar checkpoints pendentes das rotas visíveis (mesma lógica do QuickMarkPanel)
       const checkpoints: Array<{
         id: string;
         name: string;
@@ -829,7 +846,7 @@ export function InteractiveMap({
             const pin = officialPoints.find((p) => p.id === cp.pointId);
             if (!pin) return;
             const state = completedPins[pin.id];
-            if (state && state.status !== "ready") return; // já completo
+            if (state && state.status !== "ready") return;
             const getAllowedOres = (subRegionId?: string): string[] => {
               if (!subRegionId)
                 return ["ore_1","ore_2","ore_3","ore_4","ore_5","ore_6","ore_7","ore_8","ore_9"];
@@ -842,11 +859,8 @@ export function InteractiveMap({
               return list;
             };
             checkpoints.push({
-              id: pin.id,
-              name: pin.name,
-              iconId: pin.iconId,
-              type: pin.type,
-              subRegionId: pin.subRegionId,
+              id: pin.id, name: pin.name, iconId: pin.iconId,
+              type: pin.type, subRegionId: pin.subRegionId,
               allowedOres: getAllowedOres(pin.subRegionId),
             });
           } else if (cp.customPinId) {
@@ -854,12 +868,7 @@ export function InteractiveMap({
             if (!pin) return;
             const state = completedPins[pin.id];
             if (state && state.status !== "ready") return;
-            checkpoints.push({
-              id: pin.id,
-              name: pin.name,
-              iconId: pin.iconId,
-              type: "custom",
-            });
+            checkpoints.push({ id: pin.id, name: pin.name, iconId: pin.iconId, type: "custom" });
           }
         });
       });
@@ -872,7 +881,6 @@ export function InteractiveMap({
       const hasSubtypes = isOre || isMushroom;
 
       if (!hasSubtypes) {
-        // Tipos simples: opção 1 = marcar
         if (optionIndex === 1) {
           handleMarkCompleted(current.id);
           showToast("Marcado", current.name, "success");
@@ -880,7 +888,6 @@ export function InteractiveMap({
         return;
       }
 
-      // Montar lista de opções igual ao QuickMarkPanel
       const subtypeIcons: string[] = (
         markerIconsByType[current.type as keyof typeof markerIconsByType] ?? []
       ).filter(
@@ -889,7 +896,6 @@ export function InteractiveMap({
           (!isOre || (current.allowedOres ?? []).includes(iconId)),
       );
 
-      // Opção 1 = padrão/já passei (ore_1 / mushroom_1), depois vêm os subtypes
       if (optionIndex === 1) {
         const defaultSubtype = isOre ? "ore_1" : "mushroom_1";
         handleMarkCompleted(current.id, defaultSubtype);
@@ -904,17 +910,8 @@ export function InteractiveMap({
     };
 
     window.ipcRenderer.on("quick-mark-direct", handler);
-    return () => window.ipcRenderer?.off("quick-mark-direct", handler);
-  }, [
-    visibleRoutes,
-    savedRoutes,
-    publicRoutes,
-    officialPoints,
-    customPins,
-    completedPins,
-    handleMarkCompleted,
-    showToast,
-  ]);
+    return () => { window.ipcRenderer?.off("quick-mark-direct", handler); };
+  }, []); // listener registrado uma única vez
 
   const {
     displayedCamera,
@@ -1637,6 +1634,53 @@ export function InteractiveMap({
                   points={routePath}
                 />
               ) : null}
+
+              {/* Mission pins — ancorados ao mapa via %, visíveis apenas para o ninja */}
+              {missionPins.map((pin: ActiveMissionPin) => {
+                const catLabel = MISSION_PIN_CATEGORIES.find(c => c.value === pin.category)?.label ?? pin.category;
+                const pinLabel = pin.label || catLabel;
+                return (
+                  <div
+                    key={pin.pinId}
+                    style={{
+                      position: "absolute",
+                      left: `${pin.x}%`,
+                      top: `${pin.y}%`,
+                      transform: `scale(${1 / displayedCamera.scale}) translate(-50%, -100%)`,
+                      transformOrigin: "0 0",
+                      pointerEvents: "none",
+                      zIndex: 25,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                    }}
+                  >
+                    {/* Label */}
+                    <div style={{
+                      marginBottom: 3,
+                      background: "rgba(8,6,2,0.88)",
+                      border: "1px solid rgba(200,134,10,0.6)",
+                      borderRadius: 3,
+                      padding: "2px 7px",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: "#f0dfa0",
+                      whiteSpace: "nowrap",
+                      fontFamily: "'Cinzel', serif",
+                      letterSpacing: "0.04em",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.7)",
+                    }}>
+                      {pinLabel}
+                    </div>
+                    {/* Pin SVG */}
+                    <svg width="22" height="30" viewBox="0 0 22 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <ellipse cx="11" cy="28" rx="4" ry="2" fill="rgba(0,0,0,0.35)" />
+                      <path d="M11 27C11 27 2 18.5 2 11a9 9 0 1 1 18 0C20 18.5 11 27 11 27Z" fill="#c8860a" stroke="#fff8e1" strokeWidth="1.5"/>
+                      <circle cx="11" cy="11" r="4" fill="#fff8e1" opacity="0.9"/>
+                    </svg>
+                  </div>
+                );
+              })}
             </div>
 
             <MapCanvasLayer
@@ -1760,6 +1804,7 @@ export function InteractiveMap({
                 />
               );
             })}
+
 
             {/* Renderizar checkpoints de todas as rotas visíveis (fora do contêiner escalado) */}
             {visibleRoutes.map((routeId: string) => {

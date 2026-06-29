@@ -124,7 +124,7 @@ function toSavedCustomPin(record: RecordModel): SavedCustomPin {
     description: getString(record, 'description'),
     iconId: getString(record, 'icon_id') || 'arena',
     id: record.id,
-    imageUrl: record.image ? pb.files.getUrl(record, record.image) : undefined,
+    imageUrl: record.image ? pb.files.getURL(record, record.image) : undefined,
     isPlaced: typeof record.is_placed === 'boolean' ? record.is_placed : true,
     checked: typeof record.checked === 'boolean' ? record.checked : false,
     name: getString(record, 'name') || 'Pin sem nome',
