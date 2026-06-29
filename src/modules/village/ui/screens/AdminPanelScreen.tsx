@@ -437,6 +437,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   const [shouldRemoveImage, setShouldRemoveImage] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const imageRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -491,6 +492,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
     setLocationImageFiles([]);
     setShouldRemoveImage(false);
     setShowForm(true);
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
 
   const handleSave = async () => {
@@ -538,6 +540,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
             resetForm();
             setEditTpl(null);
             setShowForm(true);
+            setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
           }}
         >
           <Plus size={11} /> Nova Missão
@@ -545,6 +548,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
       </div>
 
       {showForm && (
+        <div ref={formRef}>
         <VillageCard>
           <div
             style={{
@@ -878,6 +882,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
             </VillageSecondaryButton>
           </div>
         </VillageCard>
+        </div>
       )}
 
       <div className="space-y-2">
