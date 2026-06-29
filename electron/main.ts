@@ -1153,6 +1153,42 @@ if (!gotTheLock) {
       if (shortcut) updateShortcut(tabId, shortcut)
     }
 
+    // Auto-check for updates silently on startup
+    if (app.isPackaged) {
+      autoUpdater.autoDownload = true
+      autoUpdater.autoInstallOnAppQuit = true
+      setTimeout(() => {
+        autoUpdater.checkForUpdates().catch((err) => {
+          console.error('Auto-update check failed:', err)
+        })
+      }, 8000)
+    } else {
+      // Dev simulation: runs after windows are ready to receive IPC
+      setTimeout(() => {
+        BrowserWindow.getAllWindows().forEach((win) => {
+          if (!win.isDestroyed()) win.webContents.send('update-status', { status: 'checking' })
+        })
+        setTimeout(() => {
+          BrowserWindow.getAllWindows().forEach((win) => {
+            if (!win.isDestroyed()) win.webContents.send('update-status', { status: 'available', version: '99.0.0' })
+          })
+          let percent = 0
+          const interval = setInterval(() => {
+            percent += 20
+            BrowserWindow.getAllWindows().forEach((win) => {
+              if (!win.isDestroyed()) win.webContents.send('update-progress', { percent })
+            })
+            if (percent >= 100) {
+              clearInterval(interval)
+              BrowserWindow.getAllWindows().forEach((win) => {
+                if (!win.isDestroyed()) win.webContents.send('update-status', { status: 'downloaded', version: '99.0.0' })
+              })
+            }
+          }, 800)
+        }, 1500)
+      }, 10000)
+    }
+
     // Atalhos de marcação direta: Ctrl+Alt+1 a Ctrl+Alt+9
     for (let i = 1; i <= 9; i++) {
       const accelerator = `CommandOrControl+Alt+${i}`
