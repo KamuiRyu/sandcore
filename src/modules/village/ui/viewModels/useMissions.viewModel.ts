@@ -132,6 +132,17 @@ export const useMissionsViewModel = () => {
       }
     }
 
+    // Check max daily missions limit
+    const maxMissions = settings.max_daily_missions || 0
+    if (maxMissions > 0) {
+      const todayActiveCount = myAssignments.filter(
+        a => a.day === today() && a.status !== 'completed' && !a.is_imported
+      ).length
+      if (todayActiveCount >= maxMissions) {
+        return { eligible: false, reason: `Limite de ${maxMissions} missões diárias atingido` }
+      }
+    }
+
     const pointCost = getRankCost(tpl.rank)
     const usedPoints = pb.authStore.model?.daily_points_used || 0
 
@@ -182,6 +193,11 @@ export const useMissionsViewModel = () => {
 
   const usedPoints = pb.authStore.model?.daily_points_used || 0
 
+  const todayActiveMissionCount = myAssignments.filter(
+    a => a.day === today() && a.status !== 'completed' && !a.is_imported
+  ).length
+  const maxDailyMissions = settings?.max_daily_missions || 0
+
   return {
     templates,
     myAssignments,
@@ -198,5 +214,7 @@ export const useMissionsViewModel = () => {
     checkEligibility,
     assignMission,
     usedPoints,
+    todayActiveMissionCount,
+    maxDailyMissions,
   }
 }
