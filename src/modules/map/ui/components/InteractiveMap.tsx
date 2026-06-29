@@ -14,6 +14,8 @@ import type {
   SavedCustomPin,
 } from "../../core/entities/MapRoute.entity";
 import { useMapViewModel } from "../viewModels/useMap.viewModel";
+import type { ActiveMissionPin } from "../../../village/infrastructure/adapters/PocketBaseVillage.adapter";
+import { MISSION_PIN_CATEGORIES } from "../../../village/core/entities/MissionTemplate.entity";
 import { getResourceData } from "../../core/entities/ResourceDefinitions.entity";
 import { cn } from "../../../../lib/utils";
 import { ViewportPortal } from "../../../app/ui/components/ViewportPortal";
@@ -715,6 +717,7 @@ export function InteractiveMap({
     isAuthenticated,
     referencedOfficialPointIds,
     referencedCustomPinIds,
+    missionPins,
   } = useMapViewModel();
 
   const handleMarkCompleted = useCallback(
@@ -1637,6 +1640,53 @@ export function InteractiveMap({
                   points={routePath}
                 />
               ) : null}
+
+              {/* Mission pins — ancorados ao mapa via %, visíveis apenas para o ninja */}
+              {missionPins.map((pin: ActiveMissionPin) => {
+                const catLabel = MISSION_PIN_CATEGORIES.find(c => c.value === pin.category)?.label ?? pin.category;
+                const pinLabel = pin.label || catLabel;
+                return (
+                  <div
+                    key={pin.pinId}
+                    style={{
+                      position: "absolute",
+                      left: `${pin.x}%`,
+                      top: `${pin.y}%`,
+                      transform: `scale(${1 / displayedCamera.scale}) translate(-50%, -100%)`,
+                      transformOrigin: "0 0",
+                      pointerEvents: "none",
+                      zIndex: 25,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                    }}
+                  >
+                    {/* Label */}
+                    <div style={{
+                      marginBottom: 3,
+                      background: "rgba(8,6,2,0.88)",
+                      border: "1px solid rgba(200,134,10,0.6)",
+                      borderRadius: 3,
+                      padding: "2px 7px",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: "#f0dfa0",
+                      whiteSpace: "nowrap",
+                      fontFamily: "'Cinzel', serif",
+                      letterSpacing: "0.04em",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.7)",
+                    }}>
+                      {pinLabel}
+                    </div>
+                    {/* Pin SVG */}
+                    <svg width="22" height="30" viewBox="0 0 22 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <ellipse cx="11" cy="28" rx="4" ry="2" fill="rgba(0,0,0,0.35)" />
+                      <path d="M11 27C11 27 2 18.5 2 11a9 9 0 1 1 18 0C20 18.5 11 27 11 27Z" fill="#c8860a" stroke="#fff8e1" strokeWidth="1.5"/>
+                      <circle cx="11" cy="11" r="4" fill="#fff8e1" opacity="0.9"/>
+                    </svg>
+                  </div>
+                );
+              })}
             </div>
 
             <MapCanvasLayer
@@ -1760,6 +1810,7 @@ export function InteractiveMap({
                 />
               );
             })}
+
 
             {/* Renderizar checkpoints de todas as rotas visíveis (fora do contêiner escalado) */}
             {visibleRoutes.map((routeId: string) => {

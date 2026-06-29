@@ -13,6 +13,7 @@ export interface MissionAssignment {
   reviewed_by?: string;
   group_id?: string;
   is_imported?: boolean;
+  selected_pins?: string[];
   day: string;
   assigned_at: string;
   submitted_at?: string;
