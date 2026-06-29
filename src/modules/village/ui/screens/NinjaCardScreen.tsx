@@ -95,7 +95,9 @@ export const NinjaCardScreen = ({
 
   const totalPoints = user.title_points || 0;
   const currentTitle = titles.find((t) => t.name === user.current_title);
-  const nextTitle = titles.find((t) => t.min_points > totalPoints);
+  const nextTitle = titles
+    .filter((t) => t.min_points > totalPoints)
+    .sort((a, b) => a.min_points - b.min_points)[0];
   const progressPts = nextTitle?.min_points ?? (totalPoints || 1);
   const progress = Math.min(100, Math.round((totalPoints / progressPts) * 100));
 
