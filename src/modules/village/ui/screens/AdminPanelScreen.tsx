@@ -1743,6 +1743,28 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
       }
     }
 
+    // Validação de pontos diários por ninja
+    if (selectedTpl && vm.settings) {
+      let costMap = vm.settings.points_cost as any;
+      if (typeof costMap === 'string') { try { costMap = JSON.parse(costMap) } catch { costMap = {} } }
+      const upperRank = selectedTpl.rank.toUpperCase();
+      let cost = 0;
+      for (const [key, val] of Object.entries(costMap ?? {})) {
+        if (key.toUpperCase() === upperRank) { cost = Number(val) || 0; break; }
+      }
+      const maxPoints = vm.settings.daily_points_per_ninja ?? 0;
+      if (cost > 0 && maxPoints > 0) {
+        for (const userId of selectedUsers) {
+          const ninja = vm.approvedUsers.find(u => u.id === userId);
+          const usedPoints = ninja?.daily_points_used ?? 0;
+          if (usedPoints + cost > maxPoints) {
+            setError(`${ninja?.name || userId} não tem pontos suficientes hoje (${usedPoints}/${maxPoints} usados, missão custa ${cost} pts).`);
+            return;
+          }
+        }
+      }
+    }
+
     setError("");
     setSuccess(false);
     setLoading(true);
