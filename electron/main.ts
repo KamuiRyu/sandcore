@@ -539,7 +539,7 @@ function createPanelWindow() {
     panelWin?.webContents.setZoomFactor(zoom)
   })
 
-  panelWin.webContents.openDevTools({ mode: 'detach' })
+  //panelWin.webContents.openDevTools({ mode: 'detach' })
 
   if (process.env.VITE_DEV_SERVER_URL) {
     panelWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}?windowType=panel`)
