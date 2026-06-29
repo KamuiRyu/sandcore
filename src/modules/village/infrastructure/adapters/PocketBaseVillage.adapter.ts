@@ -1,4 +1,5 @@
 import { pb } from '../../../../lib/pocketbase'
+import { cacheOrFetch, cacheInvalidate, cacheInvalidatePrefix } from '../../../../lib/cache'
 import { VillageSettings } from '../../core/entities/VillageSettings.entity'
 import { Title } from '../../core/entities/Title.entity'
 import { MissionTemplate } from '../../core/entities/MissionTemplate.entity'
@@ -8,48 +9,73 @@ import { OrganizationMember } from '../../core/entities/OrganizationMember.entit
 import { TaxRecord, DonationRecord, BankTransaction } from '../../core/entities/TaxRecord.entity'
 import { User } from '../../../authentication/core/entities/User.entity'
 
+// ─── TTLs (milliseconds) ─────────────────────────────────────────────────────
+const TTL_SETTINGS   = 5 * 60_000  // 5 min
+const TTL_TEMPLATES  = 2 * 60_000  // 2 min
+const TTL_TITLES     = 5 * 60_000  // 5 min
+const TTL_ORG_ROLES  = 5 * 60_000  // 5 min
+const TTL_BANK_TX    = 1 * 60_000  // 1 min
+
 // ─── Village Settings ────────────────────────────────────────────────────────
 
 export async function getVillageSettings(): Promise<VillageSettings> {
-  const records = await pb.collection('village_settings').getFullList({ perPage: 1 })
-  return records[0] as unknown as VillageSettings
+  return cacheOrFetch('village_settings', TTL_SETTINGS, async () => {
+    const records = await pb.collection('village_settings').getFullList({ perPage: 1 })
+    return records[0] as unknown as VillageSettings
+  })
 }
 
 export async function updateVillageSettings(id: string, data: Partial<VillageSettings>): Promise<VillageSettings> {
-  return await pb.collection('village_settings').update(id, data) as unknown as VillageSettings
+  const result = await pb.collection('village_settings').update(id, data) as unknown as VillageSettings
+  cacheInvalidate('village_settings')
+  return result
 }
 
 // ─── Titles ──────────────────────────────────────────────────────────────────
 
 export async function getTitles(): Promise<Title[]> {
-  return await pb.collection('titles').getFullList({ sort: 'min_points' }) as unknown as Title[]
+  return cacheOrFetch('titles', TTL_TITLES, async () => {
+    return await pb.collection('titles').getFullList({ sort: 'min_points' }) as unknown as Title[]
+  })
 }
 
 export async function createTitle(data: Omit<Title, 'id'>): Promise<Title> {
-  return await pb.collection('titles').create(data) as unknown as Title
+  const result = await pb.collection('titles').create(data) as unknown as Title
+  cacheInvalidate('titles')
+  return result
 }
 
 export async function updateTitle(id: string, data: Partial<Title>): Promise<Title> {
-  return await pb.collection('titles').update(id, data) as unknown as Title
+  const result = await pb.collection('titles').update(id, data) as unknown as Title
+  cacheInvalidate('titles')
+  return result
 }
 
 export async function deleteTitle(id: string): Promise<void> {
   await pb.collection('titles').delete(id)
+  cacheInvalidate('titles')
 }
 
 // ─── Mission Templates ───────────────────────────────────────────────────────
 
 export async function getMissionTemplates(activeOnly = true): Promise<MissionTemplate[]> {
-  const filter = activeOnly ? 'is_active=true && is_imported!=true' : ''
-  return await pb.collection('mission_templates').getFullList({ filter, sort: 'rank' }) as unknown as MissionTemplate[]
+  const key = activeOnly ? 'mission_templates:active' : 'mission_templates:all'
+  return cacheOrFetch(key, TTL_TEMPLATES, async () => {
+    const filter = activeOnly ? 'is_active=true && is_imported!=true' : ''
+    return await pb.collection('mission_templates').getFullList({ filter, sort: 'rank' }) as unknown as MissionTemplate[]
+  })
 }
 
 export async function createMissionTemplate(data: any): Promise<MissionTemplate> {
-  return await pb.collection('mission_templates').create(data) as unknown as MissionTemplate
+  const result = await pb.collection('mission_templates').create(data) as unknown as MissionTemplate
+  cacheInvalidatePrefix('mission_templates:')
+  return result
 }
 
 export async function updateMissionTemplate(id: string, data: any): Promise<MissionTemplate> {
-  return await pb.collection('mission_templates').update(id, data) as unknown as MissionTemplate
+  const result = await pb.collection('mission_templates').update(id, data) as unknown as MissionTemplate
+  cacheInvalidatePrefix('mission_templates:')
+  return result
 }
 
 // ─── Mission Assignments ─────────────────────────────────────────────────────
@@ -119,20 +145,28 @@ export async function updateAssignment(id: string, data: Partial<MissionAssignme
 // ─── Organization Roles ──────────────────────────────────────────────────────
 
 export async function getOrganizationRoles(org?: OrganizationType): Promise<OrganizationRole[]> {
-  const filter = org ? `organization="${org}"` : ''
-  return await pb.collection('organization_roles').getFullList({ filter, sort: 'order' }) as unknown as OrganizationRole[]
+  const key = `org_roles:${org ?? 'all'}`
+  return cacheOrFetch(key, TTL_ORG_ROLES, async () => {
+    const filter = org ? `organization="${org}"` : ''
+    return await pb.collection('organization_roles').getFullList({ filter, sort: 'order' }) as unknown as OrganizationRole[]
+  })
 }
 
 export async function createOrganizationRole(data: Omit<OrganizationRole, 'id'>): Promise<OrganizationRole> {
-  return await pb.collection('organization_roles').create(data) as unknown as OrganizationRole
+  const result = await pb.collection('organization_roles').create(data) as unknown as OrganizationRole
+  cacheInvalidatePrefix('org_roles:')
+  return result
 }
 
 export async function updateOrganizationRole(id: string, data: Partial<OrganizationRole>): Promise<OrganizationRole> {
-  return await pb.collection('organization_roles').update(id, data) as unknown as OrganizationRole
+  const result = await pb.collection('organization_roles').update(id, data) as unknown as OrganizationRole
+  cacheInvalidatePrefix('org_roles:')
+  return result
 }
 
 export async function deleteOrganizationRole(id: string): Promise<void> {
   await pb.collection('organization_roles').delete(id)
+  cacheInvalidatePrefix('org_roles:')
 }
 
 // ─── Organization Members ────────────────────────────────────────────────────
@@ -201,7 +235,9 @@ export async function createDonationRecord(data: Omit<DonationRecord, 'id' | 'cr
 }
 
 export async function getBankTransactions(): Promise<BankTransaction[]> {
-  return await pb.collection('bank_transactions').getFullList({ sort: '-created' }) as unknown as BankTransaction[]
+  return cacheOrFetch('bank_transactions', TTL_BANK_TX, async () => {
+    return await pb.collection('bank_transactions').getFullList({ sort: '-created' }) as unknown as BankTransaction[]
+  })
 }
 
 // ─── User management (admin) ─────────────────────────────────────────────────
