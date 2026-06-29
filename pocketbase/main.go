@@ -563,9 +563,17 @@ func main() {
 				userName = u.GetString("name")
 			}
 
+			missionRank := template.GetString("rank")
 			desc := fmt.Sprintf("Recompensa de missão: %s — ninja %s", missionName, userName)
-			addToBankBalance(app, -rewardYens, "reward_payout", userId, desc)
+			newBalance := addToBankBalance(app, -rewardYens, "reward_payout", userId, desc)
 			log.Printf("[Banco/missão] Descontado %.2f Yens pela missão '%s' do ninja %s", rewardYens, missionName, userName)
+
+			balanceStr := formatYens(newBalance)
+			if newBalance < 0 {
+				balanceStr = "indisponível"
+			}
+			msg := fmt.Sprintf(">>> :coin: Missão Rank %s (%s) pago para **%s** do banco da vila\nSaldo Atual: **%s**", missionRank, formatYens(rewardYens), userName, balanceStr)
+			sendDiscordWebhook("missão", msg)
 
 			return e.Next()
 		})
