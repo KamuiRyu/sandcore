@@ -114,7 +114,7 @@ const AssignmentCard = ({
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {(Array.isArray(tpl.location_image) ? tpl.location_image : [tpl.location_image]).map((imgName, i) => {
                   if (!imgName) return null;
-                  const fileUrl = pb.files.getUrl(tpl, imgName);
+                  const fileUrl = pb.files.getURL(tpl, imgName);
                   return (
                     <a
                       key={i}
@@ -176,7 +176,7 @@ const AssignmentCard = ({
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {(Array.isArray(a.evidence) ? a.evidence : [a.evidence]).map((filename, i) => {
                   if (!filename) return null;
-                  const fileUrl = pb.files.getUrl(a, filename);
+                  const fileUrl = pb.files.getURL(a, filename);
                   const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(filename);
                   
                   return (

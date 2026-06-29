@@ -1072,7 +1072,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
                       return (
                         <div key={i} style={{ position: "relative", border: "1px solid #1e1e1e", borderRadius: 3, overflow: "hidden", width: 40, height: 40 }}>
                           <img
-                            src={pb.files.getUrl(editTpl!, imgName)}
+                            src={pb.files.getURL(editTpl!, imgName)}
                             alt="Existing"
                             style={{ width: "100%", height: "100%", objectFit: "cover" }}
                           />
@@ -1369,7 +1369,7 @@ const ReviewAssignmentCard = ({
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {(Array.isArray(a.evidence) ? a.evidence : [a.evidence]).map((filename, i) => {
                 if (!filename) return null;
-                const fileUrl = pb.files.getUrl(a, filename);
+                const fileUrl = pb.files.getURL(a, filename);
                 const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(filename);
                 return (
                   <a key={i} href={fileUrl} target="_blank" rel="noopener noreferrer"

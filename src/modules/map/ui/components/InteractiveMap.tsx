@@ -1,4 +1,4 @@
-import { useState, useMemo, memo, useEffect, useCallback } from "react";
+import { useState, useMemo, memo, useEffect, useCallback, useRef } from "react";
 import {
   getMarkerIconSrc,
   getMarkerTypeLabel,
@@ -807,12 +807,26 @@ export function InteractiveMap({
   }, [visibleRoutes.length]);
 
   // Atalho de marcação direta: Ctrl+Alt+1~9 marca o ponto atual sem abrir o painel
+  const _quickMarkDataRef = useRef({
+    visibleRoutes, savedRoutes, publicRoutes, officialPoints,
+    customPins, completedPins, handleMarkCompleted, showToast,
+  });
+  useEffect(() => {
+    _quickMarkDataRef.current = {
+      visibleRoutes, savedRoutes, publicRoutes, officialPoints,
+      customPins, completedPins, handleMarkCompleted, showToast,
+    };
+  });
   useEffect(() => {
     if (!window.ipcRenderer) return;
     const handler = (_: unknown, { optionIndex }: { optionIndex: number }) => {
+      const {
+        visibleRoutes, savedRoutes, publicRoutes, officialPoints,
+        customPins, completedPins, handleMarkCompleted, showToast,
+      } = _quickMarkDataRef.current;
+
       if (visibleRoutes.length === 0) return;
 
-      // Coletar checkpoints pendentes das rotas visíveis (mesma lógica do QuickMarkPanel)
       const checkpoints: Array<{
         id: string;
         name: string;
@@ -832,7 +846,7 @@ export function InteractiveMap({
             const pin = officialPoints.find((p) => p.id === cp.pointId);
             if (!pin) return;
             const state = completedPins[pin.id];
-            if (state && state.status !== "ready") return; // já completo
+            if (state && state.status !== "ready") return;
             const getAllowedOres = (subRegionId?: string): string[] => {
               if (!subRegionId)
                 return ["ore_1","ore_2","ore_3","ore_4","ore_5","ore_6","ore_7","ore_8","ore_9"];
@@ -845,11 +859,8 @@ export function InteractiveMap({
               return list;
             };
             checkpoints.push({
-              id: pin.id,
-              name: pin.name,
-              iconId: pin.iconId,
-              type: pin.type,
-              subRegionId: pin.subRegionId,
+              id: pin.id, name: pin.name, iconId: pin.iconId,
+              type: pin.type, subRegionId: pin.subRegionId,
               allowedOres: getAllowedOres(pin.subRegionId),
             });
           } else if (cp.customPinId) {
@@ -857,12 +868,7 @@ export function InteractiveMap({
             if (!pin) return;
             const state = completedPins[pin.id];
             if (state && state.status !== "ready") return;
-            checkpoints.push({
-              id: pin.id,
-              name: pin.name,
-              iconId: pin.iconId,
-              type: "custom",
-            });
+            checkpoints.push({ id: pin.id, name: pin.name, iconId: pin.iconId, type: "custom" });
           }
         });
       });
@@ -875,7 +881,6 @@ export function InteractiveMap({
       const hasSubtypes = isOre || isMushroom;
 
       if (!hasSubtypes) {
-        // Tipos simples: opção 1 = marcar
         if (optionIndex === 1) {
           handleMarkCompleted(current.id);
           showToast("Marcado", current.name, "success");
@@ -883,7 +888,6 @@ export function InteractiveMap({
         return;
       }
 
-      // Montar lista de opções igual ao QuickMarkPanel
       const subtypeIcons: string[] = (
         markerIconsByType[current.type as keyof typeof markerIconsByType] ?? []
       ).filter(
@@ -892,7 +896,6 @@ export function InteractiveMap({
           (!isOre || (current.allowedOres ?? []).includes(iconId)),
       );
 
-      // Opção 1 = padrão/já passei (ore_1 / mushroom_1), depois vêm os subtypes
       if (optionIndex === 1) {
         const defaultSubtype = isOre ? "ore_1" : "mushroom_1";
         handleMarkCompleted(current.id, defaultSubtype);
@@ -907,17 +910,8 @@ export function InteractiveMap({
     };
 
     window.ipcRenderer.on("quick-mark-direct", handler);
-    return () => window.ipcRenderer?.off("quick-mark-direct", handler);
-  }, [
-    visibleRoutes,
-    savedRoutes,
-    publicRoutes,
-    officialPoints,
-    customPins,
-    completedPins,
-    handleMarkCompleted,
-    showToast,
-  ]);
+    return () => { window.ipcRenderer?.off("quick-mark-direct", handler); };
+  }, []); // listener registrado uma única vez
 
   const {
     displayedCamera,

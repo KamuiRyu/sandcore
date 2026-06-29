@@ -239,7 +239,7 @@ export const MissionBoardScreen = () => {
                             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                               {(Array.isArray(t.location_image) ? t.location_image : [t.location_image]).map((imgName, i) => {
                                 if (!imgName) return null;
-                                const fileUrl = pb.files.getUrl(t, imgName);
+                                const fileUrl = pb.files.getURL(t, imgName);
                                 return (
                                   <a
                                     key={i}
