@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, RefreshCw, CheckCircle2, Package, Star, Coins, Zap } from 'lucide-react'
+import { Search, RefreshCw, CheckCircle2, Package, Star, Coins, Zap, Scroll, AlertTriangle } from 'lucide-react'
 import { pb } from '../../../../lib/pocketbase'
 import { useMissionsViewModel } from '../viewModels/useMissions.viewModel'
 import { MissionRankBadge } from '../components/MissionRankBadge'
@@ -17,6 +17,8 @@ export const MissionBoardScreen = () => {
   const maxPoints = vm.settings?.daily_points_per_ninja ?? 0
   const remainingPoints = Math.max(0, maxPoints - vm.usedPoints)
   const pointsPct = maxPoints > 0 ? Math.min(100, (vm.usedPoints / maxPoints) * 100) : 0
+  const missionLimitReached = vm.maxDailyMissions > 0 && vm.todayActiveMissionCount >= vm.maxDailyMissions
+  const missionPct = vm.maxDailyMissions > 0 ? Math.min(100, (vm.todayActiveMissionCount / vm.maxDailyMissions) * 100) : 0
 
   const filtered = vm.templates.filter(t => {
     if (filterRank !== 'all' && t.rank !== filterRank) return false
@@ -104,6 +106,30 @@ export const MissionBoardScreen = () => {
         </div>
       )}
 
+      {/* Daily missions bar */}
+      {vm.maxDailyMissions > 0 && (
+        <div className="flex-none mb-3" style={{ background: missionLimitReached ? 'rgba(120,20,20,0.12)' : 'rgba(8,8,8,0.6)', border: `1px solid ${missionLimitReached ? '#7a1414' : '#1e1e1e'}`, borderRadius: 3, padding: '10px 14px', transition: 'all 0.2s' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: missionLimitReached ? '#e07070' : '#9a7a40', fontFamily: "'Orbitron', sans-serif", letterSpacing: '0.08em' }}>
+              <Scroll size={12} />
+              MISSÕES DIÁRIAS
+            </div>
+            <span style={{ fontSize: 12, fontFamily: "'Orbitron', sans-serif", fontWeight: 700, color: missionLimitReached ? '#e07070' : '#c8a030' }}>
+              {vm.todayActiveMissionCount} / {vm.maxDailyMissions} ativas
+            </span>
+          </div>
+          <div style={{ height: 4, background: '#1e1e1e', borderRadius: 2, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${missionPct}%`, background: missionLimitReached ? '#e07070' : 'linear-gradient(90deg,#2a7a5a,#3ac880)', borderRadius: 2, transition: 'width 0.3s ease' }} />
+          </div>
+          {missionLimitReached && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 11, color: '#e07070', fontFamily: "'Orbitron', sans-serif" }}>
+              <AlertTriangle size={11} />
+              Limite diário atingido. Conclua ou aguarde a avaliação de uma missão ativa.
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Board */}
       <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-6">
         {Object.entries(grouped).map(([rank, list]) => (
@@ -132,31 +158,47 @@ export const MissionBoardScreen = () => {
                     onMouseLeave={e => { if (!isExpanded && !isAssigned) e.currentTarget.style.borderColor = '#1e1e1e' }}
                   >
                     {/* Compact row (always visible) */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-                        <MissionRankBadge rank={t.rank as MissionRank} />
-                        <span style={{ fontSize: 13, fontWeight: 700, color: '#e8d5a0', fontFamily: "'Cinzel', serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {t.title}
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
-                        {vm.settings && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>
-                            <Zap size={11} />
-                            {vm.settings.points_cost[t.rank as MissionRank] ?? 0} pts
+                    {(() => {
+                      const eligibility = !isAssigned ? vm.checkEligibility(t.id) : { eligible: true }
+                      return (
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+                              <MissionRankBadge rank={t.rank as MissionRank} />
+                              <span style={{ fontSize: 13, fontWeight: 700, color: '#e8d5a0', fontFamily: "'Cinzel', serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {t.title}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+                              {vm.settings && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#9a7a40', fontFamily: "'Orbitron', sans-serif" }}>
+                                  <Zap size={11} />
+                                  {vm.settings.points_cost[t.rank as MissionRank] ?? 0} pts
+                                </div>
+                              )}
+                              {isAssigned ? (
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#5ac87a', fontFamily: "'Orbitron', sans-serif", fontWeight: 700 }}>
+                                  <CheckCircle2 size={13} /> Atribuída
+                                </span>
+                              ) : !eligibility.eligible ? (
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#e07070', fontFamily: "'Orbitron', sans-serif", fontWeight: 700 }}>
+                                  <AlertTriangle size={11} /> Bloqueada
+                                </span>
+                              ) : (
+                                <span style={{ fontSize: 10, color: '#c8a840', textDecoration: 'underline', fontFamily: "'Orbitron', sans-serif" }}>
+                                  {isExpanded ? 'Recolher' : 'Detalhes'}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        )}
-                        {isAssigned ? (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#5ac87a', fontFamily: "'Orbitron', sans-serif", fontWeight: 700 }}>
-                            <CheckCircle2 size={13} /> Atribuída
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: 10, color: '#c8a840', textDecoration: 'underline', fontFamily: "'Orbitron', sans-serif" }}>
-                            {isExpanded ? 'Recolher' : 'Detalhes'}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                          {!isAssigned && !eligibility.eligible && !isExpanded && (
+                            <div style={{ fontSize: 10, color: '#7a4040', fontFamily: "'Orbitron', sans-serif", marginTop: 4 }}>
+                              ⚠ {eligibility.reason}
+                            </div>
+                          )}
+                        </>
+                      )
+                    })()}
 
                     {/* Expanded details */}
                     {isExpanded && (
