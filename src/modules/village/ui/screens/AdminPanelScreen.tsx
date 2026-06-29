@@ -18,6 +18,9 @@ import {
   Upload,
   Camera,
   User as UserIcon,
+  Trophy,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { pb } from "../../../../lib/pocketbase";
 import { useAdminViewModel } from "../viewModels/useAdmin.viewModel";
@@ -51,10 +54,12 @@ type AdminTab =
   | "settings"
   | "titles"
   | "orgs"
-  | "bank";
+  | "bank"
+  | "ninjas";
 
 const TABS: { id: AdminTab; label: string; icon: typeof Users }[] = [
   { id: "members", label: "Membros", icon: Users },
+  { id: "ninjas", label: "Ninjas", icon: Trophy },
   { id: "missions", label: "Missões", icon: Scroll },
   { id: "assign", label: "Atribuir", icon: UserPlus },
   { id: "reviews", label: "Avaliações", icon: Eye },
@@ -65,6 +70,214 @@ const TABS: { id: AdminTab; label: string; icon: typeof Users }[] = [
 ];
 
 const RANKS: MissionRank[] = ["D", "C", "B", "A", "S"];
+
+const NINJA_RANK_ORDER: Record<string, number> = {
+  genin: 1, chunin: 2, jonin: 3, anbu: 4, kage: 5,
+};
+const NINJA_RANK_LABEL: Record<string, string> = {
+  genin: "Genin", chunin: "Chunin", jonin: "Jonin", anbu: "ANBU", kage: "Kage",
+};
+const NINJA_RANK_COLOR: Record<string, string> = {
+  genin: "#6ab04c", chunin: "#4a9fd4", jonin: "#9b59b6", anbu: "#e74c3c", kage: "#c8860a",
+};
+
+type NinjaSortKey = "name" | "ninja_rank" | "level" | "title_points" | "current_title";
+
+// ─── Ninjas Tab ──────────────────────────────────────────────────────────────
+
+const NinjasTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
+  const [sortKey, setSortKey] = useState<NinjaSortKey>("title_points");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [search, setSearch] = useState("");
+
+  const toggleSort = (key: NinjaSortKey) => {
+    if (sortKey === key) {
+      setSortDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir(key === "name" || key === "current_title" ? "asc" : "desc");
+    }
+  };
+
+  const filtered = vm.approvedUsers
+    .filter(u => !search || u.name.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "name") cmp = a.name.localeCompare(b.name);
+      else if (sortKey === "ninja_rank") {
+        cmp = (NINJA_RANK_ORDER[a.ninja_rank || ""] || 0) - (NINJA_RANK_ORDER[b.ninja_rank || ""] || 0);
+      } else if (sortKey === "level") cmp = (a.level || 0) - (b.level || 0);
+      else if (sortKey === "title_points") cmp = (a.title_points || 0) - (b.title_points || 0);
+      else if (sortKey === "current_title") {
+        cmp = (a.current_title || "").localeCompare(b.current_title || "");
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+  const pg = usePagination(filtered, 15);
+
+  const SortIcon = ({ col }: { col: NinjaSortKey }) => {
+    if (sortKey !== col) return <ChevronUp size={9} color="#3a3a2a" />;
+    return sortDir === "asc" ? <ChevronUp size={9} color="#c8860a" /> : <ChevronDown size={9} color="#c8860a" />;
+  };
+
+  const thStyle = (col: NinjaSortKey): React.CSSProperties => ({
+    padding: "7px 10px",
+    fontSize: 9,
+    fontFamily: "'Orbitron', sans-serif",
+    fontWeight: 700,
+    color: sortKey === col ? "#c8860a" : "#6a5028",
+    letterSpacing: "0.07em",
+    cursor: "pointer",
+    userSelect: "none",
+    whiteSpace: "nowrap",
+    textAlign: "left",
+    background: "transparent",
+    border: "none",
+  });
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+      {/* Controls – fixed header */}
+      <div style={{ flexShrink: 0, paddingBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar ninja..."
+            style={{
+              flex: 1,
+              background: "#0d0d0d",
+              border: "1px solid #282828",
+              borderRadius: 2,
+              padding: "6px 10px",
+              color: "#e8d5a0",
+              fontSize: 11,
+              fontFamily: "'Orbitron', sans-serif",
+              outline: "none",
+            }}
+          />
+          <span style={{ fontSize: 10, color: "#6a5028", fontFamily: "'Orbitron', sans-serif", whiteSpace: "nowrap" }}>
+            {filtered.length} ninja{filtered.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+      </div>
+
+      {/* Scrollable list */}
+      <div style={{ flex: 1, overflowY: "auto" }} className="custom-scrollbar">
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 520 }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid #1e1e1e" }}>
+                <th style={{ padding: "7px 10px", fontSize: 9, color: "#6a5028", fontFamily: "'Orbitron', sans-serif", textAlign: "left", width: 32 }}>#</th>
+                {(
+                  [
+                    { key: "name" as NinjaSortKey, label: "NOME" },
+                    { key: "ninja_rank" as NinjaSortKey, label: "POSTO" },
+                    { key: "level" as NinjaSortKey, label: "NÍVEL" },
+                    { key: "title_points" as NinjaSortKey, label: "PONTOS" },
+                    { key: "current_title" as NinjaSortKey, label: "TÍTULO ATUAL" },
+                  ] as const
+                ).map(({ key, label }) => (
+                  <th key={key} style={thStyle(key)} onClick={() => toggleSort(key)}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      {label} <SortIcon col={key} />
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {pg.paged.map((u, i) => {
+                const rankColor = NINJA_RANK_COLOR[u.ninja_rank || ""] || "#6a5028";
+                const globalIndex = (pg.page - 1) * 15 + i + 1;
+                return (
+                  <tr
+                    key={u.id}
+                    style={{
+                      borderBottom: "1px solid #111",
+                      background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)",
+                    }}
+                  >
+                    <td style={{ padding: "8px 10px", fontSize: 10, color: "#3a3a2a", fontFamily: "'Orbitron', sans-serif" }}>
+                      {globalIndex}
+                    </td>
+                    <td style={{ padding: "8px 10px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{
+                          width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                          border: "1px solid #2a2a1a", overflow: "hidden",
+                          background: "#111", display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>
+                          {avatarUrl(u)
+                            ? <img src={avatarUrl(u)!} alt={u.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            : <UserIcon size={12} color="#6a5028" />}
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "#e8d5a0" }}>{u.name}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: "8px 10px" }}>
+                      {u.ninja_rank ? (
+                        <span style={{
+                          fontSize: 10, fontWeight: 700, fontFamily: "'Orbitron', sans-serif",
+                          color: rankColor,
+                          background: `${rankColor}18`,
+                          border: `1px solid ${rankColor}40`,
+                          borderRadius: 2,
+                          padding: "2px 7px",
+                        }}>
+                          {NINJA_RANK_LABEL[u.ninja_rank] || u.ninja_rank}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 10, color: "#3a3a2a", fontFamily: "'Orbitron', sans-serif" }}>—</span>
+                      )}
+                    </td>
+                    <td style={{ padding: "8px 10px", fontSize: 12, color: "#9a7a40", fontFamily: "'Orbitron', sans-serif", fontWeight: 700 }}>
+                      {u.level || 0}
+                    </td>
+                    <td style={{ padding: "8px 10px" }}>
+                      <span style={{
+                        fontSize: 12, fontWeight: 700,
+                        color: (u.title_points || 0) > 0 ? "#c8860a" : "#3a3a2a",
+                        fontFamily: "'Orbitron', sans-serif",
+                      }}>
+                        {(u.title_points || 0).toLocaleString("pt-BR")}
+                      </span>
+                    </td>
+                    <td style={{ padding: "8px 10px" }}>
+                      {u.current_title ? (
+                        <span style={{
+                          fontSize: 10, color: "#e8d5a0",
+                          fontStyle: "italic",
+                          background: "rgba(200,134,10,0.08)",
+                          border: "1px solid #c8860a30",
+                          borderRadius: 2,
+                          padding: "2px 7px",
+                        }}>
+                          {u.current_title}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 10, color: "#3a3a2a", fontFamily: "'Orbitron', sans-serif" }}>—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} style={{ padding: "30px 0", textAlign: "center", fontSize: 12, color: "#282828", fontFamily: "'Orbitron', sans-serif" }}>
+                    Nenhum ninja aprovado
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <Pagination page={pg.page} totalPages={pg.totalPages} total={pg.total} onPage={pg.setPage} />
+      </div>
+    </div>
+  );
+};
 
 // ─── Members Tab ─────────────────────────────────────────────────────────────
 
@@ -79,137 +292,143 @@ const MembersTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   const handleRefresh = async () => { setRefreshing(true); await vm.reload(); setRefreshing(false); };
 
   return (
-    <div className="space-y-3">
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
-        <VillageSecondaryButton small onClick={handleRefresh} disabled={refreshing}>
-          <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
-          {refreshing ? "Atualizando..." : "Atualizar"}
-        </VillageSecondaryButton>
-      </div>
-      <div style={{ display: "flex", gap: 4 }}>
-        {(["pending", "approved"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => {
-              setTab(t);
-              pg.setPage(1);
-            }}
-            style={{
-              padding: "6px 14px",
-              borderRadius: 2,
-              fontSize: 11,
-              fontWeight: 700,
-              fontFamily: "'Orbitron', sans-serif",
-              cursor: "pointer",
-              background: tab === t ? "rgba(200,134,10,0.2)" : "transparent",
-              border: `1px solid ${tab === t ? "#c8860a" : "#1e1e1e"}`,
-              color: tab === t ? "#c8860a" : "#9a7a40",
-            }}
-          >
-            {t === "pending"
-              ? `PENDENTES (${vm.pendingUsers.length})`
-              : `APROVADOS (${vm.approvedUsers.length})`}
-          </button>
-        ))}
-      </div>
-
-      <div className="space-y-2">
-        {pg.paged.map((u) => (
-          <VillageCard key={u.id}>
-            <div
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+      {/* Controls – fixed header */}
+      <div style={{ flexShrink: 0, paddingBottom: 10 }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+          <VillageSecondaryButton small onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
+            {refreshing ? "Atualizando..." : "Atualizar"}
+          </VillageSecondaryButton>
+        </div>
+        <div style={{ display: "flex", gap: 4 }}>
+          {(["pending", "approved"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => {
+                setTab(t);
+                pg.setPage(1);
+              }}
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: 10,
+                padding: "6px 14px",
+                borderRadius: 2,
+                fontSize: 11,
+                fontWeight: 700,
+                fontFamily: "'Orbitron', sans-serif",
+                cursor: "pointer",
+                background: tab === t ? "rgba(200,134,10,0.2)" : "transparent",
+                border: `1px solid ${tab === t ? "#c8860a" : "#1e1e1e"}`,
+                color: tab === t ? "#c8860a" : "#9a7a40",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                {/* Avatar */}
-                <div style={{
-                  width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
-                  border: "1px solid #2a2a1a", overflow: "hidden",
-                  background: "#111", display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  {avatarUrl(u)
-                    ? <img src={avatarUrl(u)!} alt={u.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : <UserIcon size={16} color="#6a5028" />}
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#e8d5a0" }}>
-                    {u.name}
-                  </div>
-                  <div style={{ fontSize: 11, color: "#9a7a40" }}>
-                    {u.email} · {new Date(u.created).toLocaleDateString("pt-BR")}
-                  </div>
-                  <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-                    <StatusBadge status={u.status} />
-                    <span style={{ fontSize: 11, color: "#9a7a40", fontFamily: "'Orbitron', sans-serif" }}>
-                      {u.role} {u.ninja_rank ? `· ${u.ninja_rank}` : ""}{" "}
-                      {u.level ? `· Nv.${u.level}` : ""}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 6 }}>
-                {u.status === "pending" && (
-                  <>
-                    <VillagePrimaryButton
-                      small
-                      onClick={() => vm.approveUser(u.id)}
-                    >
-                      <Check size={10} /> Aprovar
-                    </VillagePrimaryButton>
-                    <VillageSecondaryButton
-                      small
-                      danger
-                      onClick={() => vm.rejectUser(u.id)}
-                    >
-                      <X size={10} /> Recusar
-                    </VillageSecondaryButton>
-                  </>
-                )}
-                {u.status === "approved" && (
-                  <>
-                    <VillageSecondaryButton
-                      small
-                      onClick={() => setEditUser(u)}
-                    >
-                      <Edit3 size={10} /> Editar
-                    </VillageSecondaryButton>
-                    <VillageSecondaryButton
-                      small
-                      danger
-                      onClick={() => vm.rejectUser(u.id)}
-                    >
-                      <X size={10} /> Revogar
-                    </VillageSecondaryButton>
-                  </>
-                )}
-              </div>
-            </div>
-          </VillageCard>
-        ))}
-        {list.length === 0 && (
-          <div
-            style={{
-              color: "#282828",
-              fontSize: 12,
-              textAlign: "center",
-              padding: "30px 0",
-              fontFamily: "'Orbitron', sans-serif",
-            }}
-          >
-            Nenhum membro {tab === "pending" ? "pendente" : "aprovado"}
-          </div>
-        )}
+              {t === "pending"
+                ? `PENDENTES (${vm.pendingUsers.length})`
+                : `APROVADOS (${vm.approvedUsers.length})`}
+            </button>
+          ))}
+        </div>
       </div>
-      <Pagination
-        page={pg.page}
-        totalPages={pg.totalPages}
-        total={pg.total}
-        onPage={pg.setPage}
-      />
+
+      {/* Scrollable list */}
+      <div style={{ flex: 1, overflowY: "auto" }} className="custom-scrollbar">
+        <div className="space-y-2">
+          {pg.paged.map((u) => (
+            <VillageCard key={u.id}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {/* Avatar */}
+                  <div style={{
+                    width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
+                    border: "1px solid #2a2a1a", overflow: "hidden",
+                    background: "#111", display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    {avatarUrl(u)
+                      ? <img src={avatarUrl(u)!} alt={u.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      : <UserIcon size={16} color="#6a5028" />}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#e8d5a0" }}>
+                      {u.name}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#9a7a40" }}>
+                      {u.email} · {new Date(u.created).toLocaleDateString("pt-BR")}
+                    </div>
+                    <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                      <StatusBadge status={u.status} />
+                      <span style={{ fontSize: 11, color: "#9a7a40", fontFamily: "'Orbitron', sans-serif" }}>
+                        {u.role} {u.ninja_rank ? `· ${u.ninja_rank}` : ""}{" "}
+                        {u.level ? `· Nv.${u.level}` : ""}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {u.status === "pending" && (
+                    <>
+                      <VillagePrimaryButton
+                        small
+                        onClick={() => vm.approveUser(u.id)}
+                      >
+                        <Check size={10} /> Aprovar
+                      </VillagePrimaryButton>
+                      <VillageSecondaryButton
+                        small
+                        danger
+                        onClick={() => vm.rejectUser(u.id)}
+                      >
+                        <X size={10} /> Recusar
+                      </VillageSecondaryButton>
+                    </>
+                  )}
+                  {u.status === "approved" && (
+                    <>
+                      <VillageSecondaryButton
+                        small
+                        onClick={() => setEditUser(u)}
+                      >
+                        <Edit3 size={10} /> Editar
+                      </VillageSecondaryButton>
+                      <VillageSecondaryButton
+                        small
+                        danger
+                        onClick={() => vm.rejectUser(u.id)}
+                      >
+                        <X size={10} /> Revogar
+                      </VillageSecondaryButton>
+                    </>
+                  )}
+                </div>
+              </div>
+            </VillageCard>
+          ))}
+          {list.length === 0 && (
+            <div
+              style={{
+                color: "#282828",
+                fontSize: 12,
+                textAlign: "center",
+                padding: "30px 0",
+                fontFamily: "'Orbitron', sans-serif",
+              }}
+            >
+              Nenhum membro {tab === "pending" ? "pendente" : "aprovado"}
+            </div>
+          )}
+        </div>
+        <Pagination
+          page={pg.page}
+          totalPages={pg.totalPages}
+          total={pg.total}
+          onPage={pg.setPage}
+        />
+      </div>
 
       {editUser && (
         <EditUserModal
@@ -529,24 +748,29 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   };
 
   return (
-    <div className="space-y-3">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <VillageSecondaryButton small onClick={async () => { setRefreshing(true); await vm.reload(); setRefreshing(false); }} disabled={refreshing}>
-          <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
-          {refreshing ? "Atualizando..." : "Atualizar"}
-        </VillageSecondaryButton>
-        <VillagePrimaryButton
-          onClick={() => {
-            resetForm();
-            setEditTpl(null);
-            setShowForm(true);
-            setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
-          }}
-        >
-          <Plus size={11} /> Nova Missão
-        </VillagePrimaryButton>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+      {/* Controls – fixed header */}
+      <div style={{ flexShrink: 0, paddingBottom: 10 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <VillageSecondaryButton small onClick={async () => { setRefreshing(true); await vm.reload(); setRefreshing(false); }} disabled={refreshing}>
+            <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
+            {refreshing ? "Atualizando..." : "Atualizar"}
+          </VillageSecondaryButton>
+          <VillagePrimaryButton
+            onClick={() => {
+              resetForm();
+              setEditTpl(null);
+              setShowForm(true);
+              setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+            }}
+          >
+            <Plus size={11} /> Nova Missão
+          </VillagePrimaryButton>
+        </div>
       </div>
 
+      {/* Scrollable list */}
+      <div style={{ flex: 1, overflowY: "auto" }} className="custom-scrollbar space-y-3">
       {showForm && (
         <div ref={formRef}>
         <VillageCard>
@@ -969,6 +1193,7 @@ const MissionsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
         total={pg.total}
         onPage={pg.setPage}
       />
+      </div>
     </div>
   );
 };
@@ -1083,13 +1308,19 @@ const ReviewsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   const groupEntries = Object.entries(groups);
 
   return (
-    <div className="space-y-2">
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <VillageSecondaryButton small onClick={handleRefresh} disabled={refreshing}>
-          <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
-          {refreshing ? "Atualizando..." : "Atualizar"}
-        </VillageSecondaryButton>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+      {/* Controls – fixed header */}
+      <div style={{ flexShrink: 0, paddingBottom: 10 }}>
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <VillageSecondaryButton small onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
+            {refreshing ? "Atualizando..." : "Atualizar"}
+          </VillageSecondaryButton>
+        </div>
       </div>
+
+      {/* Scrollable list */}
+      <div style={{ flex: 1, overflowY: "auto" }} className="custom-scrollbar space-y-2">
       {groupEntries.length === 0 ? (
         <div style={{ color: "#282828", fontSize: 10, textAlign: "center", padding: "40px 0", fontFamily: "'Orbitron', sans-serif" }}>
           Nenhuma missão aguardando avaliação
@@ -1172,6 +1403,7 @@ const ReviewsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
           );
         })
       )}
+      </div>
     </div>
   );
 };
@@ -1372,7 +1604,7 @@ const AssignTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   const [refreshing, setRefreshing] = useState(false);
 
   return (
-    <div className="space-y-3">
+    <div style={{ flex: 1, overflowY: "auto" }} className="custom-scrollbar space-y-3">
       <VillageSection label="Atribuir Missão" />
       <VillageCard>
         {/* Step 1: Missão */}
@@ -1683,22 +1915,28 @@ const TitlesTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   };
 
   return (
-    <div className="space-y-3">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <VillageSecondaryButton small onClick={async () => { setRefreshing(true); await vm.reload(); setRefreshing(false); }} disabled={refreshing}>
-          <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
-          {refreshing ? "Atualizando..." : "Atualizar"}
-        </VillageSecondaryButton>
-        <VillagePrimaryButton
-          onClick={() => {
-            setEditing(null);
-            setForm({ name: "", min_points: "0", description: "", order: "0" });
-            setShowForm(true);
-          }}
-        >
-          <Plus size={11} /> Novo Título
-        </VillagePrimaryButton>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+      {/* Controls – fixed header */}
+      <div style={{ flexShrink: 0, paddingBottom: 10 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <VillageSecondaryButton small onClick={async () => { setRefreshing(true); await vm.reload(); setRefreshing(false); }} disabled={refreshing}>
+            <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
+            {refreshing ? "Atualizando..." : "Atualizar"}
+          </VillageSecondaryButton>
+          <VillagePrimaryButton
+            onClick={() => {
+              setEditing(null);
+              setForm({ name: "", min_points: "0", description: "", order: "0" });
+              setShowForm(true);
+            }}
+          >
+            <Plus size={11} /> Novo Título
+          </VillagePrimaryButton>
+        </div>
       </div>
+
+      {/* Scrollable list */}
+      <div style={{ flex: 1, overflowY: "auto" }} className="custom-scrollbar space-y-3">
       {showForm && (
         <VillageCard>
           <div className="grid grid-cols-2 gap-3">
@@ -1820,6 +2058,7 @@ const TitlesTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
         ))}
       </div>
       <Pagination page={pg.page} totalPages={pg.totalPages} total={pg.total} onPage={pg.setPage} />
+      </div>
     </div>
   );
 };
@@ -1869,7 +2108,7 @@ const SettingsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   }
 
   return (
-    <div className="space-y-4">
+    <div style={{ flex: 1, overflowY: "auto" }} className="custom-scrollbar space-y-4">
       <VillageSection label="Missões Diárias" />
       <VillageCard>
         <div className="grid grid-cols-2 gap-4">
@@ -2042,31 +2281,35 @@ const BankTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   };
 
   return (
-    <div className="space-y-4">
-      <VillageCard>
-        <div style={{ textAlign: "center", padding: "8px 0" }}>
-          <div style={{ fontSize: 9, color: "#9a7a40", fontFamily: "'Orbitron', sans-serif", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-            Saldo do Banco da Vila
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+      {/* Controls – fixed header */}
+      <div style={{ flexShrink: 0, paddingBottom: 10 }}>
+        <VillageCard>
+          <div style={{ textAlign: "center", padding: "4px 0" }}>
+            <div style={{ fontSize: 9, color: "#9a7a40", fontFamily: "'Orbitron', sans-serif", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              Saldo do Banco da Vila
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: "#c8860a", fontFamily: "'Cinzel', serif", marginTop: 4 }}>
+              {balance.toLocaleString("pt-BR")} ¥
+            </div>
           </div>
-          <div style={{ fontSize: 32, fontWeight: 700, color: "#c8860a", fontFamily: "'Cinzel', serif", marginTop: 6 }}>
-            {balance.toLocaleString("pt-BR")} ¥
+        </VillageCard>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
+          <VillageSection label="Últimas Transações" />
+          <div style={{ display: "flex", gap: 6 }}>
+            <VillageSecondaryButton small onClick={async () => { setRefreshing(true); await vm.reload(); setRefreshing(false); }} disabled={refreshing}>
+              <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
+              {refreshing ? "..." : "Atualizar"}
+            </VillageSecondaryButton>
+            <VillagePrimaryButton small onClick={() => setShowDonationForm(v => !v)}>
+              <Plus size={10} /> Doação
+            </VillagePrimaryButton>
           </div>
-        </div>
-      </VillageCard>
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <VillageSection label="Últimas Transações" />
-        <div style={{ display: "flex", gap: 6 }}>
-          <VillageSecondaryButton small onClick={async () => { setRefreshing(true); await vm.reload(); setRefreshing(false); }} disabled={refreshing}>
-            <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
-            {refreshing ? "..." : "Atualizar"}
-          </VillageSecondaryButton>
-          <VillagePrimaryButton small onClick={() => setShowDonationForm(v => !v)}>
-            <Plus size={10} /> Doação
-          </VillagePrimaryButton>
         </div>
       </div>
 
+      {/* Scrollable list */}
+      <div style={{ flex: 1, overflowY: "auto" }} className="custom-scrollbar space-y-3">
       {showDonationForm && (
         <VillageCard>
           <div style={{ fontSize: 12, fontWeight: 700, color: "#c8860a", marginBottom: 12, fontFamily: "'Cinzel', serif" }}>
@@ -2135,6 +2378,7 @@ const BankTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
         )}
       </div>
       <Pagination page={pg.page} totalPages={pg.totalPages} total={pg.total} onPage={pg.setPage} />
+      </div>
     </div>
   );
 };
@@ -2180,39 +2424,44 @@ const OrgsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
   };
 
   return (
-    <div className="space-y-3">
-      <div style={{ display: "flex", gap: 4 }}>
-        {(["policia", "hospital", "assistente"] as const).map((org) => (
-          <button
-            key={org}
-            onClick={() => { setSelectedOrg(org); pg.setPage(1); }}
-            style={{
-              padding: "6px 14px",
-              borderRadius: 2,
-              fontSize: 11,
-              fontWeight: 700,
-              fontFamily: "'Orbitron', sans-serif",
-              cursor: "pointer",
-              background:
-                selectedOrg === org ? "rgba(200,134,10,0.2)" : "transparent",
-              border: `1px solid ${selectedOrg === org ? "#c8860a" : "#1e1e1e"}`,
-              color: selectedOrg === org ? "#c8860a" : "#9a7a40",
-            }}
-          >
-            {ORG_LABELS[org].toUpperCase()}
-          </button>
-        ))}
-        <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-          <VillageSecondaryButton small onClick={async () => { setRefreshing(true); await vm.reload(); setRefreshing(false); }} disabled={refreshing}>
-            <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
-            {refreshing ? "..." : "Atualizar"}
-          </VillageSecondaryButton>
-          <VillagePrimaryButton small onClick={() => setShowForm(true)}>
-            <Plus size={10} /> Cargo
-          </VillagePrimaryButton>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+      {/* Controls – fixed header */}
+      <div style={{ flexShrink: 0, paddingBottom: 10 }}>
+        <div style={{ display: "flex", gap: 4 }}>
+          {(["policia", "hospital", "assistente"] as const).map((org) => (
+            <button
+              key={org}
+              onClick={() => { setSelectedOrg(org); pg.setPage(1); }}
+              style={{
+                padding: "6px 14px",
+                borderRadius: 2,
+                fontSize: 11,
+                fontWeight: 700,
+                fontFamily: "'Orbitron', sans-serif",
+                cursor: "pointer",
+                background:
+                  selectedOrg === org ? "rgba(200,134,10,0.2)" : "transparent",
+                border: `1px solid ${selectedOrg === org ? "#c8860a" : "#1e1e1e"}`,
+                color: selectedOrg === org ? "#c8860a" : "#9a7a40",
+              }}
+            >
+              {ORG_LABELS[org].toUpperCase()}
+            </button>
+          ))}
+          <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+            <VillageSecondaryButton small onClick={async () => { setRefreshing(true); await vm.reload(); setRefreshing(false); }} disabled={refreshing}>
+              <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
+              {refreshing ? "..." : "Atualizar"}
+            </VillageSecondaryButton>
+            <VillagePrimaryButton small onClick={() => setShowForm(true)}>
+              <Plus size={10} /> Cargo
+            </VillagePrimaryButton>
+          </div>
         </div>
       </div>
 
+      {/* Scrollable list */}
+      <div style={{ flex: 1, overflowY: "auto" }} className="custom-scrollbar space-y-3">
       {showForm && (
         <VillageCard>
           <div className="grid grid-cols-2 gap-3">
@@ -2340,6 +2589,7 @@ const OrgsTab = ({ vm }: { vm: ReturnType<typeof useAdminViewModel> }) => {
         )}
       </div>
       <Pagination page={pg.page} totalPages={pg.totalPages} total={pg.total} onPage={pg.setPage} />
+      </div>
     </div>
   );
 };
@@ -2456,8 +2706,9 @@ export const AdminPanelScreen = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar pl-4">
+      <div className="flex-1 overflow-hidden pl-4" style={{ display: "flex", flexDirection: "column" }}>
         {activeTab === "members" && <MembersTab vm={vm} />}
+        {activeTab === "ninjas" && <NinjasTab vm={vm} />}
         {activeTab === "missions" && <MissionsTab vm={vm} />}
         {activeTab === "assign" && <AssignTab vm={vm} />}
         {activeTab === "reviews" && <ReviewsTab vm={vm} />}
