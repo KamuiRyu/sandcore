@@ -523,10 +523,10 @@ func main() {
 		})
 
 		app.OnRecordAfterUpdateSuccess("mission_assignments").BindFunc(func(e *core.RecordEvent) error {
-			if e.Record.GetString("status") != "completed" {
-				return e.Next()
-			}
-			if e.Record.Original().GetString("status") == "completed" {
+			newStatus := e.Record.GetString("status")
+			oldStatus := e.Record.Original().GetString("status")
+			// Recompensas só são concedidas quando a transição é especificamente pending_review → completed
+			if newStatus != "completed" || oldStatus != "pending_review" {
 				return e.Next()
 			}
 
